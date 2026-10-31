@@ -13,3 +13,6 @@ build/
 # Built by the Dockerfile web stage (web/ -> app/static); keep only the placeholder tracked
 app/static/*
 !app/static/index.html
+
+# Local review screenshots (kept on disk, not in git)
+web/review/
