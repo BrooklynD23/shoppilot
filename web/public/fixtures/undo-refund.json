@@ -1,0 +1,6 @@
+{
+ "error": {
+  "code": "not_undoable",
+  "message": "Refunds are irreversible. Ask the agent for a payment link to recover money."
+ }
+}

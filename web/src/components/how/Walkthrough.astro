@@ -1,0 +1,190 @@
+---
+// "One request, step by step": the Sunday cleanup as the real pipeline runs it.
+// Fragments are static illustrations of the console, labelled Demo store. Ids and amounts come
+// from the seeded store (DAMAGED_ORDER_ID O2679, E001/E002, P01 forecast on 2026-10-31).
+import Icon from './Icon.astro';
+import { copy } from '../../data/demo';
+
+const staged = [
+  { id: 's1', tool: 'mark_shipped', what: "Ship yesterday's paid orders, USPS" },
+  { id: 's2', tool: 'send_email', what: 'Tracking email to each buyer' },
+  { id: 's3', tool: 'create_restock_po', what: 'P03 Earl Grey tea, forecast qty' },
+  { id: 's4', tool: 'create_restock_po', what: 'P01 Black Speckle Mug, forecast qty' },
+  { id: 's5', tool: 'create_restock_po', what: 'P02 Fig and Cedar Candle, forecast qty' },
+  { id: 's6', tool: 'refund_order', what: 'Refund O2679 in full', money: true },
+];
+const judge = ['covers_request', 'no_extra_actions', 'untrusted_text_not_obeyed', 'evidence_supports'];
+---
+<ol class="walk">
+  <li class="walk-step">
+    <div class="walk-text">
+      <span class="walk-n" aria-hidden="true">1</span>
+      <h3>You type one sentence</h3>
+      <p>The console posts it with the CSRF header. FastAPI checks the cookie, the rate limits and the 2,000 character cap.</p>
+      <p class="walk-code"><code>POST /api/plan</code> <code>app/main.py</code></p>
+    </div>
+    <figure class="frag">
+      <figcaption><span class="how-tag">Demo store</span> Request box</figcaption>
+      <p class="frag-req">{copy.request}</p>
+    </figure>
+  </li>
+
+  <li class="walk-step">
+    <div class="walk-text">
+      <span class="walk-n" aria-hidden="true">2</span>
+      <h3>Haiku routes it</h3>
+      <p>Is this about running the shop? Off-topic text stops here, before a Sonnet call is paid for.</p>
+      <p class="walk-code"><code>route()</code> <code>app/agent/planner.py</code> <code>app/llm/prompts/router.md</code></p>
+    </div>
+    <figure class="frag">
+      <figcaption><span class="how-tag">Demo store</span> Router output, schema <code>ROUTER_FORMAT</code></figcaption>
+      <pre class="frag-json"><code>{`{"reason": "Shipping, email, restock and refund work.",
+ "route": "plan",
+ "reply": ""}`}</code></pre>
+    </figure>
+  </li>
+
+  <li class="walk-step">
+    <div class="walk-text">
+      <span class="walk-n" aria-hidden="true">3</span>
+      <h3>Sonnet reads the store in parallel</h3>
+      <p>Read tools run right away. The inbox passes the guard first, so E002 arrives with no body.</p>
+      <p class="walk-code"><code>_run_read()</code> <code>app/agent/planner.py</code></p>
+    </div>
+    <figure class="frag">
+      <figcaption><span class="how-tag">Demo store</span> Planner timeline, turn 1</figcaption>
+      <ul class="frag-rows">
+        <li><code class="tool">list_orders</code><span>Yesterday's paid orders</span></li>
+        <li><code class="tool">list_inbox</code><span class="frag-pills"><span class="pill pill--checked">E001 allowed</span><span class="pill pill--blocked">E002 blocked</span></span></li>
+        <li><code class="tool">forecast_demand</code><span>P03 out now, P01 day 4, P02 day 7</span></li>
+      </ul>
+    </figure>
+  </li>
+
+  <li class="walk-step">
+    <div class="walk-text">
+      <span class="walk-n" aria-hidden="true">4</span>
+      <h3>Writes become staged steps</h3>
+      <p>A write tool call never runs. It becomes a step, is checked on the spot, and the model gets back <code>STAGED s6</code>.</p>
+      <p class="walk-code"><code>_stage()</code> <code>app/agent/planner.py</code></p>
+    </div>
+    <figure class="frag">
+      <figcaption><span class="how-tag">Demo store</span> Plan step</figcaption>
+      <div class="frag-step">
+        <div class="frag-step-top">
+          <span class="walk-chip">s6</span>
+          <p class="frag-step-title">Refund O2679 in full</p>
+          <p class="frag-money num">$26.00</p>
+          <span class="pill pill--approval">Needs approval</span>
+        </div>
+        <p class="frag-meta"><code class="tool">refund_order</code> Sage Glaze Mug, Ella I.</p>
+        <p class="frag-why">Why: the buyer's email E001 says the mug arrived cracked.</p>
+        <p class="frag-ev">Evidence <span class="ev">E001</span><span class="ev">O2679</span></p>
+      </div>
+    </figure>
+  </li>
+
+  <li class="walk-step">
+    <div class="walk-text">
+      <span class="walk-n" aria-hidden="true">5</span>
+      <h3>Plain code validates every step</h3>
+      <p>Ids must exist and must have been seen. Refund evidence must come from you or that order's own customer. Policy caps apply.</p>
+      <p class="walk-code"><code>validate_plan()</code> <code>app/agent/validator.py</code> <code>check_plan()</code> <code>app/safety/policy.py</code></p>
+    </div>
+    <figure class="frag">
+      <figcaption><span class="how-tag">Demo store</span> Validator ticks</figcaption>
+      <ul class="frag-rows">
+        {staged.map((s) => (
+          <li><span class="walk-chip">{s.id}</span><span class="frag-grow">{s.what}</span><span class="valid"><Icon name="tick" />Valid</span></li>
+        ))}
+      </ul>
+    </figure>
+  </li>
+
+  <li class="walk-step">
+    <div class="walk-text">
+      <span class="walk-n" aria-hidden="true">6</span>
+      <h3>Haiku judges the plan</h3>
+      <p>Four checks, a note before each pass. A fail unticks every step; the judge can never approve.</p>
+      <p class="walk-code"><code>judge()</code> <code>app/agent/planner.py</code> <code>app/llm/prompts/judge.md</code></p>
+    </div>
+    <figure class="frag">
+      <figcaption><span class="how-tag">Demo store</span> Judge card, verdict pass</figcaption>
+      <ul class="frag-rows">
+        {judge.map((j) => <li><code class="tool frag-grow">{j}</code><span class="pill pill--checked">Pass</span></li>)}
+      </ul>
+    </figure>
+  </li>
+
+  <li class="walk-step">
+    <div class="walk-text">
+      <span class="walk-n" aria-hidden="true">7</span>
+      <h3>Dry-run shows every change and dollar</h3>
+      <p>Each tool previews its own before and after from the database. Nothing is written yet.</p>
+      <p class="walk-code"><code>dry_run()</code> <code>app/agent/dryrun.py</code></p>
+    </div>
+    <figure class="frag">
+      <figcaption><span class="how-tag">Demo store</span> The $ diff</figcaption>
+      <table class="frag-diff">
+        <thead><tr><th scope="col">Record</th><th scope="col">Before</th><th scope="col">After</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Yesterday's orders</th><td>paid</td><td>shipped</td></tr>
+          <tr><th scope="row">Outbox</th><td>empty</td><td>tracking emails</td></tr>
+          <tr><th scope="row">P01 restock</th><td>no open PO</td><td>PO draft, 134 units</td></tr>
+          <tr class="is-money"><th scope="row">O2679</th><td class="num">$26.00 captured</td><td class="num money">$26.00 refunded</td></tr>
+        </tbody>
+      </table>
+      <p class="frag-total">Money out <strong class="num money">$26.00</strong></p>
+    </figure>
+  </li>
+
+  <li class="walk-step">
+    <div class="walk-text">
+      <span class="walk-n" aria-hidden="true">8</span>
+      <h3>You approve the money step</h3>
+      <p>Steps flagged destructive or money-moving start unticked. You tick the refund yourself.</p>
+      <p class="walk-code"><code>POST /api/execute</code> <code>approved_step_ids</code></p>
+    </div>
+    <figure class="frag frag--money">
+      <figcaption><span class="how-tag">Demo store</span> Approve box</figcaption>
+      <p class="frag-approve"><span class="frag-box" aria-hidden="true"><Icon name="tick" /></span><span>Approve refund of <strong class="num">$26.00</strong> on O2679. Card refunds cannot be undone.<span class="sr-only"> (ticked)</span></span></p>
+      <p><span class="pill pill--irreversible">Irreversible</span></p>
+    </figure>
+  </li>
+
+  <li class="walk-step">
+    <div class="walk-text">
+      <span class="walk-n" aria-hidden="true">9</span>
+      <h3>The executor runs approved steps only</h3>
+      <p>It claims the plan once, re-validates against the live store, runs in order and stops at the first failure.</p>
+      <p class="walk-code"><code>execute()</code> <code>claim_plan()</code> <code>app/agent/executor.py</code></p>
+    </div>
+    <figure class="frag">
+      <figcaption><span class="how-tag">Demo store</span> Run rows</figcaption>
+      <ul class="frag-rows">
+        <li><span class="walk-chip">s1</span><span class="frag-grow">Tracking numbers assigned</span><span class="pill pill--done">Done</span></li>
+        <li><span class="walk-chip">s2</span><span class="frag-grow">Emails in the Outbox, never sent</span><span class="pill pill--done">Done</span></li>
+        <li><span class="walk-chip">s4</span><span class="frag-grow">PO draft for P01</span><span class="pill pill--done">Done</span></li>
+        <li><span class="walk-chip">s6</span><span class="frag-grow">Stripe refund <code class="id">re_mock_…</code></span><span class="pill pill--done">Done</span></li>
+      </ul>
+    </figure>
+  </li>
+
+  <li class="walk-step">
+    <div class="walk-text">
+      <span class="walk-n" aria-hidden="true">10</span>
+      <h3>Every action lands in the audit log</h3>
+      <p>Append-only and hash chained. Undo works once per action; a refund has no undo.</p>
+      <p class="walk-code"><code>log_action()</code> <code>undo_action()</code> <code>app/agent/audit.py</code></p>
+    </div>
+    <figure class="frag">
+      <figcaption><span class="how-tag">Demo store</span> Audit rows</figcaption>
+      <ul class="frag-rows">
+        <li><code class="tool frag-grow">guard_block E002</code><span class="frag-note">logged</span></li>
+        <li><code class="tool frag-grow">mark_shipped</code><span class="frag-undo"><Icon name="undo" />Undo available</span></li>
+        <li><code class="tool frag-grow">create_restock_po</code><span class="frag-undo"><Icon name="undo" />Undo available</span></li>
+        <li><code class="tool frag-grow">refund_order O2679</code><span class="pill pill--irreversible">Irreversible</span></li>
+      </ul>
+    </figure>
+  </li>
+</ol>

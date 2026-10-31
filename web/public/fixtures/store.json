@@ -1,0 +1,674 @@
+{
+ "anchor": "2026-10-31",
+ "store_reset": false,
+ "store_name": "Fern & Kiln",
+ "llm_mode": "live",
+ "stripe_mode": "test",
+ "products": [
+  {
+   "id": "P01",
+   "sku": "MUG-BLK-12",
+   "name": "Black Speckle Mug",
+   "category": "mugs",
+   "price_cents": 2400,
+   "cost_cents": 1283,
+   "stock": 31,
+   "lead_time_days": 5,
+   "supplier_email": "mugs-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P02",
+   "sku": "CND-FIG-08",
+   "name": "Fig & Cedar Candle",
+   "category": "candles",
+   "price_cents": 3200,
+   "cost_cents": 1611,
+   "stock": 35,
+   "lead_time_days": 7,
+   "supplier_email": "candles-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P03",
+   "sku": "TEA-EGR-100",
+   "name": "Earl Grey Loose Tea 100g",
+   "category": "tea",
+   "price_cents": 1400,
+   "cost_cents": 579,
+   "stock": 0,
+   "lead_time_days": 6,
+   "supplier_email": "tea-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P04",
+   "sku": "MUG-SAG-12",
+   "name": "Sage Glaze Mug",
+   "category": "mugs",
+   "price_cents": 2600,
+   "cost_cents": 990,
+   "stock": 179,
+   "lead_time_days": 8,
+   "supplier_email": "mugs-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P05",
+   "sku": "PLT-TER-04",
+   "name": "Terracotta Planter 4in",
+   "category": "planters",
+   "price_cents": 1800,
+   "cost_cents": 631,
+   "stock": 148,
+   "lead_time_days": 10,
+   "supplier_email": "planters-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P06",
+   "sku": "STN-LIN-A5",
+   "name": "Linen Notebook A5",
+   "category": "stationery",
+   "price_cents": 1600,
+   "cost_cents": 646,
+   "stock": 143,
+   "lead_time_days": 9,
+   "supplier_email": "stationery-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P07",
+   "sku": "CND-SEA-08",
+   "name": "Sea Salt Candle",
+   "category": "candles",
+   "price_cents": 2800,
+   "cost_cents": 1179,
+   "stock": 124,
+   "lead_time_days": 7,
+   "supplier_email": "candles-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P08",
+   "sku": "TEA-SEN-100",
+   "name": "Sencha Green Tea 100g",
+   "category": "tea",
+   "price_cents": 1600,
+   "cost_cents": 595,
+   "stock": 164,
+   "lead_time_days": 6,
+   "supplier_email": "tea-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P09",
+   "sku": "PLT-HNG-06",
+   "name": "Hanging Planter 6in",
+   "category": "planters",
+   "price_cents": 4900,
+   "cost_cents": 2442,
+   "stock": 87,
+   "lead_time_days": 12,
+   "supplier_email": "planters-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P10",
+   "sku": "MUG-CRM-16",
+   "name": "Cream Latte Mug",
+   "category": "mugs",
+   "price_cents": 2800,
+   "cost_cents": 1108,
+   "stock": 84,
+   "lead_time_days": 8,
+   "supplier_email": "mugs-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P11",
+   "sku": "STN-PEN-BR",
+   "name": "Brass Pen",
+   "category": "stationery",
+   "price_cents": 2200,
+   "cost_cents": 865,
+   "stock": 95,
+   "lead_time_days": 14,
+   "supplier_email": "stationery-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P12",
+   "sku": "CND-TRV-04",
+   "name": "Travel Tin Candle",
+   "category": "candles",
+   "price_cents": 1200,
+   "cost_cents": 427,
+   "stock": 127,
+   "lead_time_days": 7,
+   "supplier_email": "candles-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P13",
+   "sku": "PLT-CER-10",
+   "name": "Ceramic Planter 10in",
+   "category": "planters",
+   "price_cents": 6800,
+   "cost_cents": 3486,
+   "stock": 1,
+   "lead_time_days": 12,
+   "supplier_email": "planters-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P14",
+   "sku": "TEA-POT-IR",
+   "name": "Cast Iron Teapot",
+   "category": "tea",
+   "price_cents": 5800,
+   "cost_cents": 2178,
+   "stock": 36,
+   "lead_time_days": 10,
+   "supplier_email": "tea-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P15",
+   "sku": "STN-JRN-LG",
+   "name": "Leather Journal",
+   "category": "stationery",
+   "price_cents": 4400,
+   "cost_cents": 2063,
+   "stock": 25,
+   "lead_time_days": 9,
+   "supplier_email": "stationery-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P16",
+   "sku": "MUG-SET-04",
+   "name": "Mug Set of 4",
+   "category": "mugs",
+   "price_cents": 6400,
+   "cost_cents": 2296,
+   "stock": 22,
+   "lead_time_days": 8,
+   "supplier_email": "mugs-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P17",
+   "sku": "CND-LRG-3W",
+   "name": "Three-Wick Candle",
+   "category": "candles",
+   "price_cents": 5400,
+   "cost_cents": 2658,
+   "stock": 19,
+   "lead_time_days": 7,
+   "supplier_email": "candles-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P18",
+   "sku": "MUG-TRV-12",
+   "name": "Travel Tumbler",
+   "category": "mugs",
+   "price_cents": 3000,
+   "cost_cents": 1237,
+   "stock": 40,
+   "lead_time_days": 6,
+   "supplier_email": "mugs-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P19",
+   "sku": "STN-CAL-26",
+   "name": "2026 Wall Calendar",
+   "category": "stationery",
+   "price_cents": 1800,
+   "cost_cents": 756,
+   "stock": 30,
+   "lead_time_days": 3,
+   "supplier_email": "stationery-supply@example.com",
+   "active": 1
+  },
+  {
+   "id": "P20",
+   "sku": "TEA-CHM-50",
+   "name": "Chamomile Tea 50g",
+   "category": "tea",
+   "price_cents": 800,
+   "cost_cents": 413,
+   "stock": 106,
+   "lead_time_days": 6,
+   "supplier_email": "tea-supply@example.com",
+   "active": 1
+  }
+ ],
+ "orders": [
+  {
+   "id": "O2732",
+   "customer_id": "C0095",
+   "created_at": "2026-10-30T21:40:08Z",
+   "status": "paid",
+   "total_cents": 8800,
+   "refunded_cents": 0,
+   "currency": "usd",
+   "ship_country": "US",
+   "carrier": null,
+   "tracking_number": null,
+   "shipped_at": null,
+   "items": [
+    {
+     "order_id": "O2732",
+     "product_id": "P02",
+     "qty": 1,
+     "unit_price_cents": 3200
+    },
+    {
+     "order_id": "O2732",
+     "product_id": "P07",
+     "qty": 2,
+     "unit_price_cents": 2800
+    }
+   ]
+  },
+  {
+   "id": "O2731",
+   "customer_id": "C0190",
+   "created_at": "2026-10-30T20:18:22Z",
+   "status": "paid",
+   "total_cents": 6400,
+   "refunded_cents": 0,
+   "currency": "usd",
+   "ship_country": "US",
+   "carrier": null,
+   "tracking_number": null,
+   "shipped_at": null,
+   "items": [
+    {
+     "order_id": "O2731",
+     "product_id": "P01",
+     "qty": 2,
+     "unit_price_cents": 1920
+    },
+    {
+     "order_id": "O2731",
+     "product_id": "P08",
+     "qty": 2,
+     "unit_price_cents": 1280
+    }
+   ]
+  },
+  {
+   "id": "O2730",
+   "customer_id": "C0144",
+   "created_at": "2026-10-30T19:21:26Z",
+   "status": "paid",
+   "total_cents": 8000,
+   "refunded_cents": 0,
+   "currency": "usd",
+   "ship_country": "GB",
+   "carrier": null,
+   "tracking_number": null,
+   "shipped_at": null,
+   "items": [
+    {
+     "order_id": "O2730",
+     "product_id": "P01",
+     "qty": 1,
+     "unit_price_cents": 2400
+    },
+    {
+     "order_id": "O2730",
+     "product_id": "P07",
+     "qty": 2,
+     "unit_price_cents": 2800
+    }
+   ]
+  },
+  {
+   "id": "O2729",
+   "customer_id": "C0156",
+   "created_at": "2026-10-30T18:13:05Z",
+   "status": "paid",
+   "total_cents": 9600,
+   "refunded_cents": 0,
+   "currency": "usd",
+   "ship_country": "US",
+   "carrier": null,
+   "tracking_number": null,
+   "shipped_at": null,
+   "items": [
+    {
+     "order_id": "O2729",
+     "product_id": "P02",
+     "qty": 2,
+     "unit_price_cents": 3200
+    },
+    {
+     "order_id": "O2729",
+     "product_id": "P08",
+     "qty": 1,
+     "unit_price_cents": 1600
+    },
+    {
+     "order_id": "O2729",
+     "product_id": "P20",
+     "qty": 2,
+     "unit_price_cents": 800
+    }
+   ]
+  },
+  {
+   "id": "O2728",
+   "customer_id": "C0070",
+   "created_at": "2026-10-30T15:51:01Z",
+   "status": "paid",
+   "total_cents": 4800,
+   "refunded_cents": 0,
+   "currency": "usd",
+   "ship_country": "GB",
+   "carrier": null,
+   "tracking_number": null,
+   "shipped_at": null,
+   "items": [
+    {
+     "order_id": "O2728",
+     "product_id": "P02",
+     "qty": 1,
+     "unit_price_cents": 3200
+    },
+    {
+     "order_id": "O2728",
+     "product_id": "P06",
+     "qty": 1,
+     "unit_price_cents": 1600
+    }
+   ]
+  },
+  {
+   "id": "O2727",
+   "customer_id": "C0239",
+   "created_at": "2026-10-30T15:21:21Z",
+   "status": "paid",
+   "total_cents": 12000,
+   "refunded_cents": 0,
+   "currency": "usd",
+   "ship_country": "AU",
+   "carrier": null,
+   "tracking_number": null,
+   "shipped_at": null,
+   "items": [
+    {
+     "order_id": "O2727",
+     "product_id": "P01",
+     "qty": 1,
+     "unit_price_cents": 2400
+    },
+    {
+     "order_id": "O2727",
+     "product_id": "P02",
+     "qty": 2,
+     "unit_price_cents": 3200
+    },
+    {
+     "order_id": "O2727",
+     "product_id": "P08",
+     "qty": 2,
+     "unit_price_cents": 1600
+    }
+   ]
+  },
+  {
+   "id": "O2726",
+   "customer_id": "C0013",
+   "created_at": "2026-10-30T15:16:20Z",
+   "status": "paid",
+   "total_cents": 1800,
+   "refunded_cents": 0,
+   "currency": "usd",
+   "ship_country": "US",
+   "carrier": null,
+   "tracking_number": null,
+   "shipped_at": null,
+   "items": [
+    {
+     "order_id": "O2726",
+     "product_id": "P05",
+     "qty": 1,
+     "unit_price_cents": 1800
+    }
+   ]
+  },
+  {
+   "id": "O2725",
+   "customer_id": "C0038",
+   "created_at": "2026-10-30T15:01:23Z",
+   "status": "paid",
+   "total_cents": 2400,
+   "refunded_cents": 0,
+   "currency": "usd",
+   "ship_country": "US",
+   "carrier": null,
+   "tracking_number": null,
+   "shipped_at": null,
+   "items": [
+    {
+     "order_id": "O2725",
+     "product_id": "P01",
+     "qty": 1,
+     "unit_price_cents": 2400
+    }
+   ]
+  },
+  {
+   "id": "O2724",
+   "customer_id": "C0135",
+   "created_at": "2026-10-30T14:36:00Z",
+   "status": "paid",
+   "total_cents": 13000,
+   "refunded_cents": 0,
+   "currency": "usd",
+   "ship_country": "US",
+   "carrier": null,
+   "tracking_number": null,
+   "shipped_at": null,
+   "items": [
+    {
+     "order_id": "O2724",
+     "product_id": "P01",
+     "qty": 2,
+     "unit_price_cents": 2400
+    },
+    {
+     "order_id": "O2724",
+     "product_id": "P04",
+     "qty": 2,
+     "unit_price_cents": 2600
+    },
+    {
+     "order_id": "O2724",
+     "product_id": "P18",
+     "qty": 1,
+     "unit_price_cents": 3000
+    }
+   ]
+  },
+  {
+   "id": "O2723",
+   "customer_id": "C0257",
+   "created_at": "2026-10-30T13:09:26Z",
+   "status": "paid",
+   "total_cents": 7200,
+   "refunded_cents": 0,
+   "currency": "usd",
+   "ship_country": "US",
+   "carrier": null,
+   "tracking_number": null,
+   "shipped_at": null,
+   "items": [
+    {
+     "order_id": "O2723",
+     "product_id": "P03",
+     "qty": 1,
+     "unit_price_cents": 1400
+    },
+    {
+     "order_id": "O2723",
+     "product_id": "P14",
+     "qty": 1,
+     "unit_price_cents": 5800
+    }
+   ]
+  },
+  {
+   "id": "O2722",
+   "customer_id": "C0063",
+   "created_at": "2026-10-30T12:58:08Z",
+   "status": "paid",
+   "total_cents": 4000,
+   "refunded_cents": 0,
+   "currency": "usd",
+   "ship_country": "US",
+   "carrier": null,
+   "tracking_number": null,
+   "shipped_at": null,
+   "items": [
+    {
+     "order_id": "O2722",
+     "product_id": "P05",
+     "qty": 1,
+     "unit_price_cents": 1800
+    },
+    {
+     "order_id": "O2722",
+     "product_id": "P11",
+     "qty": 1,
+     "unit_price_cents": 2200
+    }
+   ]
+  },
+  {
+   "id": "O2721",
+   "customer_id": "C0192",
+   "created_at": "2026-10-30T12:23:30Z",
+   "status": "paid",
+   "total_cents": 7800,
+   "refunded_cents": 0,
+   "currency": "usd",
+   "ship_country": "US",
+   "carrier": null,
+   "tracking_number": null,
+   "shipped_at": null,
+   "items": [
+    {
+     "order_id": "O2721",
+     "product_id": "P01",
+     "qty": 1,
+     "unit_price_cents": 2400
+    },
+    {
+     "order_id": "O2721",
+     "product_id": "P12",
+     "qty": 2,
+     "unit_price_cents": 1200
+    },
+    {
+     "order_id": "O2721",
+     "product_id": "P18",
+     "qty": 1,
+     "unit_price_cents": 3000
+    }
+   ]
+  }
+ ],
+ "orders_total": 2732,
+ "customers": [
+  {
+   "id": "C0001",
+   "name": "Tara Baker",
+   "email": "tara.baker1@example.com",
+   "country": "US",
+   "created_at": "2026-05-22T16:10:26Z"
+  },
+  {
+   "id": "C0002",
+   "name": "Priya Nguyen",
+   "email": "priya.nguyen2@example.com",
+   "country": "US",
+   "created_at": "2026-05-09T10:34:29Z"
+  },
+  {
+   "id": "C0003",
+   "name": "Quinn Patel",
+   "email": "quinn.patel3@example.com",
+   "country": "US",
+   "created_at": "2026-06-10T15:29:43Z"
+  },
+  {
+   "id": "C0004",
+   "name": "Nora Lopez",
+   "email": "nora.lopez4@example.com",
+   "country": "US",
+   "created_at": "2026-05-18T10:08:01Z"
+  },
+  {
+   "id": "C0005",
+   "name": "Chloe Turner",
+   "email": "chloe.turner5@example.com",
+   "country": "US",
+   "created_at": "2026-07-06T21:11:13Z"
+  },
+  {
+   "id": "C0006",
+   "name": "Grace Adams",
+   "email": "grace.adams6@example.com",
+   "country": "US",
+   "created_at": "2026-05-11T12:18:58Z"
+  },
+  {
+   "id": "C0007",
+   "name": "Ben Fischer",
+   "email": "ben.fischer7@example.com",
+   "country": "US",
+   "created_at": "2026-06-04T19:37:36Z"
+  },
+  {
+   "id": "C0008",
+   "name": "Sam Smith",
+   "email": "sam.smith8@example.com",
+   "country": "CA",
+   "created_at": "2026-05-19T10:58:16Z"
+  },
+  {
+   "id": "C0009",
+   "name": "Priya Diaz",
+   "email": "priya.diaz9@example.com",
+   "country": "US",
+   "created_at": "2026-05-19T21:08:48Z"
+  },
+  {
+   "id": "C0010",
+   "name": "Sam Walsh",
+   "email": "sam.walsh10@example.com",
+   "country": "US",
+   "created_at": "2026-07-04T19:52:27Z"
+  },
+  {
+   "id": "C0011",
+   "name": "Ava Hughes",
+   "email": "ava.hughes11@example.com",
+   "country": "AU",
+   "created_at": "2026-07-20T18:50:56Z"
+  },
+  {
+   "id": "C0012",
+   "name": "Dev Baker",
+   "email": "dev.baker12@example.com",
+   "country": "US",
+   "created_at": "2026-05-12T11:34:14Z"
+  }
+ ]
+}

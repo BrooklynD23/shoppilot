@@ -1,0 +1,112 @@
+---
+// Architecture centrepiece: real labelled boxes and arrows. Wide layout runs left to right;
+// the phone layout is the same content stacked top to bottom. Static, no motion.
+import Box from './Box.astro';
+import Head from './Head.astro';
+
+type Line = string | [string, string];
+const api: Line[][] = [
+  ['Session cookie', 'HttpOnly, SameSite'],
+  ['CSRF header', 'X-ShopPilot: 1'],
+  ['Rate limits', 'per IP and session'],
+  ['CSP', 'self only, no inline'],
+  ['Body cap', '16 KB per request'],
+];
+const chain: { lines: Line[]; kind?: string }[] = [
+  { lines: ['Haiku router', 'on topic? plan or reject'] },
+  { lines: ['Haiku guard', 'screens customer email first'] },
+  { lines: ['Sonnet planner', 'strict tools, JSON output'], kind: 'hi' },
+  { lines: ['Validator and policy', 'plain code, no LLM'] },
+  { lines: ['Haiku judge', 'can only add friction'] },
+];
+const executor: Line[] = ['Executor', 'approved steps only'];
+const tools: Line[][] = [
+  ['SQLite store', 'one file per session', ['app/db.py', 'd-m']],
+  ['Stripe test or mock', 'refunds and payment links', ['app/integrations/stripe_client.py', 'd-m']],
+  ['Outbox', 'emails never leave the app', ['app/integrations/outbox.py', 'd-m']],
+  ['Forecast and anomaly ML', 'Croston-SBA, SES, modified z', ['app/ml/', 'd-m']],
+];
+const audit: Line[] = ['Audit log', 'append-only, hash chained', 'every plan, guard block, run and undo', ['app/agent/audit.py', 'd-m']];
+const undo: Line[] = ['Undo', 'one undo per action', 'refunds are irreversible'];
+
+const desc =
+  'The browser console calls FastAPI (app/main.py), which checks the session cookie, the CSRF header, rate limits, CSP and a 16 KB body cap. ' +
+  'FastAPI hands the request to the agent core: a Haiku router, a Haiku guard that screens customer email, the Sonnet planner with strict tools and JSON output, ' +
+  'a deterministic validator and policy, and a Haiku judge. The owner approves, then the executor runs approved steps only. ' +
+  'The planner reads from the tools and the executor runs them: the SQLite store, Stripe in test or mock mode, the fake outbox, and the forecast and anomaly ML. ' +
+  'Everything is written to an append-only audit log; undo works once per action and refunds are irreversible.';
+
+const chainY = [80, 138, 196, 254, 312];
+const pChainY = [424, 478, 532, 586, 640];
+---
+<figure class="how-arch">
+  <svg class="d d-wide" viewBox="0 0 1200 600" role="img" aria-labelledby="arch-w-t arch-w-d">
+    <title id="arch-w-t">ShopPilot+ architecture</title>
+    <desc id="arch-w-d">{desc}</desc>
+    <Head id="arch-w-ah" />
+
+    <Box x={0} y={150} w={162} h={200} lines={['Browser console', 'plan, approve,', 'run, undo', ['/api/plan', 'd-m'], ['/api/execute', 'd-m'], ['/api/undo', 'd-m']]} lh={20} />
+
+    <Box x={220} y={40} w={192} h={400} kind="group" valign="top" lines={['FastAPI', ['app/main.py', 'd-m']]} />
+    {api.map((l, i) => <Box x={234} y={110 + i * 64} w={164} h={56} lines={l} />)}
+
+    <Box x={470} y={10} w={330} h={456} kind="group" valign="top" lines={['Agent core', ['app/agent/ and app/llm/', 'd-m']]} />
+    {chain.map((c, i) => <Box x={490} y={chainY[i]} w={290} h={46} kind={c.kind} lines={c.lines} />)}
+    {[0, 1, 2, 3].map((i) => <path class="d-a" d={`M635,${chainY[i] + 47} V${chainY[i + 1] - 1}`} marker-end="url(#arch-w-ah)" />)}
+    <path class="d-a" d="M635,359 V398" marker-end="url(#arch-w-ah)" />
+    <rect class="d-b d-b--money" x="572" y="366" width="126" height="24" rx="12" />
+    <text class="d-s d-s--money" x="635" y="382" text-anchor="middle">you approve</text>
+    <Box x={490} y={400} w={290} h={46} lines={executor} />
+
+    <Box x={860} y={10} w={340} h={456} kind="group" valign="top" lines={['Tools', ['app/tools/registry.py', 'd-m']]} />
+    {tools.map((l, i) => <Box x={876} y={80 + i * 90} w={308} h={78} lines={l} />)}
+
+    <Box x={220} y={500} w={980} h={96} kind="group" valign="top" lines={audit} />
+    <Box x={880} y={514} w={304} h={68} kind="undone" lines={undo} />
+
+    <path class="d-a" d="M163,250 H218" marker-end="url(#arch-w-ah)" />
+    <path class="d-a" d="M413,250 H468" marker-end="url(#arch-w-ah)" />
+    <path class="d-a" d="M782,219 H858" marker-end="url(#arch-w-ah)" />
+    <text class="d-m" x="806" y="211">reads</text>
+    <path class="d-a" d="M782,423 H858" marker-end="url(#arch-w-ah)" />
+    <text class="d-m" x="806" y="415">runs</text>
+    <path class="d-a" d="M316,441 V498" marker-end="url(#arch-w-ah)" />
+    <text class="d-m" x="324" y="476">logs</text>
+    <path class="d-a" d="M635,467 V498" marker-end="url(#arch-w-ah)" />
+    <text class="d-m" x="643" y="488">logs</text>
+    <path class="d-a" d="M1030,467 V512" marker-end="url(#arch-w-ah)" />
+    <text class="d-m" x="1038" y="494">undo tokens</text>
+  </svg>
+
+  <svg class="d d-phone" viewBox="0 0 360 1368" role="img" aria-labelledby="arch-p-t arch-p-d">
+    <title id="arch-p-t">ShopPilot+ architecture</title>
+    <desc id="arch-p-d">{desc}</desc>
+    <Head id="arch-p-ah" />
+
+    <Box x={0} y={0} w={360} h={70} lines={['Browser console', ['/api/plan, /api/execute, /api/undo', 'd-m']]} lh={20} />
+    <path class="d-a" d="M180,71 V96" marker-end="url(#arch-p-ah)" />
+
+    <Box x={0} y={98} w={360} h={238} kind="group" valign="top" lines={['FastAPI', ['app/main.py', 'd-m']]} />
+    {api.map((l, i) => <Box x={i === 4 ? 12 : 12 + (i % 2) * 174} y={158 + Math.floor(i / 2) * 58} w={i === 4 ? 336 : 162} h={50} lines={l} />)}
+    <path class="d-a" d="M180,337 V362" marker-end="url(#arch-p-ah)" />
+
+    <Box x={0} y={364} w={360} h={418} kind="group" valign="top" lines={['Agent core', ['app/agent/ and app/llm/', 'd-m']]} />
+    {chain.map((c, i) => <Box x={12} y={pChainY[i]} w={336} h={44} kind={c.kind} lines={c.lines} />)}
+    {[0, 1, 2, 3].map((i) => <path class="d-a" d={`M180,${pChainY[i] + 45} V${pChainY[i + 1] - 1}`} marker-end="url(#arch-p-ah)" />)}
+    <path class="d-a" d="M180,685 V724" marker-end="url(#arch-p-ah)" />
+    <rect class="d-b d-b--money" x="117" y="693" width="126" height="24" rx="12" />
+    <text class="d-s d-s--money" x="180" y="709" text-anchor="middle">you approve</text>
+    <Box x={12} y={726} w={336} h={44} lines={executor} />
+    <path class="d-a" d="M180,783 V808" marker-end="url(#arch-p-ah)" />
+    <text class="d-m" x="190" y="800">reads and runs</text>
+
+    <Box x={0} y={810} w={360} h={376} kind="group" valign="top" lines={['Tools', ['app/tools/registry.py', 'd-m']]} />
+    {tools.map((l, i) => <Box x={12} y={870 + i * 78} w={336} h={70} lines={l} />)}
+    <path class="d-a" d="M180,1187 V1212" marker-end="url(#arch-p-ah)" />
+    <text class="d-m" x="190" y="1204">every step logged</text>
+
+    <Box x={0} y={1214} w={360} h={150} kind="group" valign="top" lines={['Audit log', 'append-only, hash chained', ['app/agent/audit.py', 'd-m']]} />
+    <Box x={12} y={1290} w={336} h={62} kind="undone" lines={undo} />
+  </svg>
+  <figcaption>From the browser to the audit log. Each box names the real module; the LLMs sit only in the agent core.</figcaption>
+</figure>

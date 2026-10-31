@@ -1,0 +1,23 @@
+---
+// Forecast band chart (viewBox 280x120), copied from v3-a/ForecastChart. Demo store data.
+import { chartPaths, forecast } from '../../data/demo';
+const p = chartPaths();
+const base = 104; // y of 0 units (h - pad)
+---
+<figure class="how-chart">
+  <svg viewBox="0 0 280 120" role="img" aria-labelledby="band-t band-d">
+    <title id="band-t">Demo store forecast, next 14 days</title>
+    <desc id="band-d">Cumulative units sold with an 80% band. The band crosses the {forecast.onHand} on hand line between day {forecast.range[0]} and day {forecast.range[1]}; the middle estimate crosses at about day {forecast.daysToStockout}.</desc>
+    <line class="hc-axis" x1="16" y1={base} x2="264" y2={base} />
+    <path class="hc-band" d={p.band} />
+    <path class="hc-p50" d={p.p50} />
+    <line class="hc-onhand" x1="16" y1={p.onHandY} x2="264" y2={p.onHandY} />
+    <line class="hc-marker" x1={p.markerX} y1="14" x2={p.markerX} y2={base} />
+    <circle class="hc-dot" cx={p.markerX} cy={p.onHandY} r="3.5" />
+    <text class="hc-lbl" x="262" y={p.onHandY - 4} text-anchor="end">{forecast.onHand} on hand</text>
+    <text class="hc-lbl" x={p.markerX + 4} y="22">Runs out, day {forecast.daysToStockout}</text>
+    <text class="hc-lbl" x="16" y="116">Today</text>
+    <text class="hc-lbl" x="264" y="116" text-anchor="end">Day 14</text>
+  </svg>
+  <figcaption><span class="how-tag">Demo store</span> Runs out in about {forecast.daysToStockout} days (range {forecast.range[0]} to {forecast.range[1]}). {forecast.onHand} on hand.</figcaption>
+</figure>

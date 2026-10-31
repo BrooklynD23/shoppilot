@@ -1,0 +1,32 @@
+[
+ {
+  "id": "ebd302c1114d431985178f2e2af4c62b",
+  "to_email": "sam.garcia267@example.com",
+  "subject": "Your order O2715 has shipped",
+  "body": "Hi Sam Garcia,\n\nYour order O2715 shipped via USPS. Tracking number: USPSE6F33B54742A.\n\nFern & Kiln",
+  "template": "tracking",
+  "order_id": "O2715",
+  "created_at": "2026-10-31T07:38:00.351746+00:00",
+  "recalled_at": null
+ },
+ {
+  "id": "bc6912fbcdff40b9b3d18742fd0a66c6",
+  "to_email": "priya.hughes344@example.com",
+  "subject": "Your order O2714 has shipped",
+  "body": "Hi Priya Hughes,\n\nYour order O2714 shipped via USPS. Tracking number: USPSC41EB57772F3.\n\nFern & Kiln",
+  "template": "tracking",
+  "order_id": "O2714",
+  "created_at": "2026-10-31T07:38:00.351746+00:00",
+  "recalled_at": null
+ },
+ {
+  "id": "e54153bdf6a2400bb88203b49157f9b8",
+  "to_email": "omar.moreau109@example.com",
+  "subject": "Your order O2713 has shipped",
+  "body": "Hi Omar Moreau,\n\nYour order O2713 shipped via USPS. Tracking number: USPSB060395431BD.\n\nFern & Kiln",
+  "template": "tracking",
+  "order_id": "O2713",
+  "created_at": "2026-10-31T07:38:00.351746+00:00",
+  "recalled_at": null
+ }
+]

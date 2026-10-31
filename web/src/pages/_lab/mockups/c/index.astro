@@ -1,0 +1,139 @@
+---
+import '@fontsource-variable/red-hat-display/wght.css';
+import '@fontsource-variable/red-hat-text/wght.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '../../../../styles/c.css';
+import Base from '../../../../layouts/Base.astro';
+import Icon from '../../../../components/c/Icon.astro';
+import Slab from '../../../../components/c/Slab.astro';
+import Misfit from '../../../../components/c/Misfit.astro';
+import { copy, plan, inbox } from '../../../../data/demo';
+
+const K = '/mockups/c';
+// Hero build: five slabs, Plan at the bottom, Undo seated last on top.
+const B = { x: 40, w: 232, h: 56, dx: 36, dy: -22, base: 404 };
+const stack = copy.loop.map((name, i) => ({ name, n: i + 1, y: B.base - (i + 1) * B.h }));
+// Step strip: each frame shows earlier parts ghosted and the new part bright.
+const M = { x: 14, w: 60, h: 14, dx: 12, dy: -8, base: 90 };
+const loopNotes = [
+  'One sentence becomes typed tool calls.',
+  'A validator ticks every step.',
+  'Money steps wait for your OK.',
+  'Approved steps run and get logged.',
+  'Undo any step from the audit log.',
+];
+const parts = plan.steps.map((s) => ({
+  tool: s.tool,
+  flags: [
+    ...(s.movesMoney ? [{ icon: 'coin', text: 'Moves money' }] : []),
+    ...(s.undoable ? [{ icon: 'undo', text: 'Undoable' }] : [{ icon: 'eye', text: 'Read only' }]),
+  ] as { icon: 'coin' | 'undo' | 'eye'; text: string }[],
+}));
+const bad = inbox[0];
+---
+<Base title="ShopPilot+ · Build Book" description="ShopPilot+ turns one sentence into a checked, approved, undoable plan for a small shop." themeLight="#a9d8f2" themeDark="#0e2a3d">
+  <a class="skip" href="#ask">Skip to request</a>
+  <header class="top">
+    <a class="wordmark" href={`${K}/`} aria-current="page">
+      <svg class="mark" viewBox="0 0 40 32" aria-hidden="true" focusable="false">
+        <Slab x={4} y={18} w={24} h={10} dx={8} dy={-6} />
+        <Slab x={4} y={8} w={24} h={10} dx={8} dy={-6} kind="new" top />
+      </svg>
+      ShopPilot+
+    </a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href={`${K}/console/`}>Agent console</a></li>
+        <li><a href="/">How it works</a></li>
+        <li><a href="/">Report</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="spread hero" aria-labelledby="h1">
+      <div class="page page-l">
+        <p class="step-n" aria-hidden="true">1</p>
+        <h1 id="h1">{copy.h1}</h1>
+        <p class="sub">{copy.sub}</p>
+        <form id="ask" class="callout bag" method="get" action={`${K}/console/`}>
+          <label for="q">Ask ShopPilot+</label>
+          <textarea id="q" name="q" rows="5" maxlength="500" required>{copy.request}</textarea>
+          <button class="btn btn-ink" type="submit">Plan it</button>
+        </form>
+      </div>
+      <div class="page page-r">
+        <svg class="build" viewBox="0 0 380 412" role="img" aria-labelledby="build-t build-d">
+          <title id="build-t">The finished build</title>
+          <desc id="build-d">Five parts stacked in order: Plan, Check, Approve, Run, Undo. Undo seats last, on top.</desc>
+          <path class="guide" d="M352 14H210Q174 14 174 50V90" />
+          <path class="guide-head" d="M166 90h16l-8 12z" />
+          {stack.map((b, i) => (
+            <Slab x={B.x} y={b.y} w={B.w} h={B.h} dx={B.dx} dy={B.dy} kind={i === 4 ? 'new' : 'paper'} top={i === 4} class={i === 4 ? 'seat' : undefined}>
+              <text class="b-name" x={B.x + 18} y={b.y + 36}>{b.name}</text>
+              <text class="b-n" x={B.x + B.w - 18} y={b.y + 36} text-anchor="end">{b.n}</text>
+            </Slab>
+          ))}
+        </svg>
+        <figure class="callout quote">
+          <blockquote><p>{copy.quote}</p></blockquote>
+          <figcaption>{copy.quoteSource}</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="spread gate" aria-labelledby="gate-h">
+      <div class="page page-l">
+        <p class="step-n" aria-hidden="true">2</p>
+        <h2 id="gate-h">Every part is checked before it goes in.</h2>
+        <p class="sub">{copy.trust}</p>
+        <div class="callout inventory">
+          <h3>Parts inventory</h3>
+          <ul>
+            {parts.map((p) => (
+              <li>
+                <svg class="part" viewBox="0 0 44 32" aria-hidden="true" focusable="false">
+                  <Slab x={4} y={14} w={28} h={14} dx={8} dy={-6} top />
+                </svg>
+                <code>{p.tool}</code>
+                <span class="count">x1</span>
+                <span class="flags">
+                  {p.flags.map((f) => <span class="flag"><Icon name={f.icon} />{f.text}</span>)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <div class="page page-r">
+        <p class="step-n" aria-hidden="true">3</p>
+        <h3 class="strip-h" id="loop-h">Five steps, same order every time</h3>
+        <ol class="strip" aria-labelledby="loop-h">
+          {copy.loop.map((name, n) => (
+            <li>
+              <span class="strip-n">{n + 1}</span>
+              <svg viewBox="0 0 100 96" aria-hidden="true" focusable="false">
+                {Array.from({ length: n + 1 }, (_, j) => (
+                  <Slab x={M.x} y={M.base - (j + 1) * M.h} w={M.w} h={M.h} dx={M.dx} dy={M.dy} kind={j === n ? 'new' : 'ghost'} top={j === n} />
+                ))}
+              </svg>
+              <strong>{name}</strong>
+              <span class="note">{loopNotes[n]}</span>
+            </li>
+          ))}
+        </ol>
+        <article class="callout misfit" aria-labelledby="bad-h">
+          <Misfit />
+          <div class="misfit-text">
+            <p class="stamp stamp-blocked"><Icon name="cross" />BLOCKED</p>
+            <h3 id="bad-h">This piece does not fit: {bad.subject}</h3>
+            <p class="from"><span class="k">From</span> <code>{bad.from}</code></p>
+            <p class="preview">"{bad.preview}"</p>
+            <p>{bad.reason}</p>
+            <p class="meta"><code>{bad.label}</code> <span>score <b class="num">{bad.score.toFixed(2)}</b></span></p>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+</Base>

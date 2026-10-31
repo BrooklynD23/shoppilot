@@ -1,0 +1,90 @@
+---
+import '@fontsource-variable/schibsted-grotesk';
+import '@fontsource-variable/jetbrains-mono';
+import '../../../../styles/v2-2.css';
+import Base from '../../../../layouts/Base.astro';
+import Panel from '../../../../components/v2-2/Panel.astro';
+import { store, plan, inbox } from '../../../../data/demo';
+import { footer } from '../../../../data/v2';
+
+const blocked = inbox.filter((m) => !m.allowed);
+const allowed = inbox.filter((m) => m.allowed);
+const app = '/v2/2/app/';
+---
+<Base
+  title="ShopPilot+ console: Fern & Kiln demo store"
+  description="ShopPilot+ console on the Fern & Kiln demo store: plan, check, approve, run and audit a recorded plan."
+  themeLight="#ffffff"
+  themeDark="#ffffff"
+>
+  <a class="skip" href="#ask-console">Skip to request</a>
+  <header class="con-head">
+    <nav class="con-nav" aria-label="Main">
+      <a class="wordmark" href="/v2/2/">ShopPilot+</a>
+      <a class="con-link" href="/how-it-works/">How it works</a>
+    </nav>
+    <h1 class="store">{store.name} <span class="tag">Demo store</span></h1>
+    <p class="con-meta">Stripe test mode</p>
+    <p class="con-meta"><span class="num">${plan.usage.costUsd}</span> this plan, cache {plan.usage.cacheHitPct}%</p>
+    <button type="button" class="btn btn-ghost btn-sm" data-reset-store>Reset demo store</button>
+  </header>
+
+  <main class="con">
+    <div class="con-task">
+      <Panel mode="console" />
+    </div>
+
+    <aside id="inbox" class="rail" aria-label="Inbox, Outbox and Audit">
+      <div class="tabs" role="tablist" aria-label="Store activity">
+        <button type="button" role="tab" id="t-inbox" aria-controls="p-inbox" aria-selected="true">Inbox <span class="tab-count">1 blocked</span></button>
+        <button type="button" role="tab" id="t-outbox" aria-controls="p-outbox" aria-selected="false" tabindex="-1">Outbox</button>
+        <button type="button" role="tab" id="t-audit" aria-controls="p-audit" aria-selected="false" tabindex="-1">Audit</button>
+      </div>
+
+      <section class="tabpanel" role="tabpanel" id="p-inbox" aria-labelledby="t-inbox">
+        <ul class="mail">
+          {blocked.map((m) => (
+            <li class="mail-item is-blocked">
+              <p class="mail-top"><span class="stamp">BLOCKED</span><span class="mail-subj">{m.subject}</span></p>
+              <p class="mail-from">From {m.from}</p>
+              <p class="mail-verdict">{m.reason}</p>
+              <details class="disclose">
+                <summary>Technical label</summary>
+                <p><code>{m.label}</code>, score {m.score}</p>
+              </details>
+            </li>
+          ))}
+          {allowed.map((m) => (
+            <li class="mail-item">
+              <p class="mail-top"><span class="stamp stamp-ok">Allowed</span><span class="mail-subj">{m.subject}</span></p>
+              <p class="mail-from">From {m.from}</p>
+              <p class="mail-why">Order <code>{m.reason.replace('Order ', '')}</code></p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section class="tabpanel" role="tabpanel" id="p-outbox" aria-labelledby="t-outbox" hidden>
+        <p class="rail-note">Never sent. Emails stay in this app and never reach a real inbox.</p>
+        <p class="rail-empty">The recorded replay writes no emails. A live plan puts step 2's tracking emails here.</p>
+      </section>
+
+      <section class="tabpanel" role="tabpanel" id="p-audit" aria-labelledby="t-audit" hidden>
+        <p class="rail-note">Every step that runs writes a receipt here.</p>
+        <ol class="audit" data-audit></ol>
+        <p class="rail-empty audit-empty">Nothing has run yet. Approve steps and press Run approved steps.</p>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="con-foot">
+    <p>{footer.course}</p>
+    <nav aria-label="Footer">
+      <ul>{footer.links.map((l) => <li><a href={l.href === 'app/' ? app : l.href}>{l.label}</a></li>)}</ul>
+    </nav>
+  </footer>
+</Base>
+
+<script>
+  import '../../../../scripts/v2-2/tabs';
+</script>

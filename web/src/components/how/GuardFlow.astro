@@ -1,0 +1,69 @@
+---
+// Injection guard flow, two lanes: the planted E002 is blocked before the planner; E001 passes as data.
+// Facts from app/safety/inbound_guard.py (9 regex rules, 5 hit on E002) and app/tools/list_inbox.py.
+import Box from './Box.astro';
+import Head from './Head.astro';
+
+type Line = string | [string, string];
+const lanes: { title: string; nodes: { lines: Line[]; kind?: string }[] }[] = [
+  {
+    title: 'Injection email (E002)',
+    nodes: [
+      { lines: ['E002 arrives', 'tells the AI to ignore', 'its rules, refund all'] },
+      { lines: ['Regex screen', '5 of 9 rules hit', 'score 1.0'] },
+      { lines: [['BLOCKED', 'd-stamp'], 'label: injection', 'logged as guard_block'], kind: 'bad' },
+      { lines: [['list_inbox', 'd-t d-mono'], ['<blocked_email>', 'd-m'], 'reason only, no body'] },
+      { lines: ['Planner', 'never sees the text', 'cites E002: rejected'] },
+    ],
+  },
+  {
+    title: 'Customer email (E001)',
+    nodes: [
+      { lines: ['E001 arrives', 'order O2679, mug', 'arrived cracked'] },
+      { lines: ['Regex screen', '0 rules hit', 'sent on to Haiku'] },
+      { lines: ['Haiku classifier', 'random nonce tags', 'fails closed on error'] },
+      { lines: [['list_inbox', 'd-t d-mono'], ['<untrusted_email>', 'd-m'], 'body escaped'] },
+      { lines: ['Planner', 'cites it as evidence', 'never obeys it'], kind: 'ok' },
+    ],
+  },
+];
+const desc =
+  'Two lanes. Injection email E002 tells the AI to ignore its rules and refund every order. The regex screen hits 5 of 9 rules, score 1.0, so it is blocked with label injection and logged as guard_block. ' +
+  'list_inbox passes the planner only a blocked_email tag with the reason and no body, and the validator rejects any step that cites E002. ' +
+  'Customer email E001 says order O2679 arrived cracked. It hits 0 rules, goes to the Haiku classifier inside random nonce tags, which fails closed on error. ' +
+  'It reaches the planner escaped inside an untrusted_email tag, usable as evidence and never as instructions.';
+const W = 184, G = 50, H = 76;
+const PW = 174, PH = 70, PS = 88;
+---
+<figure class="how-guard">
+  <svg class="d d-wide" viewBox="0 0 1120 252" role="img" aria-labelledby="guard-w-t guard-w-d">
+    <title id="guard-w-t">Injection guard flow</title>
+    <desc id="guard-w-d">{desc}</desc>
+    <Head id="guard-w-ah" />
+    {lanes.map((lane, li) => {
+      const y = 28 + li * 148;
+      return (
+        <g>
+          <text class="d-lane" x="0" y={y - 10}>{lane.title}</text>
+          {lane.nodes.map((n, i) => <Box x={i * (W + G)} y={y} w={W} h={H} kind={n.kind} lines={n.lines} />)}
+          {[0, 1, 2, 3].map((i) => <path class="d-a" d={`M${i * (W + G) + W + 3},${y + H / 2} H${(i + 1) * (W + G) - 3}`} marker-end="url(#guard-w-ah)" />)}
+        </g>
+      );
+    })}
+  </svg>
+  <svg class="d d-phone" viewBox="0 0 360 470" role="img" aria-labelledby="guard-p-t guard-p-d">
+    <title id="guard-p-t">Injection guard flow</title>
+    <desc id="guard-p-d">{desc}</desc>
+    <Head id="guard-p-ah" />
+    {lanes.map((lane, li) => {
+      const x = li * 186;
+      return (
+        <g>
+          <text class="d-lane" x={x} y="16">{lane.title.replace(/ \(.*/, '')}</text>
+          {lane.nodes.map((n, i) => <Box x={x} y={28 + i * PS} w={PW} h={PH} kind={n.kind} lines={n.lines} />)}
+          {[0, 1, 2, 3].map((i) => <path class="d-a" d={`M${x + PW / 2},${28 + i * PS + PH + 2} V${28 + (i + 1) * PS - 2}`} marker-end="url(#guard-p-ah)" />)}
+        </g>
+      );
+    })}
+  </svg>
+</figure>

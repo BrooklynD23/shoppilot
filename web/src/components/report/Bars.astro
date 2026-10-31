@@ -1,0 +1,39 @@
+---
+// Static horizontal bar chart. Percent coordinates, no viewBox, so text stays at real size on any width.
+// A row with value null draws a hatched "pending W3" bar.
+interface Row { label: string; value: number | null; display: string; strong?: boolean }
+interface Props { id: string; title: string; desc: string; rows: Row[]; max: number; marker?: { value: number; label: string } }
+const { id, title, desc, rows, max, marker } = Astro.props;
+const ROW = 56;
+const pct = (v: number) => `${Math.min(100, (v / max) * 100).toFixed(2)}%`;
+const height = rows.length * ROW + (marker ? 22 : 4);
+---
+<svg class="rp-bars" role="img" aria-labelledby={`${id}-t ${id}-d`} width="100%" height={height}>
+  <title id={`${id}-t`}>{title}</title>
+  <desc id={`${id}-d`}>{desc}</desc>
+  <defs>
+    <pattern id={`${id}-hatch`} width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect class="rp-hatch-bg" width="8" height="8" />
+      <line class="rp-hatch-ln" x1="0" y1="0" x2="0" y2="8" stroke-width="3" />
+    </pattern>
+  </defs>
+  {rows.map((r, i) => {
+    const y = i * ROW;
+    return (
+      <g>
+        <text class="rp-bar-label" x="0" y={y + 16}>{r.label}</text>
+        <text class:list={['rp-bar-val', { 'rp-bar-val--pending': r.value === null }]} x="100%" y={y + 16} text-anchor="end">{r.display}</text>
+        <rect class="rp-bar-track" x="0" y={y + 26} width="100%" height="16" rx="4" />
+        {r.value === null
+          ? <rect x="0" y={y + 26} width="100%" height="16" rx="4" fill={`url(#${id}-hatch)`} />
+          : <rect class:list={['rp-bar-fill', { 'rp-bar-fill--strong': r.strong }]} x="0" y={y + 26} width={pct(r.value)} height="16" rx="4" />}
+      </g>
+    );
+  })}
+  {marker && (
+    <g>
+      <line class="rp-bar-marker" x1={pct(marker.value)} x2={pct(marker.value)} y1="20" y2={rows.length * ROW} stroke-width="2" />
+      <text class="rp-bar-mlabel" x={pct(marker.value)} y={rows.length * ROW + 16} text-anchor="end">{marker.label}</text>
+    </g>
+  )}
+</svg>

@@ -1,0 +1,274 @@
+---
+// ShopPilot+ v3 variant B, "Vibrant light". Zero JS: every motion is CSS.
+import '@fontsource-variable/bricolage-grotesque/opsz.css';
+import '@fontsource-variable/hanken-grotesk/wght.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '../../../../styles/v3-b.css';
+import Base from '../../../../layouts/Base.astro';
+import HeroComp from '../../../../components/v3-b/HeroComp.astro';
+import Walkthrough from '../../../../components/v3-b/Walkthrough.astro';
+import ForecastChart from '../../../../components/v3-b/ForecastChart.astro';
+import Receipt from '../../../../components/v3-b/Receipt.astro';
+import Icon from '../../../../components/v3-b/Icon.astro';
+import { nav, hero, builtWith, proof, how, bento, safety, quote, pricingH2, faqH2, closing, footer } from '../../../../data/v3';
+import { pricing, pricingLabel, faq, anomalies, safety as safety2 } from '../../../../data/v2';
+import { plan, inbox, money, store } from '../../../../data/demo';
+
+const BASE = '/v3/b/';
+const APP = `${BASE}app/`;
+const [h1a, h1b] = hero.h1.split('. ').map((s, i) => (i === 0 ? `${s}.` : s));
+const blocked = inbox[0];
+const refund = plan.steps.find((s) => s.movesMoney)!;
+const po = plan.steps.find((s) => s.tool === 'create_restock_po')!;
+const diffs = plan.steps.filter((s) => s.undoable && !s.movesMoney);
+const tile = Object.fromEntries(bento.tiles.map((t) => [t.key, t.title]));
+const inboxTimes = ['21:31', '21:38', '21:44'];
+const footLinks = footer.links.map((l) => ({ ...l, href: l.href.startsWith('/') ? l.href : `${BASE}${l.href}` }));
+---
+<Base title="ShopPilot+: autopilot for your shop, you approve every dollar" description={hero.sub}>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="site-head">
+    <div class="wrap nav-row">
+      <a class="wordmark" href={BASE} aria-current="page"><span class="wm-glyph" aria-hidden="true"></span>ShopPilot+</a>
+      <nav aria-label="Main">
+        <ul class="nav">{nav.links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}</ul>
+      </nav>
+      <a class="btn btn-ink btn-sm" href={APP}>{nav.cta}</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- 1. Hero: copy on clean white, product composition over the mesh -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-bg" aria-hidden="true"><div class="mesh"><i></i><i></i><i></i><i></i><i></i></div></div>
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <h1 id="hero-title"><span>{h1a}</span> <span>{h1b}</span></h1>
+          <p class="hero-sub" data-hero-sub>{hero.sub}</p>
+          <div class="hero-cta">
+            <a class="btn btn-ink btn-lg" href={APP}>{hero.cta}</a>
+            <p class="hero-note">{hero.note}</p>
+          </div>
+        </div>
+        <HeroComp />
+      </div>
+    </section>
+
+    <!-- 2. Built with (honest proof strip) -->
+    <section class="built" aria-labelledby="built-title">
+      <div class="wrap built-row">
+        <h2 id="built-title" class="built-label">{builtWith.label}</h2>
+        <ul class="built-list">
+          {builtWith.items.map((b, i) => (
+            <li class="built-item">
+              <svg class={`bw-glyph bw-glyph--${i + 1}`} viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                {i === 0 && <circle cx="10" cy="10" r="7" />}
+                {i === 1 && <rect x="3.5" y="3.5" width="13" height="13" rx="3" transform="rotate(45 10 10)" />}
+                {i === 2 && <path d="M10 2.5 17.5 16h-15z" />}
+                {i === 3 && <path d="M10 2.5 16.5 6.25v7.5L10 17.5 3.5 13.75v-7.5z" />}
+              </svg>
+              <span class="bw-name">{b.name}</span>
+              <span class="bw-by">{b.by}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- 3. Proof: stats, each on the UI fragment it was measured on -->
+    <section class="proof" aria-labelledby="proof-title">
+      <div class="wrap">
+        <h2 id="proof-title" class="sh"><span>{proof.h2}</span> <span class="sh-b">{proof.line}</span></h2>
+        <dl class="proof-panel reveal">
+          {proof.stats.map((p, i) => (
+            <div class={`stat stat--${i + 1}`}>
+              <div class="stat-ui" data-ui>
+                {i === 0 && <p class="frag"><code class="tool">forecast_demand</code><span class="pill pill--forecast">{plan.steps[2].after}</span></p>}
+                {i === 1 && <p class="frag"><span>Order <code class="id">{anomalies[0].order}</code></span><span class="pill pill--blocked"><Icon name="flag" />Flagged, score {anomalies[0].score}</span></p>}
+                {i === 2 && <p class="frag"><span><span class="num">{plan.usage.tokens}</span> tokens</span><span class="pill pill--checked">Cache {plan.usage.cacheHitPct}%</span></p>}
+              </div>
+              <dt class="stat-label">{p.label}</dt>
+              <dd class="stat-value num">{p.value}</dd>
+              <dd class="stat-src"><span class="tag">{p.source}</span></dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
+
+    <!-- 4. How: walkthrough loop with the step rail -->
+    <section class="how" id="how" aria-labelledby="how-title">
+      <div class="wrap how-grid">
+        <h2 id="how-title" class="sh"><span>{how.h2}</span> <span class="sh-b">{how.line}</span></h2>
+        <div class="reveal"><Walkthrough /></div>
+      </div>
+    </section>
+
+    <!-- 5. Bento: 6 guards, each a real fragment -->
+    <section class="bento-sec band" id="product" aria-labelledby="bento-title">
+      <div class="wrap">
+        <h2 id="bento-title" class="sh"><span>{bento.h2}</span> <span class="sh-b">{bento.line}</span></h2>
+        <ul class="bento">
+          <li class="tile tile--approve tile--lg reveal">
+            <h3>{tile.approve}</h3>
+            <div class="tui" data-ui>
+              <div class="tui-row"><span class="pc-n">4</span><span class="tui-t">{po.title}</span><span class="num tui-amt">{money(po.amountCents ?? 0)} est.</span><span class="pill pill--checked">Checked</span></div>
+              <div class="tui-row"><span class="pc-n">5</span><span class="tui-t">{refund.title}</span><span class="num tui-amt tui-amt--money">{money(refund.amountCents ?? 0)}</span><span class="pill pill--approval">Needs approval</span></div>
+              <div class="tui-approve">
+                <span class="fake-check" aria-hidden="true"><Icon name="tick" /></span>
+                <span>Approve refund of {money(refund.amountCents ?? 0)} on order 1038. Card refunds cannot be undone.</span>
+                <span class="pill pill--blocked">Irreversible</span>
+              </div>
+              <p class="tui-out"><span>Money out if you run</span><span class="num">{money(refund.amountCents ?? 0)}</span></p>
+            </div>
+          </li>
+          <li class="tile tile--guard reveal">
+            <h3>{tile.guard}</h3>
+            <div class="tui" data-ui>
+              <p class="tui-mail-top"><span class="stamp">BLOCKED</span><code class="id">{blocked.label}</code></p>
+              <p class="tui-mail-subj">{blocked.subject}</p>
+              <p class="tui-mail-v">Never sent to the planner. Score <span class="num">{blocked.score}</span></p>
+            </div>
+          </li>
+          <li class="tile tile--diff reveal">
+            <h3>{tile.diff}</h3>
+            <ul class="tui tui-diffs" data-ui>
+              {diffs.map((s) => (
+                <li><code class="tool">{s.tool}</code><span class="diff"><span class="d-before">{s.before}</span><Icon name="arrow" class="diff-arrow" /><span class="d-after">{s.after}</span></span></li>
+              ))}
+            </ul>
+          </li>
+          <li class="tile tile--forecast tile--lg reveal">
+            <h3>{tile.forecast}</h3>
+            <div class="tui" data-ui><ForecastChart id="fc-bento" label="Demo store" /></div>
+          </li>
+          <li class="tile tile--anomaly reveal">
+            <h3>{tile.anomaly}</h3>
+            <ul class="tui tui-anoms" data-ui>
+              {anomalies.map((a) => (
+                <li><p class="anom-head"><span>Order <code class="id">{a.order}</code></span><span class="pill pill--blocked"><Icon name="flag" />Score {a.score}</span></p><p class="anom-why">{a.reason}</p></li>
+              ))}
+            </ul>
+          </li>
+          <li class="tile tile--audit reveal">
+            <h3>{tile.audit}</h3>
+            <div class="tui" data-ui><Receipt rows={3} class="receipt--mini" /></div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 6. Safety: the blocked email, large -->
+    <section class="safety" id="safety" aria-labelledby="safety-title">
+      <div class="wrap">
+        <div class="safety-head">
+          <h2 id="safety-title">{safety.h2}</h2>
+          <p class="sl">{safety.line}</p>
+          <ul class="caps" data-ui aria-label="Limits">
+            {safety.caps.map((c) => <li class="cap"><Icon name="lock" />{c}</li>)}
+          </ul>
+        </div>
+        <div class="safety-stage reveal">
+          <article class="bigmail" data-ui aria-label="Blocked email">
+            <div class="bigmail-head">
+              <span class="stamp stamp--lg">BLOCKED</span>
+              <span class="addr">{blocked.from}</span>
+            </div>
+            <p class="bigmail-subj">{blocked.subject}</p>
+            <blockquote class="bigmail-raw"><p>{blocked.preview}</p></blockquote>
+            <p class="bigmail-v"><Icon name="alert" />{safety2.verdictPlain}</p>
+            <p class="bigmail-tech">Guard label <code class="id">{blocked.label}</code>, score <span class="num">{blocked.score}</span></p>
+          </article>
+          <div class="safety-receipt" data-ui>
+            <p class="f-title"><span>Audit log after one run</span><span class="tag">Demo store</span></p>
+            <Receipt />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Quote next to the inbox it came from -->
+    <section class="quote-sec band" aria-labelledby="quote-title">
+      <div class="wrap quote-grid">
+        <div class="inbox reveal" data-ui>
+          <p class="f-title"><span>Inbox</span><span class="tag">{store.name}, demo store</span></p>
+          <ul>
+            {inbox.map((m, i) => (
+              <li class:list={['in-row', { 'in-row--bad': !m.allowed }]}>
+                <span class="in-ts num">{inboxTimes[i]}</span>
+                <span class="in-main"><span class="in-subj">{m.subject}</span><span class="addr in-from">{m.from}</span></span>
+                {m.allowed ? <span class="pill pill--checked">Allowed</span> : <span class="stamp">BLOCKED</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <figure class="quote">
+          <h2 id="quote-title" class="sr-only">Why this exists</h2>
+          <blockquote><p>{quote.text}</p></blockquote>
+          <figcaption>{quote.source}</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- 8. Planned pricing -->
+    <section class="pricing" id="pricing" aria-labelledby="pricing-title">
+      <div class="wrap">
+        <div class="pricing-head">
+          <h2 id="pricing-title">{pricingH2}</h2>
+          <p class="pricing-label"><Icon name="alert" />{pricingLabel}</p>
+        </div>
+        <ul class="tiers">
+          {pricing.map((t, i) => (
+            <li class:list={['tier', { 'tier--now': i === 0 }]}>
+              <div class="tier-top">
+                <h3>{t.name}</h3>
+                <p class="tier-price"><span class="num">{t.price}</span>{t.period && <span class="tier-period"> {t.period}</span>}</p>
+              </div>
+              <ul class="tier-feats">{t.features.map((f) => <li><Icon name="tick" />{f}</li>)}</ul>
+              {i === 0
+                ? <a class="btn btn-ink" href={APP}>{t.cta}</a>
+                : <button class="btn" type="button" disabled>{t.cta}</button>}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- 9. FAQ -->
+    <section class="faq band" id="faq" aria-labelledby="faq-title">
+      <div class="wrap faq-grid">
+        <h2 id="faq-title">{faqH2}</h2>
+        <div class="faq-list">
+          {faq.map((f) => (
+            <details class="qa">
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- 10. Closing band -->
+    <section class="closing" aria-labelledby="closing-title">
+      <div class="wrap">
+        <div class="closing-panel">
+          <div class="closing-copy">
+            <h2 id="closing-title">{closing.h2}</h2>
+            <p>{closing.line}</p>
+            <a class="btn btn-white btn-lg" href={APP}>{closing.cta}</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap foot-row">
+      <span class="wordmark"><span class="wm-glyph" aria-hidden="true"></span>ShopPilot+</span>
+      <ul class="foot-links">{footLinks.map((l) => <li><a href={l.href}>{l.label}</a></li>)}</ul>
+      <p class="foot-note">{footer.note}</p>
+    </div>
+  </footer>
+</Base>

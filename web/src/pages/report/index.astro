@@ -1,11 +1,225 @@
 ---
-import Base from '../../layouts/Base.astro';
-import '../../styles/index.css';
+// /report/: results, evidence, limits and links for graders. No JS. Every number comes from src/data/report.ts.
+import Site from '../../layouts/Site.astro';
+import Tag from '../../components/report/Tag.astro';
+import Table from '../../components/report/Table.astro';
+import Bars from '../../components/report/Bars.astro';
+import { links } from '../../data/site';
+import { RUN_DATE, tests, evalSet, evalCases, guard, guardCases, mlMae, mlRows, mlCaveat, costs, criteria, limits } from '../../data/report';
+import '../../styles/page-report.css';
+
+const deliverables = [
+  { name: 'Code repository (GitHub URL)', url: links.repo },
+  { name: 'Deployed URL', url: links.deployed },
+  { name: 'Demo video, 1 to 2 minutes (YouTube URL)', url: links.video },
+];
+const injectionIds = evalCases.filter((c) => c.injection).map((c) => c.id).join(', ');
 ---
-<Base title="ShopPilot+ · Report" description="Placeholder page for the mockup round.">
-  <main class="idx">
-    <h1>Report</h1>
-    <p>Planned page. It gets built in the approach you pick.</p>
-    <p class="links"><a href="/">Back to all approaches</a></p>
+<Site title="Report: ShopPilot+" description="What ShopPilot+ does, how it was measured, what is still pending and where to find the code, the deploy and the demo video." surface="morning" headerSurface="night" current="/report/">
+  <main id="main">
+    <section class="night rp-hero" aria-labelledby="rp-h1">
+      <div class="wrap">
+        <h1 id="rp-h1">What we built, measured and left open</h1>
+        <p class="rp-lede">Every number below links to the file or command it came from. Anything not measured yet says so.</p>
+        <ul class="rp-stats">
+          <li>
+            <span class="rp-stat-v num">{tests.passed}</span>
+            <span class="rp-stat-l">tests pass in the full suite, {tests.failed} fail</span>
+            <Tag kind="measured" text={`Measured ${tests.date}`} />
+          </li>
+          <li>
+            <span class="rp-stat-v num">{guard.passedOffline} of {guard.total}</span>
+            <span class="rp-stat-l">prompt-injection guard cases pass offline</span>
+            <Tag kind="replay" text="Offline, fixtures" />
+          </li>
+          <li>
+            <span class="rp-stat-v rp-stat-v--pending">pending W3</span>
+            <span class="rp-stat-l">agent eval, {evalSet.total} cases, gate {evalSet.gate} of {evalSet.total}</span>
+          </li>
+          <li>
+            <span class="rp-stat-v num">1.55</span>
+            <span class="rp-stat-l">forecast error, units per day (seasonal-naive 1.77)</span>
+            <Tag kind="prototype" />
+          </li>
+          <li>
+            <span class="rp-stat-v rp-stat-v--pending">pending W3</span>
+            <span class="rp-stat-l">measured cost per plan</span>
+            <Tag kind="estimate" text="Estimate ≈ $0.058 complex, cold" />
+          </li>
+        </ul>
+        <p class="rp-key"><span>How to read the tags:</span> <Tag kind="measured" /> we ran it; <Tag kind="replay" /> offline, with canned model output; <Tag kind="prototype" /> spec numbers before the real seed; <Tag kind="estimate" /> spec arithmetic; <Tag kind="config" /> a value in code or config; <Tag kind="pending" /> not measured yet.</p>
+      </div>
+    </section>
+
+    <div class="wrap rp-body">
+      <nav class="rp-toc" aria-label="On this page">
+        <ul>
+          <li><a href="#video">Demo video</a></li>
+          <li><a href="#eval">Agent eval</a></li>
+          <li><a href="#guard">Injection guard</a></li>
+          <li><a href="#ml">Forecast backtest</a></li>
+          <li><a href="#costs">Costs</a></li>
+          <li><a href="#tests">Test suite</a></li>
+          <li><a href="#limits">Known limits</a></li>
+          <li><a href="#links">Links and checklist</a></li>
+        </ul>
+      </nav>
+
+      <section class="rp-sec" id="video" aria-labelledby="h-video">
+        <h2 id="h-video">Demo video</h2>
+        {links.video ? (
+          <a class="rp-video" href={links.video} rel="noopener">
+            <picture>
+              <source srcset="/media/night-poster.avif" type="image/avif" />
+              <img src="/media/night-poster.webp" alt="" width="1280" height="720" decoding="async" />
+            </picture>
+            <span class="rp-play" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" /><path d="M26 20l20 12-20 12z" /></svg></span>
+            <span class="rp-video-cap">Watch the demo on YouTube</span>
+          </a>
+        ) : (
+          <div class="rp-video is-pending" aria-disabled="true">
+            <picture>
+              <source srcset="/media/night-poster.avif" type="image/avif" />
+              <img src="/media/night-poster.webp" alt="" width="1280" height="720" decoding="async" />
+            </picture>
+            <span class="rp-play" aria-hidden="true"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="31" /><path d="M26 20l20 12-20 12z" /></svg></span>
+            <span class="rp-video-cap">Video link pending</span>
+          </div>
+        )}
+        <p class="rp-note">The video plays on YouTube; nothing is embedded here. The still is AI-generated footage (Google Veo).</p>
+      </section>
+
+      <section class="rp-sec" id="eval" aria-labelledby="h-eval">
+        <h2 id="h-eval">Agent eval</h2>
+        <p>{evalSet.total} requests, each with an expected plan. The bar to pass is {evalSet.gate} of {evalSet.total}, and the four injection cases ({injectionIds}) must all pass. The case list is written; the runner, <code>tests/eval/cases.json</code> and the recorded model responses are not, so no case has a result yet.</p>
+        <figure class="rp-fig">
+          <Bars id="evalbar" title="Agent eval pass rate" desc={`Pass rate not measured yet (pending W3). The pass gate is ${evalSet.gate} of ${evalSet.total} cases.`}
+            rows={[{ label: `Cases passed, of ${evalSet.total}`, value: evalSet.passed, display: evalSet.passed === null ? 'pending W3' : `${evalSet.passed} of ${evalSet.total}` }]}
+            max={evalSet.total} marker={{ value: evalSet.gate, label: `gate ${evalSet.gate} of ${evalSet.total}` }} />
+          <figcaption>Pass rate: <Tag kind="pending" />. Gate: {evalSet.gate} of {evalSet.total} cases.</figcaption>
+        </figure>
+        <Table caption={`Eval cases (${evalSet.total})`} source={`docs/specs/02-agent-core.md §8; ${evalSet.run}, ${RUN_DATE}`}>
+          <thead><tr><th scope="col">Id</th><th scope="col">Request</th><th scope="col">Expected</th><th scope="col">Result</th><th scope="col">Cost</th></tr></thead>
+          <tbody>
+            {evalCases.map((c) => (
+              <tr>
+                <th scope="row"><code>{c.id}</code>{c.injection && <span class="rp-inj">injection</span>}</th>
+                <td>{c.request}</td>
+                <td>{c.expected}</td>
+                <td><Tag kind="pending" /></td>
+                <td><Tag kind="pending" /></td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </section>
+
+      <section class="rp-sec" id="guard" aria-labelledby="h-guard">
+        <h2 id="h-guard">Injection guard</h2>
+        <p>Every email and order note is screened before the planner sees it. A regex heuristic decides the obvious cases alone (H). Haiku decides the rest (L). Offline, the L cases get a hand-written model answer, so they prove the plumbing, not Haiku's judgement. The live re-check of the {guard.testsDeselected} L cases needs an API key and is pending.</p>
+        <p class="rp-result"><strong class="num">{guard.passedOffline} of {guard.total}</strong> cases pass offline. The whole guard test file: <span class="num">{guard.testsPassed}</span> passed, <span class="num">{guard.testsDeselected}</span> live tests not run.</p>
+        <Table caption={`Guard cases (${guard.total}) with verdicts`} source={`tests/safety/guard_cases.json; ${guard.command}, ${RUN_DATE}`}>
+          <thead><tr><th scope="col">#</th><th scope="col">Source</th><th scope="col">Attack or trap</th><th scope="col">Expected</th><th scope="col">Layer</th><th scope="col">Offline</th><th scope="col">Live Haiku</th></tr></thead>
+          <tbody>
+            {guardCases.map((g) => (
+              <tr>
+                <th scope="row" class="num">{g.id}</th>
+                <td>{g.src}</td>
+                <td>{g.attack}</td>
+                <td>{g.expect === 'block' ? <span class="pill pill--blocked">Block</span> : <span class="pill pill--allowed">Allow</span>}</td>
+                <td>{g.layer === 'H' ? 'Heuristic' : 'Haiku'}</td>
+                <td><span class="pill pill--checked">Pass</span></td>
+                <td>{g.layer === 'H' ? <span class="rp-na">Not needed</span> : <Tag kind="pending" />}</td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+        <p>At the agent level, eval cases {injectionIds} test the same attacks end to end (a refund must go only to the damaged order, and the planted email must stay blocked). Their results are <Tag kind="pending" />.</p>
+      </section>
+
+      <section class="rp-sec" id="ml" aria-labelledby="h-ml">
+        <h2 id="h-ml">Forecast and anomaly backtest</h2>
+        <p>Stdlib only: simple exponential smoothing with a weekday index, Croston-SBA for slow sellers, and a robust z-score for odd orders. These are <Tag kind="prototype" /> numbers from the spec. There is no evaluate script in <code>app/ml/</code> yet, so nothing has run on the real seed.</p>
+        <figure class="rp-fig">
+          <Bars id="maebar" title="Daily forecast error by method (lower is better)" desc="Mean absolute error in units per day: model 1.55, seasonal-naive 1.77, 28-day mean 1.56. Prototype, synthetic data."
+            rows={mlMae.map((m, i) => ({ label: m.label, value: m.value, display: m.value.toFixed(2), strong: i === 0 }))} max={2} />
+          <figcaption>Mean absolute error, units per day, lower is better: model 1.55, seasonal-naive 1.77, 28-day mean 1.56. <Tag kind="prototype" /></figcaption>
+        </figure>
+        <p class="rp-caveat"><strong>Honest caveat.</strong> {mlCaveat}</p>
+        <Table caption="Backtest results against their gates" source="docs/specs/03-ml-actions.md §6 (prototype numbers, 2026-10-30)">
+          <thead><tr><th scope="col">Metric</th><th scope="col">Result</th><th scope="col">Gate</th><th scope="col">Status</th></tr></thead>
+          <tbody>
+            {mlRows.map((r) => (
+              <tr><th scope="row">{r.metric}</th><td class="num">{r.result}</td><td>{r.gate}</td><td><Tag kind="prototype" text="Prototype" /></td></tr>
+            ))}
+          </tbody>
+        </Table>
+      </section>
+
+      <section class="rp-sec" id="costs" aria-labelledby="h-costs">
+        <h2 id="h-costs">Costs</h2>
+        <p>Model calls cost money; hosting and the ML layer do not. The per-plan figures are arithmetic from list prices until real usage is recorded.</p>
+        <Table caption="Cost per plan, per guard check, caps and hosting" source="docs/specs/02-agent-core.md §6.2 and §9; 04-safety.md §9; app/config.py; render.yaml">
+          <thead><tr><th scope="col">Item</th><th scope="col">Value</th><th scope="col">Kind</th><th scope="col">From</th></tr></thead>
+          <tbody>
+            {costs.map((c) => (
+              <tr>
+                <th scope="row">{c.item}</th>
+                <td class="num">{c.kind === 'pending' ? <Tag kind="pending" /> : c.value}</td>
+                <td>{c.kind === 'pending' ? 'Not measured' : <Tag kind={c.kind} />}</td>
+                <td><code>{c.source}</code></td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </section>
+
+      <section class="rp-sec" id="tests" aria-labelledby="h-tests">
+        <h2 id="h-tests">Test suite</h2>
+        <dl class="rp-dl">
+          <div><dt>Passed</dt><dd class="num">{tests.passed}</dd></div>
+          <div><dt>Failed</dt><dd class="num">{tests.failed}</dd></div>
+          <div><dt>Not run</dt><dd class="num">{tests.deselected} live tests (need real API keys)</dd></div>
+          <div><dt>Run</dt><dd>{tests.date}, {tests.time}</dd></div>
+        </dl>
+        <p>The {tests.failed} failures came from a run while backend files were still being edited. The suite gets one more run before submission.</p>
+        <p class="rp-source">Source: <code>{tests.command}</code> from the repo root, {tests.date} {tests.time}.</p>
+      </section>
+
+      <section class="rp-sec" id="limits" aria-labelledby="h-limits">
+        <h2 id="h-limits">Known limits</h2>
+        <ul class="rp-limits">
+          {limits.map((l) => <li><span>{l.text}</span> <code>{l.source}</code></li>)}
+        </ul>
+      </section>
+
+      <section class="rp-sec" id="links" aria-labelledby="h-links">
+        <h2 id="h-links">Links and submission checklist</h2>
+        <Table caption="Required deliverables" source="ASSIGNMENT.md, Submission guidelines; links from src/data/site.ts">
+          <thead><tr><th scope="col">Deliverable</th><th scope="col">Status</th><th scope="col">Link</th></tr></thead>
+          <tbody>
+            {deliverables.map((d) => (
+              <tr>
+                <th scope="row">{d.name}</th>
+                <td>{d.url ? <span class="pill pill--done">Ready</span> : <span class="pill pill--planned">Pending</span>}</td>
+                <td>{d.url ? <a class="rp-link" href={d.url}>{d.url}</a> : <span class="rp-na">Link pending</span>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+        <Table caption="Grading criteria and where each is shown" source="ASSIGNMENT.md, Grading criteria">
+          <thead><tr><th scope="col">Criterion</th><th scope="col">Weight</th><th scope="col">Where to look</th></tr></thead>
+          <tbody>
+            {criteria.map((c) => (
+              <tr>
+                <th scope="row">{c.name}</th>
+                <td class="num">{c.weight}%</td>
+                <td><ul class="rp-where">{c.where.map((w) => <li><a class="rp-link" href={w.href}>{w.label}</a></li>)}</ul></td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </section>
+    </div>
   </main>
-</Base>
+</Site>

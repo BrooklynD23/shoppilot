@@ -1,0 +1,230 @@
+---
+// ShopPilot+ round 3, variant A: Dark premium. Zero JS on this page.
+import '@fontsource-variable/mona-sans/wdth.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '../../../../styles/v3-a.css';
+import Base from '../../../../layouts/Base.astro';
+import HeroStage from '../../../../components/v3-a/HeroStage.astro';
+import Walkthrough from '../../../../components/v3-a/Walkthrough.astro';
+import Bento from '../../../../components/v3-a/Bento.astro';
+import Receipt from '../../../../components/v3-a/Receipt.astro';
+import ForecastChart from '../../../../components/v3-a/ForecastChart.astro';
+import Icon from '../../../../components/v3-a/Icon.astro';
+import {
+  nav, hero, builtWith, proof, how, bento, safety, quote, pricingH2, faqH2, closing, footer,
+} from '../../../../data/v3';
+import { pricing, pricingLabel, faq, anomalies } from '../../../../data/v2';
+import { inbox, plan } from '../../../../data/demo';
+
+const BASE = '/v3/a/';
+const APP = `${BASE}app/`;
+const [h1a, h1b] = hero.h1.split('. ').map((s, i) => (i === 0 ? `${s}.` : s));
+const blocked = inbox[0];
+const footLinks = footer.links.map((l) => ({ ...l, href: l.href.startsWith('/') ? l.href : `${BASE}${l.href}` }));
+const glyphs = ['ring', 'square', 'tri', 'diamond'] as const;
+---
+<Base title="ShopPilot+: autopilot for your shop" description={hero.sub} themeLight="#07080a" themeDark="#07080a">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-head">
+    <div class="wrap nav-row">
+      <a class="wordmark" href={BASE} aria-current="page">ShopPilot+</a>
+      <nav aria-label="Main">
+        <ul class="nav">
+          {nav.links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+        </ul>
+      </nav>
+      <a class="btn btn-primary btn-sm" href={APP}>{nav.cta}</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- 1. Hero: left-aligned copy over a layered product composition -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-grid" aria-hidden="true"></div>
+      <div class="wrap hero-copy">
+        <h1 id="hero-title"><span>{h1a}</span> <span>{h1b}</span></h1>
+        <div class="hero-row">
+          <p class="hero-sub" data-hero-sub>{hero.sub}</p>
+          <div class="hero-cta">
+            <a class="btn btn-primary btn-lg" href={APP}>{hero.cta}</a>
+            <p class="hero-note">{hero.note}</p>
+          </div>
+        </div>
+      </div>
+      <div class="wrap">
+        <HeroStage />
+      </div>
+    </section>
+
+    <!-- 2. Built with: honest stack strip, drawn glyphs, no logos -->
+    <section class="built" aria-label={builtWith.label}>
+      <div class="wrap built-row">
+        <p class="built-label">{builtWith.label}</p>
+        <ul class="built-list">
+          {builtWith.items.map((b, i) => (
+            <li class="built-item">
+              <svg class="glyph" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                {glyphs[i] === 'ring' && <circle cx="10" cy="10" r="6.5" />}
+                {glyphs[i] === 'square' && <rect x="4" y="4" width="12" height="12" rx="2.5" />}
+                {glyphs[i] === 'tri' && <path d="M10 3.5 16.5 15.5h-13z" />}
+                {glyphs[i] === 'diamond' && <path d="M10 3 17 10 10 17 3 10z" />}
+              </svg>
+              <span class="built-name">{b.name}</span>
+              <span class="built-by">{b.by}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- 3. Proof: 3 stats, each standing on the UI it came from -->
+    <section class="proof wrap" aria-labelledby="proof-title">
+      <div class="sh">
+        <h2 id="proof-title">{proof.h2}</h2>
+        <p>{proof.line}</p>
+      </div>
+      <dl class="proof-strip reveal">
+        <div class="stat">
+          <dt class="stat-label">{proof.stats[0].label}</dt>
+          <dd class="stat-value num">{proof.stats[0].value}</dd>
+          <dd class="stat-src"><span class="tag">{proof.stats[0].source}</span></dd>
+          <dd class="stat-ui" data-ui><ForecastChart id="pf-fc" bare /></dd>
+        </div>
+        <div class="stat">
+          <dt class="stat-label">{proof.stats[1].label}</dt>
+          <dd class="stat-value num">{proof.stats[1].value}</dd>
+          <dd class="stat-src"><span class="tag">{proof.stats[1].source}</span></dd>
+          <dd class="stat-ui" data-ui>
+            <p class="pf-anom"><code class="id">#{anomalies[0].order}</code><span class="pill pill--approval">Flagged <span class="num">{anomalies[0].score}</span></span></p>
+            <p class="pf-anom"><code class="id">#{anomalies[1].order}</code><span class="pill pill--approval">Flagged <span class="num">{anomalies[1].score}</span></span></p>
+          </dd>
+        </div>
+        <div class="stat">
+          <dt class="stat-label">{proof.stats[2].label}</dt>
+          <dd class="stat-value num money">{proof.stats[2].value}</dd>
+          <dd class="stat-src"><span class="tag">{proof.stats[2].source}</span></dd>
+          <dd class="stat-ui" data-ui>
+            <p class="pf-meter"><span><span class="num">{plan.usage.tokens}</span> tokens</span><span>cache <span class="num">{plan.usage.cacheHitPct}%</span></span></p>
+            <meter class="pf-meter-bar" min="0" max="100" value={plan.usage.cacheHitPct} aria-label="Cache hit rate"></meter>
+          </dd>
+        </div>
+      </dl>
+    </section>
+
+    <!-- 4. How: centered walkthrough loop with the step rail -->
+    <section class="how wrap" id="how" aria-labelledby="how-title">
+      <div class="sh sh--center">
+        <h2 id="how-title">{how.h2}</h2>
+        <p>{how.line}</p>
+      </div>
+      <div class="reveal">
+        <Walkthrough />
+      </div>
+    </section>
+
+    <!-- 5. Bento: every guard as a tile -->
+    <section class="product wrap" id="product" aria-labelledby="product-title">
+      <div class="sh">
+        <h2 id="product-title">{bento.h2}</h2>
+        <p>{bento.line}</p>
+      </div>
+      <Bento />
+    </section>
+
+    <!-- 6. Safety: the blocked email as the specimen, caps, receipt -->
+    <section class="safety" id="safety" aria-labelledby="safety-title">
+      <div class="wrap safety-grid">
+        <div class="safety-copy">
+          <div class="sh">
+            <h2 id="safety-title">{safety.h2}</h2>
+            <p>{safety.line}</p>
+          </div>
+          <ul class="caps" data-ui>
+            {safety.caps.map((c) => <li class="cap"><Icon name="lock" />{c}</li>)}
+          </ul>
+        </div>
+        <div class="specimen reveal" data-ui>
+          <article class="mail mail--big">
+            <div class="mail-head">
+              <span class="stamp stamp--big">BLOCKED</span>
+              <span class="mail-from">From <span class="addr">{blocked.from}</span></span>
+            </div>
+            <p class="mail-subj">{blocked.subject}</p>
+            <p class="mail-raw">{blocked.preview}</p>
+            <p class="mail-verdict"><Icon name="shield" />{blocked.reason}</p>
+            <p class="receipt-ids">Guard label <code class="id">{blocked.label}</code> score <span class="num">{blocked.score}</span></p>
+          </article>
+          <div class="specimen-receipt">
+            <Receipt pick={['refund_order', 'create_restock_po']} />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Quote: small, next to the work it replaces -->
+    <section class="quote wrap" aria-label="Why we built it">
+      <figure class="quote-fig">
+        <blockquote><p>{quote.text}</p></blockquote>
+        <figcaption>{quote.source}</figcaption>
+      </figure>
+      <div class="quote-ui reveal" data-ui>
+        <Receipt pick={['mark_shipped', 'send_email']} />
+      </div>
+    </section>
+
+    <!-- 8. Planned pricing -->
+    <section class="pricing wrap" id="pricing" aria-labelledby="pricing-title">
+      <div class="pricing-head">
+        <h2 id="pricing-title">{pricingH2}</h2>
+        <p class="pricing-label"><Icon name="alert" />{pricingLabel}</p>
+      </div>
+      <ul class="tiers">
+        {pricing.map((t, i) => (
+          <li class:list={['tier', { 'tier--now': i === 0 }]}>
+            <h3>{t.name}</h3>
+            <p class="tier-price"><span class="num">{t.price}</span>{t.period && <span class="tier-period"> {t.period}</span>}</p>
+            <ul class="tier-feats">
+              {t.features.map((f) => <li><Icon name="tick" />{f}</li>)}
+            </ul>
+            {i === 0
+              ? <a class="btn btn-primary" href={APP}>{t.cta}</a>
+              : <button class="btn" type="button" disabled>{t.cta}</button>}
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <!-- 9. FAQ -->
+    <section class="faq wrap" id="faq" aria-labelledby="faq-title">
+      <h2 id="faq-title">{faqH2}</h2>
+      <div class="faq-list">
+        {faq.map((f) => (
+          <details class="qa">
+            <summary>{f.q}</summary>
+            <p>{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+
+    <!-- 10. Closing band -->
+    <section class="closing" aria-labelledby="closing-title">
+      <div class="closing-glow" aria-hidden="true"></div>
+      <div class="wrap closing-inner">
+        <h2 id="closing-title">{closing.h2}</h2>
+        <p>{closing.line}</p>
+        <a class="btn btn-primary btn-lg" href={APP}>{closing.cta}</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap foot-row">
+      <a class="wordmark" href={BASE}>ShopPilot+</a>
+      <ul class="foot-links">
+        {footLinks.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+      </ul>
+      <p class="foot-note">{footer.note}</p>
+    </div>
+  </footer>
+</Base>

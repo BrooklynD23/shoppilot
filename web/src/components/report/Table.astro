@@ -1,0 +1,14 @@
+---
+// Captioned table in its own horizontal scroller, with a source line under it.
+interface Props { caption: string; source: string; id?: string }
+const { caption, source, id } = Astro.props;
+---
+<div class="rp-table">
+  <div class="rp-scroll" role="region" aria-label={caption} tabindex="0" id={id}>
+    <table>
+      <caption>{caption}</caption>
+      <slot />
+    </table>
+  </div>
+  <p class="rp-source">Source: <code>{source}</code></p>
+</div>

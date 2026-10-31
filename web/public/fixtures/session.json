@@ -1,0 +1,8 @@
+{
+ "created": true,
+ "store_reset": false,
+ "anchor": "2026-10-31",
+ "store_name": "Fern & Kiln",
+ "llm_mode": "live",
+ "stripe_mode": "test"
+}

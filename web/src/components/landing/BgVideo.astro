@@ -1,0 +1,39 @@
+---
+// Muted looping footage with a Pause toggle (src/scripts/landing/video.ts).
+// The poster is also the layer's CSS background, so reduced motion and no-JS show a still frame.
+// `eager`: autoplay + preload=metadata (hero). Otherwise preload=none; the script starts it in view.
+// `cssFallback`: a no-JS checkbox that hides the moving video (script swaps in the real button).
+import Icon from './Icon.astro';
+interface Props { name: 'night' | 'morning'; eager?: boolean; cssFallback?: boolean; class?: string; label: string }
+// Reduced motion: no <source> matches, so nothing downloads and the poster stays.
+const MOTION = '(prefers-reduced-motion: no-preference)';
+const { name, eager = false, cssFallback = false, class: cls, label } = Astro.props;
+---
+<div class:list={['vid', `vid--${name}`, cls]} data-vid>
+  <video
+    class="vid-media"
+    muted
+    playsinline
+    loop
+    autoplay={eager}
+    preload={eager ? 'metadata' : 'none'}
+    poster={`/media/${name}-poster.avif`}
+    aria-hidden="true"
+    disablepictureinpicture
+    disableremoteplayback
+  >
+    <source src={`/media/${name}.webm`} type="video/webm" media={MOTION} />
+    <source src={`/media/${name}.mp4`} type="video/mp4" media={MOTION} />
+  </video>
+  <div class="vid-ctl">
+    <button class="vid-btn" type="button" aria-pressed="false" aria-label={`Pause ${label}`} data-vid-btn hidden>
+      <Icon name="pause" />Pause
+    </button>
+    {cssFallback && (
+      <label class="vid-btn vid-css" data-vid-css>
+        <input type="checkbox" aria-label={`Pause ${label}`} />
+        <Icon name="pause" />Pause
+      </label>
+    )}
+  </div>
+</div>

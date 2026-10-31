@@ -1,0 +1,47 @@
+---
+// Inbox / Outbox / Audit rail. Lists are filled by src/scripts/console/* (textContent only).
+import Icon from './Icon.astro';
+const exportsList = [
+  { kind: 'orders_csv', label: 'Orders (CSV)' },
+  { kind: 'refunds_csv', label: 'Refunds (CSV)' },
+  { kind: 'report_pdf', label: 'Store report (PDF)' },
+];
+---
+<aside class="rail" id="rail" aria-label="Inbox, outbox and audit log">
+  <div class="tabs" role="tablist" aria-label="Store activity">
+    <button class="tab" role="tab" type="button" id="tab-inbox" aria-controls="panel-inbox" aria-selected="true">Inbox <span class="tab-count" id="count-inbox"></span></button>
+    <button class="tab" role="tab" type="button" id="tab-outbox" aria-controls="panel-outbox" aria-selected="false" tabindex="-1">Outbox <span class="tab-count tab-count--quiet" id="count-outbox"></span></button>
+    <button class="tab" role="tab" type="button" id="tab-audit" aria-controls="panel-audit" aria-selected="false" tabindex="-1">Audit <span class="tab-count tab-count--quiet" id="count-audit"></span></button>
+  </div>
+
+  <div class="tab-panel" role="tabpanel" id="panel-inbox" aria-labelledby="tab-inbox" tabindex="0">
+    <p class="rail-note"><Icon name="shield" /> Every email is screened before the planner sees it.</p>
+    <div class="rail-list" id="inbox-list" data-kind="inbox" aria-busy="true">
+      <div class="sk" aria-hidden="true"><i></i><i></i><i></i></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" role="tabpanel" id="panel-outbox" aria-labelledby="tab-outbox" tabindex="0" hidden>
+    <p class="rail-note"><Icon name="mail" /> Never sent. Emails stay in this app.</p>
+    <div class="rail-list" id="outbox-list" data-kind="outbox" aria-busy="true">
+      <div class="sk" aria-hidden="true"><i></i><i></i></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" role="tabpanel" id="panel-audit" aria-labelledby="tab-audit" tabindex="0" hidden>
+    <p class="rail-note" id="chain-line"><Icon name="lock" /> Checking the hash chain.</p>
+    <p class="undo-msg" id="undo-msg" role="status" aria-live="polite"></p>
+    <div class="rail-list" id="audit-list" data-kind="audit" aria-busy="true">
+      <div class="sk" aria-hidden="true"><i></i><i></i><i></i></div>
+    </div>
+    <div class="exports" id="exports">
+      <h3 class="exports-h">Download</h3>
+      <ul class="exports-list">
+        {exportsList.map((e) => (
+          <li><a class="btn btn-line btn-sm" href={`/api/export/${e.kind}`} download data-export>{e.label}</a></li>
+        ))}
+      </ul>
+      <p class="rail-note" id="exports-off" hidden>Downloads need the live server. Offline fixtures cannot export.</p>
+    </div>
+  </div>
+</aside>

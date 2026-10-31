@@ -1,0 +1,15 @@
+---
+// One stroke family: 16px grid, 1.6 stroke, round caps. Decorative only (aria-hidden).
+interface Props { name: 'tick' | 'arrow' | 'play' | 'pause' | 'alert' | 'lock' | 'undo' | 'shield'; class?: string }
+const { name, class: cls } = Astro.props;
+---
+<svg class:list={['icon', cls]} viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  {name === 'tick' && <path d="M3.5 8.5l3 3 6-7" />}
+  {name === 'arrow' && <path d="M2.5 8h11M9.5 4l4 4-4 4" />}
+  {name === 'play' && <path d="M5.5 3.5v9l7-4.5z" />}
+  {name === 'alert' && <><path d="M8 2 14.5 13.5h-13z" /><path d="M8 6.5v3M8 11.6v.01" /></>}
+  {name === 'lock' && <><rect x="3" y="7" width="10" height="7" rx="1.5" /><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" /></>}
+  {name === 'undo' && <><path d="M5 4 2.5 6.5 5 9" /><path d="M2.5 6.5h7a3.5 3.5 0 0 1 0 7H7" /></>}
+  {name === 'pause' && <path d="M5.5 3.5v9M10.5 3.5v9" />}
+  {name === 'shield' && <><path d="M8 1.8 13.5 4v4c0 3.2-2.4 5.4-5.5 6.2C4.9 13.4 2.5 11.2 2.5 8V4z" /><path d="m5.6 8.1 1.7 1.7 3.2-3.5" /></>}
+</svg>

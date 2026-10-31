@@ -1,0 +1,16 @@
+---
+import Site from '../layouts/Site.astro';
+---
+<Site title="Page not found · ShopPilot+" description="This page does not exist." surface="night" footerSurface="night">
+  <main id="main" class="nf wrap">
+    <h1>This page does not exist.</h1>
+    <p>Nothing was changed. Head back to the demo store or the overview.</p>
+    <p class="nf-actions"><a class="btn btn-primary" href="/app/">Try the live demo</a> <a class="btn btn-line" href="/">Home</a></p>
+  </main>
+</Site>
+<style>
+  .nf { min-height: 60dvh; display: grid; align-content: center; gap: 16px; padding-block: 96px; }
+  .nf h1 { font-size: clamp(2rem, 5vw, 3.25rem); }
+  .nf p { color: var(--ink-2); }
+  .nf-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+</style>

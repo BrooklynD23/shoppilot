@@ -1,11 +1,189 @@
 ---
-import Base from '../../layouts/Base.astro';
-import '../../styles/index.css';
+import Site from '../../layouts/Site.astro';
+import '../../styles/page-how.css';
+import Pipeline from '../../components/how/Pipeline.astro';
+import Architecture from '../../components/how/Architecture.astro';
+import Walkthrough from '../../components/how/Walkthrough.astro';
+import Techniques from '../../components/how/Techniques.astro';
+import GuardFlow from '../../components/how/GuardFlow.astro';
+import BandChart from '../../components/how/BandChart.astro';
+import Icon from '../../components/how/Icon.astro';
+
+const layers = [
+  { n: '1', name: 'Agent core', does: 'Router, staged planner, validator, judge and executor.', code: ['app/agent/', 'app/llm/'] },
+  { n: '2', name: 'Classical ML', does: 'Demand forecast and order anomaly scores, called as read tools.', code: ['app/ml/forecast.py', 'app/ml/anomaly.py'] },
+  { n: '3', name: 'Safety', does: 'Inbound guard, hard policy caps and web hardening.', code: ['app/safety/inbound_guard.py', 'app/safety/policy.py', 'app/safety/web.py'] },
+  { n: '4', name: 'Real APIs', does: 'Stripe in test or mock mode, a fake outbox, CSV and PDF export.', code: ['app/integrations/'] },
+];
+
+// Real constants from app/safety/policy.py.
+const caps = [
+  ['Refunds in one plan', '3', 'MAX_REFUNDS_PER_PLAN'],
+  ['One refund', '$200.00 max', 'REFUND_CAP_PER_ORDER_CENTS'],
+  ['All refunds in one plan', '$500.00 max', 'REFUND_CAP_PER_PLAN_CENTS'],
+  ['Refund window', '30 days', 'REFUND_WINDOW_DAYS'],
+  ['Refunds per session hour', '5 and $1,000.00', 'REFUNDS_PER_SESSION_HOUR', 'REFUND_CENTS_PER_SESSION_HOUR'],
+  ['Destructive steps per session hour', '30', 'DESTRUCTIVE_STEPS_PER_SESSION_HOUR'],
+  ['Steps in one plan', '20', 'MAX_STEPS_PER_PLAN'],
+  ['Email steps in one plan', '20', 'MAX_EMAILS_PER_PLAN'],
+  ['Payment link', '$0.50 to $1,000.00', 'PAYMENT_LINK_MIN_CENTS', 'PAYMENT_LINK_MAX_CENTS'],
+  ['Restock quantity', '1 to 500', 'RESTOCK_QTY_MIN', 'RESTOCK_QTY_MAX'],
+];
+
+const controls = [
+  { name: 'CSRF', what: 'Every write needs this custom header and a JSON body; a foreign Origin gets 403.', code: ['X-ShopPilot: 1', '_csrf_error()', 'app/safety/web.py'] },
+  { name: 'CSP', what: 'Scripts, styles and requests come from this origin only. No inline code, no framing.', code: ["default-src 'self'", 'CSP', 'app/main.py'] },
+  { name: 'Rate limits', what: 'Plans: 60 a minute per IP, 10 a minute and 20 an hour per session. Other API calls: 120 a minute.', code: ['plan_limits()', 'app/main.py'] },
+  { name: 'Spend cap', what: 'Each LLM call is priced at its worst case first: $0.50 per session a day, $5.00 a day overall.', code: ['ensure_budget()', 'app/llm/budget.py'] },
+];
 ---
-<Base title="ShopPilot+ · How it works" description="Placeholder page for the mockup round.">
-  <main class="idx">
-    <h1>How it works</h1>
-    <p>Planned page. It gets built in the approach you pick.</p>
-    <p class="links"><a href="/">Back to all approaches</a></p>
+<Site
+  title="How it works | ShopPilot+"
+  description="How ShopPilot+ turns one sentence into safe, approved, audited shop actions: architecture, pipeline, prompts, safety rails and ML."
+  surface="morning"
+  headerSurface="night"
+  current="/how-it-works/"
+>
+  <main id="main" class="how">
+    <section class="night how-hero" aria-labelledby="how-h1">
+      <div class="wrap">
+        <h1 id="how-h1">How ShopPilot+ turns one sentence into safe actions</h1>
+        <p class="how-hero-sub">A model proposes, plain code checks, you approve, and every action is logged with undo.</p>
+        <Pipeline />
+      </div>
+    </section>
+
+    <section class="how-sec" aria-labelledby="arch-h">
+      <div class="wrap">
+        <h2 id="arch-h" class="how-h2">Architecture</h2>
+        <p class="how-lede">Claude appears only in the guard, router, planner and judge. Everything that touches money or data is plain, tested code.</p>
+        <Architecture />
+      </div>
+    </section>
+
+    <section class="how-sec how-sec--alt" aria-labelledby="layers-h">
+      <div class="wrap">
+        <h2 id="layers-h" class="how-h2">Four layers</h2>
+        <p class="how-lede">On one FastAPI app with one SQLite file per visitor (<code>app/main.py</code>, <code>app/db.py</code>).</p>
+        <ol class="layers">
+          {layers.map((l) => (
+            <li class="layer">
+              <span class="layer-n" aria-hidden="true">{l.n}</span>
+              <div class="layer-body">
+                <h3><span class="sr-only">Layer {l.n}: </span>{l.name}</h3>
+                <p>{l.does}</p>
+              </div>
+              <p class="layer-code">{l.code.map((c) => <code>{c}</code>)}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <section class="how-sec" aria-labelledby="walk-h">
+      <div class="wrap">
+        <h2 id="walk-h" class="how-h2">One request, step by step</h2>
+        <p class="how-lede">The Sunday cleanup, as the code runs it. Fragments are illustrations from the demo store.</p>
+        <Walkthrough />
+      </div>
+    </section>
+
+    <section class="how-sec how-sec--alt" aria-labelledby="pe-h">
+      <div class="wrap">
+        <h2 id="pe-h" class="how-h2">Prompt engineering</h2>
+        <p class="how-lede">14 techniques, each mapped to the file that holds it.</p>
+        <Techniques />
+      </div>
+    </section>
+
+    <section class="how-sec" aria-labelledby="safe-h">
+      <div class="wrap">
+        <h2 id="safe-h" class="how-h2">Safety rails</h2>
+        <p class="how-lede">Guards can miss. These caps run in code at validate time and again at execute time, whatever the model says.</p>
+
+        <div class="safe-grid">
+          <div class="caps">
+            <h3>Policy caps</h3>
+            <table class="caps-table">
+              <caption class="sr-only">Hard policy caps from app/safety/policy.py</caption>
+              <thead><tr><th scope="col">Rule</th><th scope="col">Limit</th><th scope="col">Constant</th></tr></thead>
+              <tbody>
+                {caps.map(([rule, limit, ...ks]) => (
+                  <tr><th scope="row">{rule}</th><td class="num">{limit}</td><td>{ks.map((k) => <code>{k.split('_').map((p, i, a) => <>{p}{i < a.length - 1 && <>_<wbr /></>}</>)}</code>)}</td></tr>
+                ))}
+              </tbody>
+            </table>
+            <p class="caps-note">So "refund every order" fails at the 3-refund cap even if every guard missed it. Source: <code>app/safety/policy.py</code></p>
+          </div>
+
+          <div class="safe-side">
+            <article class="safe-card safe-card--bad">
+              <h3>Refunds are irreversible</h3>
+              <p><code>refund_order</code> registers with <code>undoable=False</code>. Undo answers 409 and suggests a payment link instead.</p>
+              <p class="safe-row"><span class="pill pill--irreversible">Irreversible</span><code>app/tools/refund_order.py</code></p>
+            </article>
+            <article class="safe-card">
+              <h3>Audit and undo</h3>
+              <p>SQLite triggers refuse any edit or delete on the log. A unique index allows one undo per action; a stale record answers <code>changed_since</code>.</p>
+              <p class="safe-row"><span class="pill pill--undone"><Icon name="undo" />Undo once</span><code>app/agent/audit.py</code> <code>app/db.py</code></p>
+            </article>
+          </div>
+        </div>
+
+        <h3 class="how-h3">Injection guard</h3>
+        <p class="how-lede">The planted email E002 is caught by regex alone. Its text never reaches the planner.</p>
+        <GuardFlow />
+        <p class="how-note">A guard error or timeout holds the email for manual review. Test set: 20 cases in <code>tests/safety/guard_cases.json</code>.</p>
+
+        <h3 class="how-h3">Web and spend controls</h3>
+        <ul class="controls">
+          {controls.map((c) => (
+            <li class="ctl">
+              <p class="ctl-n"><Icon name="shield" />{c.name}</p>
+              <p>{c.what}</p>
+              <p class="ctl-code">{c.code.map((k) => <code>{k}</code>)}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <section class="how-sec how-sec--alt" aria-labelledby="ml-h">
+      <div class="wrap">
+        <h2 id="ml-h" class="how-h2">Classical ML, no GPU</h2>
+        <p class="how-lede">Standard library Python, called by the planner as read tools.</p>
+        <div class="ml-grid">
+          <div class="ml-methods">
+            <article class="ml-card">
+              <h3>Demand forecast</h3>
+              <p>Croston-SBA for intermittent sellers, SES with a day-of-week index for the rest; an 80% band from residuals.</p>
+              <p class="ml-code"><code>forecast_demand()</code> <code>app/ml/forecast.py</code></p>
+            </article>
+            <article class="ml-card">
+              <h3>Order anomalies</h3>
+              <p>Modified z-score (Iglewicz-Hoaglin) flagged at 3.5, plus price, velocity and new-customer rules.</p>
+              <p class="ml-code"><code>flag_anomalies()</code> <code>app/ml/anomaly.py</code></p>
+            </article>
+            <figure class="frag">
+              <figcaption><span class="how-tag">Demo store</span> Flagged order</figcaption>
+              <p class="frag-flag"><code class="id">O2693</code><span>25 units in one order ($450.00); typical is 3.</span><span class="pill">Flagged</span></p>
+            </figure>
+            <p class="how-note">Prototype check: 8 of 8 planted anomalies found, 0 false positives in 2,700 orders (prototype, synthetic data).</p>
+          </div>
+          <BandChart />
+        </div>
+      </div>
+    </section>
+
+    <section class="how-sec how-close" aria-labelledby="close-h">
+      <div class="wrap">
+        <h2 id="close-h" class="how-h2">See it run</h2>
+        <p class="how-lede">Your own seeded demo store. Stripe stays in test or mock mode and email stays in the outbox.</p>
+        <p class="how-ctas">
+          <a class="btn btn-primary" href="/app/">Try the live demo</a>
+          <a class="btn btn-line" href="/report/">Read the report</a>
+        </p>
+      </div>
+    </section>
   </main>
-</Base>
+</Site>

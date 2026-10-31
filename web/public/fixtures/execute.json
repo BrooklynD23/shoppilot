@@ -1,0 +1,107 @@
+{
+ "s1": {
+  "plan_id": "plan_824939ecbb3c",
+  "results": [
+   {
+    "ok": true,
+    "summary": "Marked 3 order(s) shipped via USPS.",
+    "data": {
+     "orders": [
+      {
+       "id": "O2713",
+       "status": "shipped",
+       "carrier": "usps",
+       "tracking_number": "USPSB060395431BD",
+       "shipped_at": "2026-10-31T07:38:00.320351+00:00"
+      },
+      {
+       "id": "O2714",
+       "status": "shipped",
+       "carrier": "usps",
+       "tracking_number": "USPSC41EB57772F3",
+       "shipped_at": "2026-10-31T07:38:00.320351+00:00"
+      },
+      {
+       "id": "O2715",
+       "status": "shipped",
+       "carrier": "usps",
+       "tracking_number": "USPSE6F33B54742A",
+       "shipped_at": "2026-10-31T07:38:00.320351+00:00"
+      }
+     ]
+    },
+    "error": null,
+    "step_id": "s1",
+    "audit_id": "aud_f4fe7b6bccf2",
+    "replayed": false
+   }
+  ]
+ },
+ "s2": {
+  "plan_id": "plan_824939ecbb3c",
+  "results": [
+   {
+    "ok": true,
+    "summary": "Queued 3 tracking email(s) in the fake outbox.",
+    "data": {
+     "outbox_ids": [
+      "e54153bdf6a2400bb88203b49157f9b8",
+      "bc6912fbcdff40b9b3d18742fd0a66c6",
+      "ebd302c1114d431985178f2e2af4c62b"
+     ],
+     "order_ids": [
+      "O2713",
+      "O2714",
+      "O2715"
+     ]
+    },
+    "error": null,
+    "step_id": "s2",
+    "audit_id": "aud_ec36771366be",
+    "replayed": false
+   }
+  ]
+ },
+ "s3": {
+  "plan_id": "plan_824939ecbb3c",
+  "results": [
+   {
+    "ok": true,
+    "summary": "Created PO po_b33b466e5617: 134 x Black Speckle Mug ($1,719.22), arrives 2026-11-05.",
+    "data": {
+     "po_id": "po_b33b466e5617",
+     "product_id": "P01",
+     "qty": 134,
+     "unit_cost_cents": 1283,
+     "amount_cents": 171922
+    },
+    "error": null,
+    "step_id": "s3",
+    "audit_id": "aud_3da2d8555181",
+    "replayed": false
+   }
+  ]
+ },
+ "s4": {
+  "plan_id": "plan_824939ecbb3c",
+  "results": [
+   {
+    "ok": true,
+    "summary": "[MOCK] Refunded $26.00 on order O2679 (Stripe MOCK re_mock_1530201c791c7f)",
+    "data": {
+     "stripe_refund_id": "re_mock_1530201c791c7f",
+     "payment_intent_id": "pi_mock_c7237213e2456c",
+     "amount_cents": 2600,
+     "mode": "mock",
+     "undoable": false,
+     "irreversible_reason": "card refunds cannot be reversed via API",
+     "duplicate": false
+    },
+    "error": null,
+    "step_id": "s4",
+    "audit_id": "aud_053dd0add549",
+    "replayed": false
+   }
+  ]
+ }
+}

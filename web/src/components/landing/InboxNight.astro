@@ -1,0 +1,23 @@
+---
+// Problem section: the demo-store inbox piling up on a Sunday night (real UI fragment, static).
+import { problem } from '../../data/landing';
+import { store } from '../../data/demo';
+---
+<article class="inbox" data-ui aria-label="Inbox, demo store">
+  <header class="inbox-head">
+    <p class="inbox-title">Inbox <span class="inbox-count num">{problem.inbox.length} unread</span></p>
+    <span class="tag">{store.name}, demo store</span>
+  </header>
+  <ol class="inbox-list">
+    {[...problem.inbox].reverse().map((m) => (
+      <li class="inbox-row">
+        <span class="inbox-dot" aria-hidden="true"></span>
+        <div class="inbox-main">
+          <p class="inbox-subj">{m.subject}</p>
+          <p class="inbox-from addr">{m.from}</p>
+        </div>
+        <time class="inbox-ts num">{m.ts}</time>
+      </li>
+    ))}
+  </ol>
+</article>

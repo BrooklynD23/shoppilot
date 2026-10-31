@@ -1,0 +1,52 @@
+---
+import Base from '../../layouts/Base.astro';
+import '../../styles/index.css';
+const v2 = [
+  { n: 1, name: 'Approval-first, Stripe-clean', line: 'The real plan card ticks through 5 steps and stops on "$24.00 awaiting approval".' },
+  { n: 2, name: 'The demo is the landing', line: 'Pick a prompt chip in the hero and watch a recorded plan build, then approve it.' },
+  { n: 3, name: 'Sunday night, scroll story', line: 'One owner, one evening: inbox fills, plan, blocked email, approve, done.' },
+  { n: 4, name: 'Cinematic hero + product film', line: 'A calm Veo mood loop behind the headline (poster placeholder for now), then a real product film slot.' },
+  { n: 5, name: 'Trust ledger, safety-first', line: 'Every dollar previewed, every action receipted; a "try to trick it" box.' },
+  { n: 6, name: 'Recommended blend', line: "Approach 1's skin, 2's live hero, 5's safety copy, 4's product film slot." },
+];
+const v3 = [
+  { k: 'a', name: 'Dark premium', line: 'Near-black, one luminous accent, glow behind a layered product hero.' },
+  { k: 'b', name: 'Vibrant light', line: 'Animated gradient-mesh hero, colourful accents, light cards with soft depth.' },
+  { k: 'c', name: 'Bento product-led', line: 'Neutral canvas; the page is mostly real product tiles in a bento grid.' },
+];
+const old = [
+  { key: 'a', name: 'Carton' }, { key: 'b', name: 'Label' }, { key: 'c', name: 'Build Book' },
+];
+---
+<Base title="ShopPilot+ approaches" description="Six landing approaches for ShopPilot+, plus the rejected first round.">
+  <main class="idx">
+    <h1>ShopPilot+ landing approaches</h1>
+    <h2 class="round">Round 3: one page, three skins</h2>
+    <ol>
+      {v3.map((d) => (
+        <li>
+          <h2>{d.k.toUpperCase()}. {d.name}</h2>
+          <p>{d.line}</p>
+          <p class="links"><a href={`/v3/${d.k}/`}>Landing</a> <a href={`/v3/${d.k}/app/`}>Console</a></p>
+        </li>
+      ))}
+    </ol>
+    <h2 class="round">Round 2: six approaches</h2>
+    <ol>
+      {v2.map((d) => (
+        <li>
+          <h2>{d.n}. {d.name}</h2>
+          <p>{d.line}</p>
+          <p class="links"><a href={`/v2/${d.n}/`}>Landing</a> <a href={`/v2/${d.n}/app/`}>Console</a></p>
+        </li>
+      ))}
+    </ol>
+    <h2 class="old">Rejected round 1</h2>
+    <ul class="oldlist">
+      {old.map((d) => (
+        <li><span>{d.key.toUpperCase()}. {d.name}</span> <a href={`/mockups/${d.key}/`}>Landing</a> <a href={`/mockups/${d.key}/console/`}>Console</a></li>
+      ))}
+    </ul>
+    <p class="note">Comparison and ranking: <code>shoppilot/web/DIRECTIONS-v3.md</code> (round 3), <code>DIRECTIONS-v2.md</code> (round 2).</p>
+  </main>
+</Base>

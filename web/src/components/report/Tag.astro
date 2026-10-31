@@ -1,0 +1,11 @@
+---
+// Provenance tag for a number. "pending" renders the hatched "pending W3" chip.
+import type { Kind } from '../../data/report';
+interface Props { kind: Kind; text?: string }
+const { kind, text } = Astro.props;
+const words: Record<Kind, string> = {
+  measured: 'Measured', replay: 'Replay', prototype: 'Prototype, synthetic data', estimate: 'Estimate',
+  config: 'Configured', planned: 'Planned setting', pending: 'pending W3',
+};
+---
+<span class:list={['rp-tag', `rp-tag--${kind}`]}>{text ?? words[kind]}</span>

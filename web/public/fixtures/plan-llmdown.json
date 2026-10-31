@@ -1,0 +1,90 @@
+{
+ "plan_id": "plan_ccd32f974423",
+ "source": "live",
+ "plan": {
+  "request": "Ship yesterday's orders, email buyers tracking, restock what will run out this week, refund anything damaged.",
+  "steps": [],
+  "blocked_inputs": [
+   {
+    "source_id": "email:E002",
+    "allowed": false,
+    "label": "injection",
+    "reason": "Blocked: tries to override the agent's rules; tries to skip human confirmation; fakes system or prompt markup; asks for a bulk refund or bulk change; addresses the AI directly",
+    "score": 1.0
+   }
+  ],
+  "id": "plan_ccd32f974423",
+  "status": "error",
+  "message": "The AI service is overloaded. Try again in a minute.",
+  "usage": {
+   "calls": [],
+   "total_cost_usd": 0,
+   "cache_hit_pct": 0.0,
+   "prompt_version": "6b7a03a2"
+  },
+  "judge": null,
+  "prompt_version": "6b7a03a2",
+  "source": "live"
+ },
+ "validations": [],
+ "diff": [],
+ "tools": {
+  "create_payment_link": {
+   "destructive": true,
+   "moves_money": true,
+   "undoable": true
+  },
+  "create_restock_po": {
+   "destructive": true,
+   "moves_money": false,
+   "undoable": true
+  },
+  "export_report": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": false
+  },
+  "flag_anomalies": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": false
+  },
+  "forecast_demand": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": false
+  },
+  "list_inbox": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": false
+  },
+  "list_orders": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": false
+  },
+  "mark_shipped": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": true
+  },
+  "refund_order": {
+   "destructive": true,
+   "moves_money": true,
+   "undoable": false
+  },
+  "send_email": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": true
+  }
+ },
+ "clarify": null,
+ "usage": {
+  "calls": [],
+  "total_cost_usd": 0,
+  "cache_hit_pct": 0.0,
+  "prompt_version": "6b7a03a2"
+ }
+}

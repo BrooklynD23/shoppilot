@@ -1,0 +1,7 @@
+{
+ "error": {
+  "code": "demo_budget_reached",
+  "message": "Daily demo budget reached. Try again tomorrow.",
+  "retry_after_s": 5400
+ }
+}

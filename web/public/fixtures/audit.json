@@ -1,0 +1,29 @@
+{
+ "chain_ok": true,
+ "actions": [
+  {
+   "id": "aud_7b87e1155597",
+   "ts": "2026-10-31T07:37:59Z",
+   "kind": "guard_block",
+   "plan_id": null,
+   "step_id": null,
+   "tool": null,
+   "summary": "guard_block",
+   "can_undo": false,
+   "undone": false,
+   "undone_at": null
+  },
+  {
+   "id": "aud_38ff98f94adb",
+   "ts": "2026-10-31T07:37:59Z",
+   "kind": "session",
+   "plan_id": null,
+   "step_id": null,
+   "tool": null,
+   "summary": "Store created",
+   "can_undo": false,
+   "undone": false,
+   "undone_at": null
+  }
+ ]
+}

@@ -3,8 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "astro dev --host 127.0.0.1 --port 4321",
+    "dev": "CHOKIDAR_USEPOLLING=1 astro dev --host 127.0.0.1 --port 4321 --ignore-lock",
     "build": "astro build",
+    "build:app": "astro build --outDir ../app/static",
     "preview": "astro preview --host 127.0.0.1 --port 4321"
   },
   "dependencies": {

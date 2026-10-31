@@ -1,0 +1,137 @@
+{
+ "chain_ok": true,
+ "actions": [
+  {
+   "id": "aud_053dd0add549",
+   "ts": "2026-10-31T07:38:00Z",
+   "kind": "execute",
+   "plan_id": "plan_824939ecbb3c",
+   "step_id": "s4",
+   "tool": "refund_order",
+   "summary": "[MOCK] Refunded $26.00 on order O2679 (Stripe MOCK re_mock_1530201c791c7f)",
+   "can_undo": false,
+   "undone": false,
+   "undone_at": null
+  },
+  {
+   "id": "aud_a9136fa552ad",
+   "ts": "2026-10-31T07:38:00Z",
+   "kind": "confirm",
+   "plan_id": "plan_824939ecbb3c",
+   "step_id": "s4",
+   "tool": "refund_order",
+   "summary": "Owner approved refund_order",
+   "can_undo": false,
+   "undone": false,
+   "undone_at": null
+  },
+  {
+   "id": "aud_3da2d8555181",
+   "ts": "2026-10-31T07:38:00Z",
+   "kind": "execute",
+   "plan_id": "plan_824939ecbb3c",
+   "step_id": "s3",
+   "tool": "create_restock_po",
+   "summary": "Created PO po_b33b466e5617: 134 x Black Speckle Mug ($1,719.22), arrives 2026-11-05.",
+   "can_undo": true,
+   "undone": false,
+   "undone_at": null
+  },
+  {
+   "id": "aud_9fb2813b0f51",
+   "ts": "2026-10-31T07:38:00Z",
+   "kind": "confirm",
+   "plan_id": "plan_824939ecbb3c",
+   "step_id": "s3",
+   "tool": "create_restock_po",
+   "summary": "Owner approved create_restock_po",
+   "can_undo": false,
+   "undone": false,
+   "undone_at": null
+  },
+  {
+   "id": "aud_ec36771366be",
+   "ts": "2026-10-31T07:38:00Z",
+   "kind": "execute",
+   "plan_id": "plan_824939ecbb3c",
+   "step_id": "s2",
+   "tool": "send_email",
+   "summary": "Queued 3 tracking email(s) in the fake outbox.",
+   "can_undo": true,
+   "undone": false,
+   "undone_at": null
+  },
+  {
+   "id": "aud_7735cc6974bd",
+   "ts": "2026-10-31T07:38:00Z",
+   "kind": "confirm",
+   "plan_id": "plan_824939ecbb3c",
+   "step_id": "s2",
+   "tool": "send_email",
+   "summary": "Owner approved send_email",
+   "can_undo": false,
+   "undone": false,
+   "undone_at": null
+  },
+  {
+   "id": "aud_f4fe7b6bccf2",
+   "ts": "2026-10-31T07:38:00Z",
+   "kind": "execute",
+   "plan_id": "plan_824939ecbb3c",
+   "step_id": "s1",
+   "tool": "mark_shipped",
+   "summary": "Marked 3 order(s) shipped via USPS.",
+   "can_undo": true,
+   "undone": false,
+   "undone_at": null
+  },
+  {
+   "id": "aud_e64192f8dfaf",
+   "ts": "2026-10-31T07:38:00Z",
+   "kind": "confirm",
+   "plan_id": "plan_824939ecbb3c",
+   "step_id": "s1",
+   "tool": "mark_shipped",
+   "summary": "Owner approved mark_shipped",
+   "can_undo": false,
+   "undone": false,
+   "undone_at": null
+  },
+  {
+   "id": "aud_636ee00023e6",
+   "ts": "2026-10-31T07:38:00Z",
+   "kind": "plan",
+   "plan_id": "plan_824939ecbb3c",
+   "step_id": null,
+   "tool": null,
+   "summary": "Plan: 4 steps (ready)",
+   "can_undo": false,
+   "undone": false,
+   "undone_at": null
+  },
+  {
+   "id": "aud_7b87e1155597",
+   "ts": "2026-10-31T07:37:59Z",
+   "kind": "guard_block",
+   "plan_id": null,
+   "step_id": null,
+   "tool": null,
+   "summary": "guard_block",
+   "can_undo": false,
+   "undone": false,
+   "undone_at": null
+  },
+  {
+   "id": "aud_38ff98f94adb",
+   "ts": "2026-10-31T07:37:59Z",
+   "kind": "session",
+   "plan_id": null,
+   "step_id": null,
+   "tool": null,
+   "summary": "Store created",
+   "can_undo": false,
+   "undone": false,
+   "undone_at": null
+  }
+ ]
+}

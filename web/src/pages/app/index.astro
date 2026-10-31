@@ -1,0 +1,157 @@
+---
+// /app/: the working ShopPilot+ console (Operate mode, morning surface).
+// Every record is rendered by src/scripts/console/* with textContent; no data in this HTML.
+import '../../styles/page-console.css';
+import Site from '../../layouts/Site.astro';
+import Icon from '../../components/console/Icon.astro';
+import Rail from '../../components/console/Rail.astro';
+import { chips } from '../../data/v2';
+
+const icons = ['tick', 'cross', 'clock', 'alert', 'undo', 'mail', 'shield', 'refresh', 'lock'] as const;
+---
+<Site
+  title="ShopPilot+ console, Fern & Kiln demo store"
+  description="Plan, check, approve and run shop work on a private demo store. Every dollar is shown before it moves."
+  surface="morning"
+  headerSurface="night"
+  current="/app/"
+  footerSurface="morning"
+  skipTo="ask"
+>
+  <main id="main" class="console-page" data-console>
+    <div class="cbar">
+      <div class="wrap cbar-in">
+        <p class="cbar-store">
+          <span id="store-name">Loading store</span>
+          <span class="tag">Demo store</span>
+        </p>
+        <p class="cbar-meta" id="store-stats"></p>
+        <p class="cbar-meta cbar-tag" id="stripe-tag">Stripe mode loading</p>
+        <p class="cbar-meta" id="cost-meter">No AI cost yet this session</p>
+        <button class="btn btn-line btn-sm cbar-reset" type="button" id="reset-btn">Reset demo store</button>
+      </div>
+    </div>
+
+    <div class="wrap banners">
+      <p class="banner banner--fixture" id="fixture-banner" hidden><Icon name="alert" /><span id="fixture-text">Offline fixtures. Nothing here touches a server.</span></p>
+      <p class="banner" id="mode-banner" hidden><Icon name="alert" /><span id="mode-text"></span></p>
+      <p class="boot-line" id="notice-line" role="status" aria-live="polite"></p>
+      <div class="gerror" id="error" role="alert" hidden>
+        <p id="error-text"></p>
+        <button class="btn btn-ink btn-sm" type="button" id="error-retry" hidden>Try again</button>
+      </div>
+    </div>
+
+    <div class="wrap intro">
+      <div class="intro-copy">
+        <h1>Run the Sunday-night shop cleanup in one sentence.</h1>
+        <p class="sub">ShopPilot+ plans the work, shows every change and dollar, and waits for your OK before money moves.</p>
+      </div>
+      <details class="quickstart" id="quickstart" open>
+        <summary>Graders: try it in 60 seconds</summary>
+        <ol>
+          <li>Click <strong>Sunday cleanup</strong>, then <strong>Plan it</strong> or <strong>Use recorded plan</strong>.</li>
+          <li>Read the plan. A tick means the validator passed it. The refund waits for your checkbox.</li>
+          <li>Open <strong>Inbox</strong>: one email tried to hijack the agent. It is blocked.</li>
+          <li>Press <strong>Run approved steps</strong>, then undo anything in <strong>Audit</strong>.</li>
+          <li>Try to break it: ask "refund every order", or something vague like "refund it".</li>
+        </ol>
+        <p>Your store is private to this browser. Emails stay in the Outbox. <strong>Reset demo store</strong> starts over.</p>
+      </details>
+    </div>
+
+    <div class="wrap console">
+      <div class="task">
+        <form class="panel ask" id="ask" novalidate>
+          <label class="field-label" for="request-input">Ask ShopPilot+</label>
+          <textarea id="request-input" name="request" rows="3" maxlength="500" required placeholder="e.g. Ship yesterday's orders and email buyers tracking" aria-describedby="ask-hint"></textarea>
+          <div class="ask-row">
+            <button class="btn btn-primary" type="submit" id="plan-btn">Plan it</button>
+            <button class="btn btn-line" type="button" id="replay-btn">Use recorded plan</button>
+            <p class="ask-hint" id="ask-hint">Ctrl+Enter plans. Nothing runs until you press Run.</p>
+          </div>
+          <p class="chips-label" id="chips-label">Try an example</p>
+          <ul class="chips" aria-labelledby="chips-label">
+            {chips.map((c) => <li><button type="button" class="chip" data-prompt={c.prompt}>{c.label}</button></li>)}
+          </ul>
+        </form>
+
+        <section class="panel plan" id="plan" data-state="empty" aria-labelledby="plan-heading">
+          <div class="plan-head">
+            <h2 id="plan-heading" tabindex="-1">Plan</h2>
+            <p class="plan-meta" id="plan-meta"></p>
+          </div>
+          <p class="sr-only" id="plan-status" aria-live="polite"></p>
+          <p class="banner banner--replay" id="replay-banner" hidden><Icon name="refresh" /><span>Recorded plan (replay). Claude was not called for this one. Steps still run for real on your demo store.</span></p>
+
+          <div class="plan-empty">
+            <p>Type a request or pick one above. ShopPilot+ will show a plan first. Nothing runs until you press Run.</p>
+            <ol class="legend" aria-label="How it works">
+              <li>Plan</li><li>Check</li><li>Approve</li><li>Run</li>
+            </ol>
+          </div>
+
+          <div class="plan-loading">
+            <div class="loading-row">
+              <p class="timer"><Icon name="clock" class="spin" /><span id="plan-timer">Planning… 0 s</span></p>
+              <button class="btn btn-line btn-sm" type="button" id="cancel-btn">Cancel</button>
+            </div>
+            <p class="slow-line" id="slow-line" hidden>Claude is slow right now. <button class="btn btn-ink btn-sm" type="button" id="slow-replay">Use recorded plan</button></p>
+            <div class="sk sk--steps" aria-hidden="true"><i></i><i></i><i></i></div>
+          </div>
+
+          <div class="plan-error">
+            <p class="plan-error-msg" id="plan-error-msg"></p>
+            <div class="plan-error-actions">
+              <button class="btn btn-ink btn-sm" type="button" id="err-retry">Try again</button>
+              <button class="btn btn-line btn-sm" type="button" id="err-replay">Use recorded plan</button>
+              <a class="btn btn-line btn-sm" id="err-fixtures" href="/app/?fixtures=happy">Open offline fixtures</a>
+            </div>
+          </div>
+
+          <form class="plan-clarify" id="clarify">
+            <p class="clarify-q" id="clarify-q"></p>
+            <div class="clarify-options" id="clarify-options"></div>
+            <label class="field-label" for="clarify-input">Or type an answer</label>
+            <div class="clarify-row">
+              <input id="clarify-input" type="text" maxlength="200" autocomplete="off" />
+              <button class="btn btn-ink" type="submit">Send answer</button>
+            </div>
+          </form>
+
+          <div class="plan-ready">
+            <p class="notice" id="plan-blocked" hidden>
+              <Icon name="shield" />
+              <span id="plan-blocked-text"></span>
+              <button class="linkbtn" type="button" id="see-it">See it</button>
+            </p>
+            <p class="plan-nothing" id="plan-nothing" hidden></p>
+            <ol class="steps" id="steps"></ol>
+          </div>
+
+          <div class="run-bar" id="run-bar" hidden>
+            <p class="out">
+              <span class="out-label">Money out if you run</span>
+              <span class="out-value num" id="money-out">$0.00</span>
+              <span class="out-note" id="money-note"></span>
+            </p>
+            <button class="btn btn-ink" type="button" id="run-btn">Run approved steps</button>
+          </div>
+        </section>
+
+        <section class="panel runlog" id="runlog" aria-labelledby="runlog-h" hidden>
+          <h2 id="runlog-h">Run log</h2>
+          <ol class="stream" id="stream" aria-live="polite"></ol>
+        </section>
+      </div>
+
+      <Rail />
+    </div>
+
+    <template id="tpl-icons">{icons.map((n) => <Icon name={n} />)}</template>
+  </main>
+</Site>
+
+<script>
+  import '../../scripts/console/console';
+</script>

@@ -1,0 +1,56 @@
+---
+// Hero pipeline strip: one row on wide screens, a 4 + 4 snake on phones. Static.
+import Head from './Head.astro';
+
+const nodes = [
+  { t: 'Request', s: 'you type it' },
+  { t: 'Guard', s: 'Haiku' },
+  { t: 'Planner', s: 'Sonnet' },
+  { t: 'Validator', s: 'plain code' },
+  { t: 'Dry-run', s: 'preview' },
+  { t: 'Approve', s: 'you tick it', money: true },
+  { t: 'Execute', s: 'plain code' },
+  { t: 'Audit', s: 'with undo' },
+];
+const desc = `Eight stages in order: ${nodes.map((n) => `${n.t} (${n.s})`).join(', ')}.`;
+
+// Wide: 8 across.
+const W = 112, G = 24;
+// Phone: 4 across, row 2 runs right to left.
+const PW = 77, PG = 15, PH = 58;
+const phone = nodes.map((n, i) => {
+  const row = i < 4 ? 0 : 1;
+  const col = row === 0 ? i : 7 - i;
+  return { ...n, x: col * (PW + PG), y: row === 0 ? 4 : 104 };
+});
+---
+<figure class="how-pipe">
+  <svg class="d d-wide" viewBox="0 0 1064 72" role="img" aria-labelledby="pipe-w-t pipe-w-d">
+    <title id="pipe-w-t">The ShopPilot+ pipeline</title>
+    <desc id="pipe-w-d">{desc}</desc>
+    <Head id="pipe-w-ah" />
+    {nodes.map((n, i) => (
+      <g>
+        <rect class:list={['d-b', n.money ? 'd-b--money' : 'd-b--pipe']} x={i * (W + G)} y="6" width={W} height="60" rx="10" />
+        <text class="d-t" x={i * (W + G) + W / 2} y="32" text-anchor="middle">{n.t}</text>
+        <text class="d-s" x={i * (W + G) + W / 2} y="51" text-anchor="middle">{n.s}</text>
+        {i < 7 && <path class="d-a" d={`M${i * (W + G) + W + 3},36 H${(i + 1) * (W + G) - 3}`} marker-end="url(#pipe-w-ah)" />}
+      </g>
+    ))}
+  </svg>
+  <svg class="d d-phone" viewBox="0 0 356 168" role="img" aria-labelledby="pipe-p-t pipe-p-d">
+    <title id="pipe-p-t">The ShopPilot+ pipeline</title>
+    <desc id="pipe-p-d">{desc}</desc>
+    <Head id="pipe-p-ah" />
+    {phone.map((n, i) => (
+      <g>
+        <rect class:list={['d-b', n.money ? 'd-b--money' : 'd-b--pipe']} x={n.x} y={n.y} width={PW} height={PH} rx="9" />
+        <text class="d-t d-t--sm" x={n.x + PW / 2} y={n.y + 26} text-anchor="middle">{n.t}</text>
+        <text class="d-s d-s--sm" x={n.x + PW / 2} y={n.y + 44} text-anchor="middle">{n.s}</text>
+      </g>
+    ))}
+    {[0, 1, 2].map((c) => <path class="d-a" d={`M${c * (PW + PG) + PW + 2},${4 + PH / 2} H${(c + 1) * (PW + PG) - 2}`} marker-end="url(#pipe-p-ah)" />)}
+    <path class="d-a" d={`M${3 * (PW + PG) + PW / 2},${4 + PH + 2} V${104 - 2}`} marker-end="url(#pipe-p-ah)" />
+    {[3, 2, 1].map((c) => <path class="d-a" d={`M${c * (PW + PG) - 2},${104 + PH / 2} H${(c - 1) * (PW + PG) + PW + 2}`} marker-end="url(#pipe-p-ah)" />)}
+  </svg>
+</figure>

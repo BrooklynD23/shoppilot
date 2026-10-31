@@ -1,0 +1,14 @@
+{
+ "plan_id": "plan_824939ecbb3c",
+ "results": [
+  {
+   "ok": false,
+   "summary": "Not run: tracking email before order is shipped",
+   "data": {},
+   "error": "invalid",
+   "step_id": "s2",
+   "audit_id": "aud_ec36771366be",
+   "replayed": false
+  }
+ ]
+}

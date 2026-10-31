@@ -1,0 +1,109 @@
+/* /report/ only. Reads the site tokens (.night / .morning); defines no new palette. */
+
+/* Hero band (night) */
+.rp-hero { padding-block: clamp(48px, 8vw, 96px) clamp(40px, 6vw, 72px); border-bottom: 1px solid var(--line); }
+.rp-hero h1 { font-size: clamp(2.125rem, 5.2vw, 3.75rem); max-width: 20ch; }
+.rp-lede { margin-top: 16px; max-width: 58ch; color: var(--ink-2); font-size: clamp(1rem, 1.6vw, 1.125rem); }
+.rp-stats { margin-top: clamp(32px, 5vw, 48px); display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.rp-stats li { display: grid; align-content: start; justify-items: start; gap: 8px; padding: 18px 18px 16px; border-radius: var(--r-card); background: var(--s1); box-shadow: var(--shadow); }
+.rp-stat-v { font-size: clamp(1.75rem, 3vw, 2.25rem); font-weight: 600; letter-spacing: -0.03em; line-height: 1.05; }
+.rp-stat-v--pending { font-family: var(--mono); font-size: 1.25rem; font-weight: 500; letter-spacing: 0; color: var(--ink); padding: 6px 10px; border-radius: 6px; outline: 1px dashed var(--line-ctl); outline-offset: -1px; background: repeating-linear-gradient(-45deg, var(--muted-bg) 0 6px, transparent 6px 12px); }
+.rp-stat-l { color: var(--ink-2); font-size: .9375rem; line-height: 1.4; }
+.rp-key { margin-top: 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--ink-3); font-size: .875rem; line-height: 2; }
+.rp-key > span:first-child { color: var(--ink-2); }
+
+/* Provenance tags. "pending W3" is hatched, dashed and monospaced, so it never reads as a result. */
+.rp-tag { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: var(--r-pill); font-size: .75rem; font-weight: 560; line-height: 1.45; white-space: nowrap; color: var(--ink-2); background: var(--muted-bg); box-shadow: inset 0 0 0 1px var(--line); }
+.rp-tag--measured { color: var(--ok); background: var(--ok-bg); box-shadow: none; }
+.rp-tag--replay { color: var(--run); background: var(--run-bg); box-shadow: none; }
+.rp-tag--prototype, .rp-tag--planned { color: var(--undone); background: var(--undone-bg); box-shadow: none; }
+.rp-tag--estimate, .rp-tag--config { color: var(--ink-2); }
+.rp-tag--pending {
+  font-family: var(--mono); font-weight: 500; border-radius: 4px; color: var(--ink);
+  background: repeating-linear-gradient(-45deg, var(--muted-bg) 0 5px, transparent 5px 10px);
+  box-shadow: none; outline: 1px dashed var(--line-ctl); outline-offset: -1px;
+}
+
+/* Body layout */
+.rp-body { display: grid; gap: clamp(48px, 7vw, 80px); padding-block: clamp(32px, 5vw, 56px) clamp(56px, 8vw, 96px); }
+.rp-toc ul { display: flex; flex-wrap: wrap; gap: 8px; }
+.rp-toc a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: var(--r-pill); color: var(--ink-2); text-decoration: none; font-size: .875rem; font-weight: 500; box-shadow: inset 0 0 0 1px var(--line-ctl); transition: color 150ms var(--ease), box-shadow 150ms var(--ease); }
+.rp-toc a:active { transform: scale(.97); }
+@media (hover: hover) and (pointer: fine) { .rp-toc a:hover { color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink-2); } }
+
+.rp-sec { display: grid; gap: 20px; min-width: 0; scroll-margin-top: 80px; }
+.rp-sec > h2 { font-size: clamp(1.5rem, 3vw, 2rem); }
+.rp-sec > p { max-width: 70ch; color: var(--ink-2); }
+.rp-sec > p .rp-tag { vertical-align: 1px; }
+.rp-result { color: var(--ink) !important; }
+.rp-note { font-size: .875rem; }
+.rp-caveat { padding: 14px 16px; border-radius: var(--r-ctl); background: var(--s2); color: var(--ink) !important; border-left: 3px solid var(--ink-3); }
+
+/* Video slot: a link out, never an embed (CSP forbids frames). */
+.rp-video { position: relative; display: block; aspect-ratio: 16 / 9; max-width: 960px; border-radius: var(--r-card); overflow: hidden; background: var(--n-bg); color: var(--n-ink); text-decoration: none; box-shadow: var(--shadow); }
+.rp-video img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.rp-video::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20, 16, 12, .25) 0%, rgba(20, 16, 12, .55) 55%, rgba(20, 16, 12, .88) 100%); }
+.rp-play { position: absolute; z-index: 1; left: 50%; top: 46%; width: clamp(56px, 9vw, 84px); translate: -50% -50%; }
+.rp-play svg { display: block; width: 100%; height: auto; }
+.rp-play circle { fill: rgba(20, 16, 12, .55); stroke: var(--n-ink); stroke-width: 2; }
+.rp-play path { fill: var(--n-ink); }
+.rp-video-cap { position: absolute; z-index: 1; left: 0; right: 0; bottom: 0; padding: 16px 20px; font-weight: 600; font-size: clamp(.9375rem, 1.8vw, 1.125rem); }
+.rp-video.is-pending { cursor: not-allowed; }
+.rp-video.is-pending .rp-play { opacity: .6; }
+.rp-video.is-pending .rp-video-cap { font-family: var(--mono); font-weight: 500; }
+a.rp-video { transition: transform 150ms var(--ease); }
+a.rp-video:active { transform: scale(.97); }
+@media (hover: hover) and (pointer: fine) { a.rp-video:hover .rp-play circle { fill: rgba(245, 181, 68, .35); } }
+
+/* Charts */
+.rp-fig { display: grid; gap: 10px; max-width: 760px; padding: 18px 18px 14px; border-radius: var(--r-card); background: var(--s1); box-shadow: var(--shadow); }
+.rp-fig figcaption { color: var(--ink-2); font-size: .875rem; }
+.rp-bars { display: block; overflow: visible; font-family: var(--font); }
+.rp-bar-label { fill: var(--ink-2); font-size: 14px; }
+.rp-bar-val { fill: var(--ink); font-size: 14px; font-weight: 600; }
+.rp-bar-val--pending { font-family: var(--mono); font-weight: 500; }
+.rp-bar-track { fill: var(--muted-bg); }
+.rp-bar-fill { fill: var(--ink-3); }
+.rp-bar-fill--strong { fill: var(--ink); }
+.rp-hatch-bg { fill: transparent; }
+.rp-hatch-ln { stroke: var(--line); }
+.rp-bar-marker { stroke: var(--ink); stroke-dasharray: 3 3; }
+.rp-bar-mlabel { fill: var(--ink-2); font-size: 12px; }
+
+/* Tables: each scrolls inside its own wrapper on narrow screens. */
+.rp-table { display: grid; gap: 8px; min-width: 0; }
+.rp-scroll { overflow-x: auto; border-radius: var(--r-card); background: var(--s1); box-shadow: var(--shadow); overscroll-behavior-x: contain; }
+.rp-scroll:focus-visible { outline-offset: 3px; }
+.rp-scroll table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: .9375rem; }
+.rp-scroll caption { caption-side: top; text-align: left; padding: 16px 16px 10px; font-weight: 600; color: var(--ink); }
+.rp-scroll th, .rp-scroll td { padding: 10px 16px; text-align: left; vertical-align: top; border-top: 1px solid var(--line); }
+.rp-scroll thead th { font-size: .8125rem; font-weight: 600; color: var(--ink-3); background: var(--s2); white-space: nowrap; }
+.rp-scroll tbody th { font-weight: 520; }
+.rp-scroll td .pill, .rp-scroll td .rp-tag { vertical-align: 1px; }
+.rp-source { font-size: .8125rem; color: var(--ink-3); overflow-wrap: anywhere; }
+.rp-source code { color: var(--ink-2); }
+.rp-inj { display: block; margin-top: 4px; font-size: .75rem; font-weight: 500; color: var(--bad); }
+.rp-na { color: var(--ink-3); font-size: .875rem; }
+.rp-where { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.rp-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); font-weight: 520; overflow-wrap: anywhere; }
+@media (pointer: fine) { .rp-link { min-height: 28px; } }
+
+/* Test suite and limits */
+.rp-dl { display: grid; gap: 1px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); border-radius: var(--r-card); overflow: hidden; background: var(--line); box-shadow: var(--shadow); }
+.rp-dl > div { display: grid; gap: 4px; padding: 16px; background: var(--s1); min-width: 0; }
+.rp-dl dt { font-size: .8125rem; color: var(--ink-3); font-weight: 560; }
+.rp-dl dd { font-weight: 560; overflow-wrap: anywhere; }
+.rp-dl > div:first-child dd { font-size: 2rem; letter-spacing: -0.03em; line-height: 1.1; }
+.rp-limits { display: grid; gap: 0; max-width: 820px; }
+.rp-limits li { display: grid; gap: 2px; padding: 12px 0 12px 20px; border-top: 1px solid var(--line); position: relative; }
+.rp-limits li::before { content: ""; position: absolute; left: 2px; top: 22px; width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); }
+.rp-limits code { font-size: .75rem; color: var(--ink-3); overflow-wrap: anywhere; }
+
+@media (max-width: 560px) {
+  .rp-stats { grid-template-columns: 1fr 1fr; }
+  .rp-stats li { padding: 14px; }
+  .rp-stats li:last-child { grid-column: 1 / -1; }
+  .rp-stat-v--pending { font-size: 1.0625rem; }
+  .rp-fig { padding: 14px; }
+}
+.rp-stats .rp-tag { white-space: normal; max-width: 100%; }

@@ -1,0 +1,85 @@
+---
+import '@fontsource-variable/archivo/wdth.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '../../../../styles/b.css';
+import Base from '../../../../layouts/Base.astro';
+import Barcode from '../../../../components/b/Barcode.astro';
+import VoidLabel from '../../../../components/b/VoidLabel.astro';
+import { copy, plan } from '../../../../data/demo';
+
+const [trustHead, ...trustRest] = copy.trust.split('. ');
+const loopNotes: Record<string, string> = {
+  Plan: 'One sentence becomes a typed list of tool calls.',
+  Check: 'A validator ticks every step before you see it.',
+  Approve: 'Steps that move money wait for your checkbox.',
+  Run: 'Only the steps you approved run, one at a time.',
+  Undo: 'Every run is logged, and undoable steps reverse in one click.',
+};
+---
+<Base title="ShopPilot+ · Label" description={copy.sub} themeLight="#efe6cf" themeDark="#17150f">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site">
+    <a class="wordmark" href="/mockups/b/" aria-current="page">ShopPilot+</a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="/mockups/b/console/">Agent console</a></li>
+        <li><a href="/">How it works</a></li>
+        <li><a href="/">Report</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-h1">
+      <div class="ship label">
+        <div class="ship__frame">
+          <p class="ship__from"><span>From:</span> one sentence</p>
+          <p class="ship__to"><span>To:</span> your shop, done</p>
+          <div class="ship__code" aria-hidden="true">SUN</div>
+          <h1 class="ship__h1" id="hero-h1">{copy.h1}</h1>
+          <p class="ship__sub">{copy.sub}</p>
+          <form class="ship__form" method="get" action="/mockups/b/console/">
+            <label for="hero-request">Ask ShopPilot+</label>
+            <div class="ship__row">
+              <textarea id="hero-request" name="request" rows="3" maxlength="500" required>{copy.request}</textarea>
+              <button class="btn btn--primary" type="submit">Plan it</button>
+            </div>
+          </form>
+          <Barcode value={plan.planId} class="ship__bc" />
+        </div>
+      </div>
+
+      <figure class="packing label">
+        <blockquote><p>“{copy.quote}”</p></blockquote>
+        <figcaption>{copy.quoteSource}</figcaption>
+        <Barcode value="r/ecommerce" class="packing__bc" />
+      </figure>
+    </section>
+
+    <div class="perf" aria-hidden="true"></div>
+
+    <section class="gate" aria-labelledby="gate-h2">
+      <div class="gate__head">
+        <h2 id="gate-h2">{trustHead}.</h2>
+        <p>{trustRest.join('. ')}</p>
+      </div>
+
+      <ol class="strip">
+        {copy.loop.map((word, i) => (
+          <li class="mini label">
+            <span class="mini__n" aria-hidden="true">{i + 1}</span>
+            <div class="mini__body">
+              <h3 class="mini__word"><span class="sr-only">Step {i + 1}: </span>{word}</h3>
+              <p>{loopNotes[word]}</p>
+            </div>
+            <Barcode value={`${plan.planId}-${word}`} class="mini__bc" />
+          </li>
+        ))}
+      </ol>
+
+      <div class="gate__proof">
+        <VoidLabel />
+      </div>
+    </section>
+  </main>
+</Base>

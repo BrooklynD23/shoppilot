@@ -1,0 +1,171 @@
+{
+ "plan_id": "plan_11c22644a42a",
+ "source": "live",
+ "plan": {
+  "request": "Ship yesterday's orders, email buyers tracking, restock what will run out this week, refund anything damaged.",
+  "steps": [],
+  "blocked_inputs": [
+   {
+    "source_id": "email:E002",
+    "allowed": false,
+    "label": "injection",
+    "reason": "Blocked: tries to override the agent's rules; tries to skip human confirmation; fakes system or prompt markup; asks for a bulk refund or bulk change; addresses the AI directly",
+    "score": 1.0
+   }
+  ],
+  "id": "plan_11c22644a42a",
+  "status": "needs_clarification",
+  "message": "Two orders mention damage. Which one should I refund?",
+  "usage": {
+   "calls": [
+    {
+     "stage": "router",
+     "model": "claude-haiku-5-5",
+     "ms": 610,
+     "input_tokens": 412,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 0,
+     "output_tokens": 38,
+     "cost_usd": 6e-05,
+     "retries": 0,
+     "replayed": false
+    },
+    {
+     "stage": "planner",
+     "model": "claude-sonnet-5-5",
+     "ms": 7420,
+     "input_tokens": 1840,
+     "cache_read_tokens": 4100,
+     "cache_write_tokens": 0,
+     "output_tokens": 620,
+     "cost_usd": 0.01029,
+     "retries": 0,
+     "replayed": false
+    },
+    {
+     "stage": "judge",
+     "model": "claude-haiku-5-5",
+     "ms": 540,
+     "input_tokens": 980,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 0,
+     "output_tokens": 60,
+     "cost_usd": 0.000128,
+     "retries": 0,
+     "replayed": false
+    }
+   ],
+   "total_cost_usd": 0.010478,
+   "cache_hit_pct": 50.8,
+   "prompt_version": "6b7a03a2"
+  },
+  "judge": null,
+  "prompt_version": "6b7a03a2",
+  "source": "live"
+ },
+ "validations": [],
+ "diff": [],
+ "tools": {
+  "create_payment_link": {
+   "destructive": true,
+   "moves_money": true,
+   "undoable": true
+  },
+  "create_restock_po": {
+   "destructive": true,
+   "moves_money": false,
+   "undoable": true
+  },
+  "export_report": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": false
+  },
+  "flag_anomalies": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": false
+  },
+  "forecast_demand": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": false
+  },
+  "list_inbox": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": false
+  },
+  "list_orders": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": false
+  },
+  "mark_shipped": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": true
+  },
+  "refund_order": {
+   "destructive": true,
+   "moves_money": true,
+   "undoable": false
+  },
+  "send_email": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": true
+  }
+ },
+ "clarify": {
+  "question": "Two orders mention damage. Which one should I refund?",
+  "options": [
+   "O2679",
+   "Both",
+   "Neither, just ship"
+  ]
+ },
+ "usage": {
+  "calls": [
+   {
+    "stage": "router",
+    "model": "claude-haiku-5-5",
+    "ms": 610,
+    "input_tokens": 412,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_tokens": 38,
+    "cost_usd": 6e-05,
+    "retries": 0,
+    "replayed": false
+   },
+   {
+    "stage": "planner",
+    "model": "claude-sonnet-5-5",
+    "ms": 7420,
+    "input_tokens": 1840,
+    "cache_read_tokens": 4100,
+    "cache_write_tokens": 0,
+    "output_tokens": 620,
+    "cost_usd": 0.01029,
+    "retries": 0,
+    "replayed": false
+   },
+   {
+    "stage": "judge",
+    "model": "claude-haiku-5-5",
+    "ms": 540,
+    "input_tokens": 980,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_tokens": 60,
+    "cost_usd": 0.000128,
+    "retries": 0,
+    "replayed": false
+   }
+  ],
+  "total_cost_usd": 0.010478,
+  "cache_hit_pct": 50.8,
+  "prompt_version": "6b7a03a2"
+ }
+}

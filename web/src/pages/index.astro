@@ -1,52 +1,213 @@
 ---
-import Base from '../layouts/Base.astro';
-import '../styles/index.css';
-const v2 = [
-  { n: 1, name: 'Approval-first, Stripe-clean', line: 'The real plan card ticks through 5 steps and stops on "$24.00 awaiting approval".' },
-  { n: 2, name: 'The demo is the landing', line: 'Pick a prompt chip in the hero and watch a recorded plan build, then approve it.' },
-  { n: 3, name: 'Sunday night, scroll story', line: 'One owner, one evening: inbox fills, plan, blocked email, approve, done.' },
-  { n: 4, name: 'Cinematic hero + product film', line: 'A calm Veo mood loop behind the headline (poster placeholder for now), then a real product film slot.' },
-  { n: 5, name: 'Trust ledger, safety-first', line: 'Every dollar previewed, every action receipted; a "try to trick it" box.' },
-  { n: 6, name: 'Recommended blend', line: "Approach 1's skin, 2's live hero, 5's safety copy, 4's product film slot." },
-];
-const v3 = [
-  { k: 'a', name: 'Dark premium', line: 'Near-black, one luminous accent, glow behind a layered product hero.' },
-  { k: 'b', name: 'Vibrant light', line: 'Animated gradient-mesh hero, colourful accents, light cards with soft depth.' },
-  { k: 'c', name: 'Bento product-led', line: 'Neutral canvas; the page is mostly real product tiles in a bento grid.' },
-];
-const old = [
-  { key: 'a', name: 'Carton' }, { key: 'b', name: 'Label' }, { key: 'c', name: 'Build Book' },
-];
+// ShopPilot+ landing, "night to morning". Night half: hero video, built-with, problem, how, safety.
+// Dawn band: the morning video and the finished run. Morning half: bento, proof, pricing, FAQ.
+// JS: one bundled script for the two videos (src/scripts/landing/video.ts). Everything else is CSS.
+import '../styles/page-landing.css';
+import Site from '../layouts/Site.astro';
+import BgVideo from '../components/landing/BgVideo.astro';
+import HeroStage from '../components/landing/HeroStage.astro';
+import Walkthrough from '../components/landing/Walkthrough.astro';
+import Bento from '../components/landing/Bento.astro';
+import Receipt from '../components/landing/Receipt.astro';
+import ForecastChart from '../components/landing/ForecastChart.astro';
+import InboxNight from '../components/landing/InboxNight.astro';
+import RunDone from '../components/landing/RunDone.astro';
+import Icon from '../components/landing/Icon.astro';
+import { hero, how, bento, safety, quote, pricingH2, faqH2, closing } from '../data/v3';
+import { pricing, pricingLabel, faq, anomalies } from '../data/v2';
+import { inbox, plan } from '../data/demo';
+import * as L from '../data/landing';
+
+const APP = '/app/';
+const [h1a, h1b] = hero.h1.split('. ').map((s, i) => (i === 0 ? `${s}.` : s));
+const blocked = inbox[0];
+const ps = L.proof.stats;
 ---
-<Base title="ShopPilot+ approaches" description="Six landing approaches for ShopPilot+, plus the rejected first round.">
-  <main class="idx">
-    <h1>ShopPilot+ landing approaches</h1>
-    <h2 class="round">Round 3: one page, three skins</h2>
-    <ol>
-      {v3.map((d) => (
-        <li>
-          <h2>{d.k.toUpperCase()}. {d.name}</h2>
-          <p>{d.line}</p>
-          <p class="links"><a href={`/v3/${d.k}/`}>Landing</a> <a href={`/v3/${d.k}/app/`}>Console</a></p>
-        </li>
-      ))}
-    </ol>
-    <h2 class="round">Round 2: six approaches</h2>
-    <ol>
-      {v2.map((d) => (
-        <li>
-          <h2>{d.n}. {d.name}</h2>
-          <p>{d.line}</p>
-          <p class="links"><a href={`/v2/${d.n}/`}>Landing</a> <a href={`/v2/${d.n}/app/`}>Console</a></p>
-        </li>
-      ))}
-    </ol>
-    <h2 class="old">Rejected round 1</h2>
-    <ul class="oldlist">
-      {old.map((d) => (
-        <li><span>{d.key.toUpperCase()}. {d.name}</span> <a href={`/mockups/${d.key}/`}>Landing</a> <a href={`/mockups/${d.key}/console/`}>Console</a></li>
-      ))}
-    </ul>
-    <p class="note">Comparison and ranking: <code>shoppilot/web/DIRECTIONS-v3.md</code> (round 3), <code>DIRECTIONS-v2.md</code> (round 2).</p>
+<Site title="ShopPilot+: autopilot for your shop" description={hero.sub} surface="night" current="/" showVeoNote footerSurface="morning">
+  <main id="main" class="landing">
+    <!-- 1. Hero: night footage, scrim, layered product -->
+    <section class="hero" aria-labelledby="hero-title">
+      <BgVideo name="night" eager cssFallback class="hero-vid" label="background video" />
+      <div class="wrap hero-copy">
+        <h1 id="hero-title"><span>{h1a}</span> <span>{h1b}</span></h1>
+        <div class="hero-row">
+          <p class="hero-sub" data-hero-sub>{hero.sub}</p>
+          <div class="hero-cta">
+            <a class="btn btn-primary btn-lg" href={APP}>{hero.cta}</a>
+            <p class="hero-note">{hero.note}</p>
+          </div>
+        </div>
+      </div>
+      <div class="wrap">
+        <HeroStage />
+      </div>
+    </section>
+
+    <!-- 2. Built with: text wordmarks only -->
+    <section class="built" aria-label="Built with">
+      <div class="wrap built-row">
+        <p class="built-label">Built with</p>
+        <ul class="built-list">
+          {L.builtWith.map((b) => (
+            <li class="built-item"><span class="built-name">{b.name}</span>{b.by && <span class="built-by">{b.by}</span>}</li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- 3. Problem: the quote beside the inbox at night -->
+    <section class="problem wrap" aria-labelledby="problem-title">
+      <h2 id="problem-title" class="sr-only">{L.problem.h2}</h2>
+      <figure class="quote-fig">
+        <blockquote><p>{quote.text}</p></blockquote>
+        <figcaption>{quote.source}</figcaption>
+      </figure>
+      <div class="reveal"><InboxNight /></div>
+    </section>
+
+    <!-- 4. How: walkthrough loop with Pause and the step rail -->
+    <section class="how wrap" id="how" aria-labelledby="how-title">
+      <div class="sh sh--center">
+        <h2 id="how-title">{how.h2}</h2>
+        <p>{L.how.line}</p>
+      </div>
+      <div class="reveal"><Walkthrough /></div>
+    </section>
+
+    <!-- 5. Safety: the blocked email, caps, receipt -->
+    <section class="safety" id="safety" aria-labelledby="safety-title">
+      <div class="wrap safety-grid">
+        <div class="safety-copy">
+          <div class="sh">
+            <h2 id="safety-title">{safety.h2}</h2>
+            <p>{L.safety.line}</p>
+          </div>
+          <ul class="caps" data-ui>
+            {safety.caps.map((c) => <li class="cap"><Icon name="lock" />{c}</li>)}
+          </ul>
+        </div>
+        <div class="specimen reveal" data-ui>
+          <article class="mail mail--big">
+            <div class="mail-head">
+              <span class="stamp stamp--big">BLOCKED</span>
+              <span class="mail-from">From <span class="addr">{blocked.from}</span></span>
+            </div>
+            <p class="mail-subj">{blocked.subject}</p>
+            <p class="mail-raw">{blocked.preview}</p>
+            <p class="mail-verdict"><Icon name="shield" />{blocked.reason}</p>
+            <p class="receipt-ids">Guard label <code class="id">{blocked.label}</code> score <span class="num">{blocked.score}</span></p>
+          </article>
+          <div class="specimen-receipt">
+            <Receipt pick={['refund_order', 'create_restock_po']} />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Dawn: night fades to cream; morning footage beside the finished run -->
+    <section class="dawn morning" aria-labelledby="dawn-title">
+      <div class="dawn-fade" aria-hidden="true"></div>
+      <div class="wrap dawn-inner">
+        <div class="sh">
+          <h2 id="dawn-title">{L.morning.h2}</h2>
+          <p>{L.morning.line}</p>
+        </div>
+        <div class="dawn-grid">
+          <BgVideo name="morning" class="dawn-vid" label="morning video" />
+          <div class="reveal"><RunDone /></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="morning">
+      <!-- 7. Bento: every guard as a tile -->
+      <section class="product wrap" id="product" aria-labelledby="product-title">
+        <div class="sh">
+          <h2 id="product-title">{bento.h2}</h2>
+          <p>{L.bentoLine}</p>
+        </div>
+        <Bento />
+      </section>
+
+      <!-- 8. Proof: 3 stats with source labels -->
+      <section class="proof wrap" aria-labelledby="proof-title">
+        <div class="sh"><h2 id="proof-title">{L.proof.h2}</h2></div>
+        <dl class="proof-strip reveal">
+          <div class="stat">
+            <dt class="stat-label">{ps[0].label}</dt>
+            <dd class="stat-value num">{ps[0].value}</dd>
+            <dd class="stat-src"><span class="tag">{ps[0].source}</span></dd>
+            <dd class="stat-ui" data-ui><ForecastChart id="pf-fc" bare /></dd>
+          </div>
+          <div class="stat">
+            <dt class="stat-label">{ps[1].label}</dt>
+            <dd class="stat-value num">{ps[1].value}</dd>
+            <dd class="stat-src"><span class="tag">{ps[1].source}</span></dd>
+            <dd class="stat-ui" data-ui>
+              {anomalies.map((a) => (
+                <p class="pf-anom"><code class="id">#{a.order}</code><span class="pill pill--approval">Flagged <span class="num">{a.score}</span></span></p>
+              ))}
+            </dd>
+          </div>
+          <div class="stat">
+            <dt class="stat-label">{ps[2].label}</dt>
+            <dd class="stat-value num money">{ps[2].value}</dd>
+            <dd class="stat-src"><span class="tag">{ps[2].source}</span></dd>
+            <dd class="stat-ui" data-ui>
+              <p class="pf-meter"><span><span class="num">{plan.usage.tokens}</span> tokens</span><span>cache <span class="num">{plan.usage.cacheHitPct}%</span></span></p>
+              <meter class="pf-meter-bar" min="0" max="100" value={plan.usage.cacheHitPct} aria-label="Cache hit rate"></meter>
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <!-- 9. Planned pricing -->
+      <section class="pricing wrap" id="pricing" aria-labelledby="pricing-title">
+        <div class="pricing-head">
+          <h2 id="pricing-title">{pricingH2}</h2>
+          <p class="pricing-label"><Icon name="alert" />{pricingLabel}</p>
+        </div>
+        <ul class="tiers">
+          {pricing.map((t, i) => (
+            <li class:list={['tier', { 'tier--now': i === 0 }]}>
+              <h3>{t.name}</h3>
+              <p class="tier-price"><span class="num">{t.price}</span>{t.period && <span class="tier-period"> {t.period}</span>}</p>
+              <ul class="tier-feats">
+                {t.features.map((f) => <li><Icon name="tick" />{f}</li>)}
+              </ul>
+              {i === 0
+                ? <a class="btn btn-primary" href={APP}>{t.cta}</a>
+                : <button class="btn btn-line" type="button" disabled>{t.cta}</button>}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <!-- 10. FAQ -->
+      <section class="faq wrap" id="faq" aria-labelledby="faq-title">
+        <h2 id="faq-title">{faqH2}</h2>
+        <div class="faq-list">
+          {faq.map((f) => (
+            <details class="qa">
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      <!-- 11. Closing band: amber -->
+      <section class="closing" aria-labelledby="closing-title">
+        <div class="wrap closing-inner">
+          <h2 id="closing-title">{closing.h2}</h2>
+          <p>{L.closingLine}</p>
+          <a class="btn btn-ink btn-lg" href={APP}>{closing.cta}</a>
+        </div>
+      </section>
+    </div>
   </main>
-</Base>
+</Site>
+
+<script>
+  import '../scripts/landing/video';
+</script>

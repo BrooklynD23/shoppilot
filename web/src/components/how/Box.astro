@@ -1,0 +1,24 @@
+---
+// One labelled box for the inline-SVG diagrams. Lines are real <text>; the first is the title.
+// A line can be a string (title, then subs) or [text, class] with d-t | d-s | d-m.
+type Line = string | [string, string];
+interface Props {
+  x: number; y: number; w: number; h: number;
+  kind?: string;             // group | hi | money | bad | ok | undone
+  lines: Line[];
+  align?: 'start' | 'middle';
+  valign?: 'top' | 'middle';
+  lh?: number;
+}
+const { x, y, w, h, kind, lines, align = 'start', valign = 'middle', lh = 17 } = Astro.props;
+const n = lines.length;
+const y0 = valign === 'top' ? y + 26 : y + h / 2 - (n * lh) / 2 + lh * 0.72;
+const tx = align === 'middle' ? x + w / 2 : x + 14;
+const rows = lines.map((l, i) => (typeof l === 'string' ? [l, i === 0 ? 'd-t' : 'd-s'] : l));
+---
+<g>
+  <rect class:list={['d-b', kind && `d-b--${kind}`]} x={x} y={y} width={w} height={h} rx={kind === 'group' ? 14 : 9} />
+  {rows.map(([t, c], i) => (
+    <text class={c} x={tx} y={(y0 + i * lh).toFixed(1)} text-anchor={align}>{t}</text>
+  ))}
+</g>
