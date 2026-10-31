@@ -1,0 +1,61 @@
+---
+// Hero: layered product composition. Server-rendered from demo data, final state on first paint.
+// CSS only: pills tick Planned to Checked 1..5, then the $24.00 badge lands (see .pc-pill, .f-badge).
+import { plan, inbox, copy, money, moneyOutCents, store } from '../../data/demo';
+import Icon from './Icon.astro';
+import ForecastChart from './ForecastChart.astro';
+import Receipt from './Receipt.astro';
+
+const blocked = inbox[0];
+const gated = plan.steps.filter((s) => s.movesMoney).length;
+---
+<div class="comp" data-ui>
+  <div class="f-chart">
+    <p class="f-title"><span>Lavender tin</span><code class="tool">forecast_demand</code></p>
+    <ForecastChart id="fc-hero" mini caption={false} />
+  </div>
+
+  <article class="pc" aria-label={`Plan for ${store.name}, demo store`}>
+    <div class="pc-bar">
+      <span class="pc-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="tag">Demo store</span>
+      <span class="pc-store">{store.name}</span>
+    </div>
+    <p class="pc-ask">{copy.request}</p>
+    <div class="pc-head">
+      <p class="pc-h">Plan</p>
+      <p class="pc-meta">{plan.steps.length} steps, {gated} needs your approval</p>
+    </div>
+    <ol class="pc-steps">
+      {plan.steps.map((s) => (
+        <li class:list={['pc-step', { 'pc-step--money': s.movesMoney }]}>
+          <span class="pc-n" aria-hidden="true">{s.n}</span>
+          <span class="pc-main">
+            <span class="pc-title">{s.title}</span>
+            <code class="tool">{s.tool}</code>
+          </span>
+          {s.amountCents != null && <span class="pc-amt num">{money(s.amountCents)}</span>}
+          {s.movesMoney
+            ? <span class="pill pill--approval pc-pill"><span class="pt"><span class="pt-a">Planned</span><span class="pt-b">Needs approval</span></span></span>
+            : <span class="pill pill--checked pc-pill"><span class="pt"><span class="pt-a">Planned</span><span class="pt-b">Checked</span></span></span>}
+        </li>
+      ))}
+    </ol>
+  </article>
+
+  <div class="f-mail">
+    <span class="f-mail-ic"><Icon name="mail" /></span>
+    <div class="f-mail-body">
+      <span class="stamp">BLOCKED</span>
+      <p class="f-mail-subj">{blocked.subject}</p>
+      <p class="f-mail-from addr">{blocked.from}</p>
+    </div>
+  </div>
+
+  <div class="f-receipt">
+    <p class="f-title"><span>Audit log</span><span class="tag">Demo store</span></p>
+    <Receipt rows={3} class="receipt--mini" />
+  </div>
+
+  <p class="f-badge"><Icon name="lock" /><span><span class="num">{money(moneyOutCents)}</span> awaiting approval</span></p>
+</div>

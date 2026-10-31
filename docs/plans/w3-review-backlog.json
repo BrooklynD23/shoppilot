@@ -1,0 +1,642 @@
+[
+ {
+  "task": "P1-T1",
+  "severity": "medium",
+  "file": ".github/workflows/ci.yml",
+  "problem": "Lines 22-27: the Docker smoke step runs the image with the baked-in APP_ENV=prod (Dockerfile:3) and passes no ANTHROPIC_API_KEY. Spec 01 \u00a79 and resolutions \u00a76.2 say prod with no Anthropic key aborts startup. Once P1-T2's Settings load at startup, the container exits, `curl /healthz` fails, and the CI docker job on main goes red. That blocks deploy.yml, which runs on workflow_run CI. The fixed `sleep 5` is also a flake risk. The run also leaves out `--memory=512m` from plan Step 8, so the RSS reading does not match the 512 MB host limit.",
+  "fix": "Use `docker run -d -p 8000:8000 --memory=512m -e ANTHROPIC_API_KEY=dummy-not-a-key --name sp shoppilot`. Replace `sleep 5; curl` with a retry loop: `for i in $(seq 30); do curl -fsS localhost:8000/healthz && break; sleep 1; done`. If it never comes up, run `docker logs sp` and fail. Alternatively, run the smoke with `-e APP_ENV=test`.",
+  "source": "both"
+ },
+ {
+  "task": "P1-T1",
+  "severity": "medium",
+  "file": "README.md",
+  "problem": "Plan Step 8 is unmet. The image size (< 700 MB) and idle RSS (< 250 MB) budgets are not measured. README Known limits says only 'not yet measured'. The Dockerfile now also keeps `uv` (about 30 MB) and /tmp/req.txt in the final layer, which adds to the size budget.",
+  "fix": "After the first green CI docker run, copy the `docker image ls` and `docker stats` numbers from the log into README Known limits. Optionally add `&& pip uninstall -y uv && rm /tmp/req.txt` to the same RUN layer.",
+  "source": "opus"
+ },
+ {
+  "task": "P7-D1",
+  "severity": "medium",
+  "file": "tests/deploy/test_render_yaml.py",
+  "problem": "The secret-leak guard at line 24 only checks for `sk_`. A hardcoded Anthropic key (`sk-ant-...`) or a restricted Stripe key (`rk_test_...`, the R15-recommended kind) pasted into render.yaml would still pass. The test also never checks that `sync: false` sits on the two secret keys rather than on APP_ENV or DATA_DIR.",
+  "fix": "Assert that none of `sk-ant-`, `sk_test_`, `sk_live_`, `rk_test_`, `rk_live_` appears in TEXT. Also assert that the line after `- key: ANTHROPIC_API_KEY` and the line after `- key: STRIPE_SECRET_KEY` are both `sync: false`.",
+  "source": "both"
+ },
+ {
+  "task": "P7-D1",
+  "severity": "medium",
+  "file": "app/main.py",
+  "problem": "This is outside D1's owned files, for P1 to fix. The `/healthz` health check in render.yaml (line 8) always returns 200 because the current main.py never calls `get_settings()` at import or startup. If `ANTHROPIC_API_KEY` is missing in prod, the service still boots and Render marks the deploy healthy. That breaks the plan's Review Focus 4, which expects P1's prod validator to raise at boot so smoke/deploy goes red.",
+  "fix": "P1 (owner of app/main.py) should call `get_settings()` at module import or in a startup hook, so a bad prod config fails boot. No change to render.yaml is needed.",
+  "source": "codex"
+ },
+ {
+  "task": "P1-T4",
+  "severity": "medium",
+  "file": "app/tools/registry.py",
+  "problem": "_check_strict (lines 62-80) only recurses into properties/items/anyOf/oneOf/allOf and only checks nodes with an explicit type 'object'. It skips $defs/definitions, $ref targets, prefixItems, not, if/then/else, patternProperties and object schemas with no 'type' key. I confirmed this with a repro: a property {'$ref':'#/$defs/O'} with $defs.O={'type':'object','properties':{}} registers, and validate_args('b', {'o': {'junk': 1}}) returns None. A property {'properties':{'x':...}} with no type also accepts {'junk': 1}. This breaks the 'registry rejects non-strict schemas' rule (D8 and resolutions \u00a73). None of the \u00a73 tools use these keywords today.",
+  "fix": "Treat any dict that has 'properties' or 'required' as an object node. Then either recurse into $defs, definitions, prefixItems, not, if, then, else and patternProperties, or raise ValueError on keywords the registry does not support ($ref, $defs, patternProperties, if, not). Add one test for $defs/$ref and one for an object node with no type.",
+  "source": "both"
+ },
+ {
+  "task": "P1-T4",
+  "severity": "medium",
+  "file": "app/tools/registry.py",
+  "problem": "get_tools() (line 102) and get_tool() (line 106) return the stored ToolSpec. Pydantic frozen=True does not freeze the nested input_schema dict. I confirmed that get_tools()[i].input_schema['required'] = [] makes validate_args accept {} afterwards. P2 adds rationale/evidence to staged tool schemas, and P4 builds a regex from get_tools(), so a consumer that edits a schema in place would silently loosen or corrupt validation for the whole process.",
+  "fix": "Make get_tools() return [t.spec.model_copy(deep=True) for t in _TOOLS.values()]. validate_args and get_tool can keep using the internal spec. Add a test that changes a schema returned by get_tools() and then asserts that validate_args and claude_tool_defs are unchanged.",
+  "source": "both"
+ },
+ {
+  "task": "P1-T4",
+  "severity": "medium",
+  "file": "app/tools/registry.py",
+  "problem": "Line 86 uses _NAME.match with a pattern ending in '$'. In Python, '$' also matches just before a trailing newline, so 'mark_shipped\\n' passes the check. I confirmed that register() accepted the name 'a\\n'. The plan says register must raise ValueError for any name that does not match ^[a-z][a-z0-9_]{0,63}$. Claude would reject such a tool name, and every planner call would then fail.",
+  "fix": "Use _NAME.fullmatch(spec.name), or anchor the pattern with \\Z. Add a test that a name with a trailing newline raises ValueError.",
+  "source": "codex"
+ },
+ {
+  "task": "P1-T2",
+  "severity": "medium",
+  "file": "app/db.py:218",
+  "problem": "get_db calls path.as_uri(), which raises ValueError for a relative path. Reproduced: with DATA_DIR=rel, every get_db fails with \"relative path can't be expressed as a file URI\", so every route would return 500. Deployed configs (Dockerfile, render.yaml, .env.example) all use the absolute /tmp/shoppilot, so this only breaks local or dev setups that use a relative DATA_DIR.",
+  "fix": "Resolve once in Settings with a field_validator on data_dir that returns v.expanduser().resolve(), or use path.resolve().as_uri() in get_db. Add a test that sets DATA_DIR to a relative path and opens a store.",
+  "source": "opus"
+ },
+ {
+  "task": "P1-T2",
+  "severity": "medium",
+  "file": "app/db.py:257",
+  "problem": "mkdir(mode=0o700, exist_ok=True) sets the mode only when it creates the directory. If DATA_DIR already exists with wider permissions, or was created first by another local user (the /tmp default), session DBs land in a directory other users can read or own, which breaks spec 01 \u00a79 'data dir 0700'. The Render container is single-user and the Dockerfile does not pre-create the dir, so this does not block approval.",
+  "fix": "After mkdir, check that the dir is owned by os.getuid() and refuse to start if it is not, then os.chmod(data_dir, 0o700). Add a test that pre-creates the dir with 0o755 and asserts 0o700 after create_store.",
+  "source": "codex"
+ },
+ {
+  "task": "P1-T2",
+  "severity": "medium",
+  "file": "app/db.py:82",
+  "problem": "SESSION_ID_RE is unanchored (r\"[A-Za-z0-9_-]{43}\"). store_path uses fullmatch, so it is safe. But the regex is exported and the plan specifies ^...$. A consumer that writes SESSION_ID_RE.match(cookie), such as P1-T6 current_session, would accept 'a'*43 + '/../x' (verified True). store_path still rejects that id afterwards, so this is a trap for callers, not a hole today.",
+  "fix": "Use re.compile(r\"\\A[A-Za-z0-9_-]{43}\\Z\") so match, search and fullmatch all behave the same. Add one test case using SESSION_ID_RE.match.",
+  "source": "opus"
+ },
+ {
+  "task": "P1-T2",
+  "severity": "medium",
+  "file": "app/db.py:270",
+  "problem": "Spec 01 \u00a73 uses the default rollback journal. If the process dies mid-transaction (for example an OOM kill at 512 MB), <hash>.db-journal stays on disk. create_store then os.replaces a fresh DB at the same path, and sweep_sessions (line 291) unlinks *.db but leaves the -journal file. On the next open, SQLite rolls the stale hot journal back into the new file, which is the documented 'mispaired hot journal' corruption case.",
+  "fix": "In create_store, unlink path.with_name(path.name + '-journal') (missing_ok) just before os.replace. In sweep_sessions, unlink the -journal sibling of each deleted store. Optionally sweep orphaned *.tmp files older than 1 h as well.",
+  "source": "opus"
+ },
+ {
+  "task": "P7-D2",
+  "severity": "medium",
+  "file": ".github/workflows/deploy.yml",
+  "problem": "Line 37 runs `scripts/smoke.sh` directly, so it needs the executable bit. core.filemode=false on /mnt/c, and git's ce_mode_from_stat stages a new file as 100644. If the orchestrator forgets `git update-index --chmod=+x`, the smoke step fails with exit 126 (Permission denied) after the Render hook has already fired. The deploy then goes out without being checked.",
+  "fix": "Change the step to `bash scripts/smoke.sh \"$APP_URL\" \"$SHA\" 600`. The existing test assertion still passes, and the step no longer depends on file mode. Alternatively, the orchestrator must run `git update-index --chmod=+x scripts/smoke.sh` before committing.",
+  "source": "opus"
+ },
+ {
+  "task": "P7-D2",
+  "severity": "medium",
+  "file": ".github/workflows/deploy.yml",
+  "problem": "The workflow has no `permissions:` block, and checkout keeps its token by default (persist-credentials). The job then runs `scripts/smoke.sh` from the checked-out SHA. With workflow_dispatch, that can be any ref a writer picks. The CI-bypass on dispatch itself is what the plan specifies, so it is not a violation. Codex rated this high; I lowered it to medium because only writers can dispatch.",
+  "fix": "Add a top-level `permissions: { contents: read }` (ci.yml already does this) and set `persist-credentials: false` on actions/checkout.",
+  "source": "both"
+ },
+ {
+  "task": "P7-D2",
+  "severity": "medium",
+  "file": ".github/workflows/deploy.yml",
+  "problem": "The workflow_dispatch input `ref` (lines 10-12) is described as a commit SHA but nothing checks it. A branch name such as `main`, or a short SHA under 7 characters, still triggers the Render hook. smoke.sh then compares `${SHA:0:7}` with the real commit SHA, never matches, and fails red only after the full 600 s.",
+  "fix": "Add a first step that fails fast unless SHA matches `^[0-9a-f]{7,40}$`, or resolve the ref with `git rev-parse` after checkout and pass the full SHA to both the hook and smoke.sh.",
+  "source": "both"
+ },
+ {
+  "task": "P2-T9",
+  "severity": "medium",
+  "file": "app/agent/dryrun.py:14",
+  "problem": "Each preview gets the live `step.args` dict. The route runs validate_plan, then dry_run, then save_plan (R32). If a preview mutates its args, the saved plan and the diff the owner approves no longer match the plan that was validated. Real previews are supposed to be read-only, so this needs a tool that breaks its contract.",
+  "fix": "Call `preview(copy.deepcopy(step.args), ctx)`. Add a test with a preview that mutates its args, then assert `plan.steps[i].args` is unchanged.",
+  "source": "codex"
+ },
+ {
+  "task": "P2-T9",
+  "severity": "medium",
+  "file": "app/agent/dryrun.py:13-18",
+  "problem": "The no-writes rule is assumed, not enforced. A preview can write rows and then raise. The `except` catches the error, but the writes stay in ctx.db's open transaction, and `save_plan` later commits them on the same connection. Today only the happy path is checked (`test_no_writes` uses a fake preview that does no DB work).",
+  "fix": "Optional hardening: wrap each preview in `SAVEPOINT dry_run` / `ROLLBACK TO dry_run` / `RELEASE dry_run`. Or at least assert `ctx.db.total_changes` is unchanged after each preview and turn a change into the error DiffItem. Add a test with a preview that writes and then raises.",
+  "source": "opus"
+ },
+ {
+  "task": "P2-T5",
+  "severity": "medium",
+  "file": "app/llm/prompts/planner_system.md",
+  "problem": "Line 17 says 'Every id, amount and email address in a write call must come from a tool result'. But policy.md lines 4-5 let the owner give a restock qty or refund amount, and the examples.md repair-after-reject example (lines 31-35) uses the owner's $60 with evidence 'owner_request'. This contradiction comes from the spec 4.1 text, which the plan says to copy verbatim. With it, the planner may ask for clarification instead of using an amount the owner stated. Codex found this and I confirmed it.",
+  "fix": "Change line 17 to: 'Every id, amount and email address in a write call must come from a tool result in this conversation or from the owner's request.' Log it as a contract request, because it changes the verbatim spec 4.1 wording.",
+  "source": "codex"
+ },
+ {
+  "task": "P2-T5",
+  "severity": "medium",
+  "file": "app/llm/prompts/policy.md",
+  "problem": "Spec 03-ml-actions.md section 3.4 item 2 assigns a planner-prompt rule to P2: 'When a step uses forecast or anomaly output, put its explanation or reason in Step.rationale verbatim; do not restate numbers in your own words.' Neither policy.md nor planner_system.md has it. Without it, the LLM writes its own numbers in rationales, and the deterministic-explanation design in P3 is lost.",
+  "fix": "Add one bullet to policy.md: 'When a step relies on forecast_demand or flag_anomalies output, copy its explanation or reason into rationale verbatim; never restate numbers in your own words.' Optionally add a test asserting the text is in SYSTEM_PROMPT.",
+  "source": "opus"
+ },
+ {
+  "task": "P2-T2",
+  "severity": "medium",
+  "file": "app/llm/budget.py:84-89",
+  "problem": "ensure_budget is check-then-act. Up to 4 concurrent llm_slot holders can each read the same spend_today, all pass, then record_spend pushes the session or global total past its cap. The overshoot is bounded by about 4 x worst_case (Sonnet planner at 8,000 max_tokens is about $0.08-0.10 per call, so about $0.40 at most). This is the design that spec 02 section 6.2 and the plan prescribe (check before the call, record after), so it does not block. Codex rated it high; I downgraded it because it matches the spec and the Console caps (R47) are the backstop.",
+  "fix": "Optional, later: reserve worst_case atomically (INSERT a provisional row in the same BEGIN IMMEDIATE transaction as the SUM check), then settle it to the actual cost after the call. Otherwise, document the bounded overshoot in a `ponytail:` comment and README known limits.",
+  "source": "both"
+ },
+ {
+  "task": "P2-T2",
+  "severity": "medium",
+  "file": "app/llm/budget.py:31-34",
+  "problem": "The rate window `_calls` deque and `_sem` are module-global, and there is no reset hook. Every llm_slot entry in the test process appends to `_calls` (test_slot_busy already adds 5). Once P2-T3, P2-T8 or P2-T11 tests drive more than 60 llm_slot entries within 60 s of wall time, later tests block for wait_s (default 10 s) and then raise Busy, so the full suite becomes slow or flaky depending on order.",
+  "fix": "Add a tiny `_reset_for_tests()` that clears `_calls`, and call it from an autouse fixture (the P1 conftest owner, or locally in the tests/llm and tests/agent conftests). Alternatively, P2-T3 tests can monkeypatch `budget._calls` with a fresh deque.",
+  "source": "opus"
+ },
+ {
+  "task": "P5-I4",
+  "severity": "medium",
+  "file": "app/tools/mark_shipped.py",
+  "problem": "undo() (lines 91-99) reads the live rows, compares them to post state, then runs unconditional UPDATEs. Python sqlite3 only issues an implicit BEGIN before DML, not before SELECT. If undo_action (P1-T5, not written yet) calls tool.undo before making any write, the check SELECT runs in autocommit. A concurrent request on the same session DB could then commit an edit between the check and the UPDATE, and undo would silently overwrite it, breaking R22. run() is protected only because R1's claim_plan UPDATE takes the write lock first. The window is microseconds on a per-session DB, so this does not block approval. Verified from Codex finding 1; the existing changed_since test only edits before the check.",
+  "fix": "Cheapest: P1-T5 undo_action starts with a write (BEGIN IMMEDIATE, or its audit UPDATE/INSERT) before calling tool.undo, the same lock-then-check pattern R1 uses for execute. Alternative inside the tool: compare-and-swap updates `UPDATE orders SET ... WHERE id=? AND status IS ? AND carrier IS ? AND tracking_number IS ? AND shipped_at IS ?` inside a SAVEPOINT. If any rowcount is 0, roll back to the savepoint and return changed_since. Raise this with the P1-T5 owner as a contract note.",
+  "source": "both"
+ },
+ {
+  "task": "P5-I1",
+  "severity": "medium",
+  "file": "tests/integrations/test_stripe_client.py",
+  "problem": "Line 30 `test_mode_defaults_to_mock_without_key` reads the real env through the import-time `_boot()`. I confirmed that `STRIPE_SECRET_KEY=sk_test_abc uv run pytest tests/integrations/test_stripe_client.py` fails with an AssertionError at line 31. A developer who exports a test key to run the I9 live smoke test will see this unit test fail.",
+  "fix": "Make the test hermetic. Either drop it, or monkeypatch `get_settings` to return `Settings()` and assert `sc._boot() == ('mock', None)`.",
+  "source": "opus"
+ },
+ {
+  "task": "P5-I1",
+  "severity": "medium",
+  "file": "app/integrations/stripe_client.py",
+  "problem": "The livemode guard at line 108 uses `getattr(obj, 'livemode', False)`. In stripe 16.1.0 the Refund object has no `livemode` field (grep of `_refund.py` finds none), so the guard never fires on `refund()`. Yet `test_livemode_response_blocked` at test line 142 only exercises `refund()`, using a fake object that has `livemode=True`. The test passes, but the guard it covers is a no-op on real Refund objects. PaymentIntent, payment-link create and deactivate do carry `livemode` but are untested.",
+  "fix": "Parametrize the livemode test over `ensure_payment_intent`, `create_payment_link` and `deactivate_payment_link`. Add a comment that Refund objects have no livemode field, so the refund path relies on the boot key guard and on the PaymentIntent check.",
+  "source": "both"
+ },
+ {
+  "task": "P5-I1",
+  "severity": "medium",
+  "file": "tests/integrations/test_stripe_client.py",
+  "problem": "The boot wiring is untested, although plan Review Focus #2 says to test the boot refusal. `_boot()` (stripe_client.py:74-79) is covered only by the mock-mode import. Nothing checks that a test key builds `StripeClient(key, max_network_retries=2)`, that `STRIPE_MODE=mock` with a test key yields no client, or that a non-test key refuses at boot. A regression in how settings feed `resolve_mode` would go unnoticed.",
+  "fix": "Add a parametrized `_boot()` test that monkeypatches `sc.get_settings` with `Settings(stripe_secret_key=..., stripe_mode=...)` and `sc.stripe.StripeClient` with a recorder. Assert the returned mode, whether a client was built, and the `max_network_retries=2` kwarg. Add one case asserting that a live key raises.",
+  "source": "both"
+ },
+ {
+  "task": "P1-T3",
+  "severity": "medium",
+  "file": "app/seed/generate.py",
+  "problem": "Lines 36-40 and 89: the weekday multipliers follow the weekday of CANON_ANCHOR (2026-10-15) minus k, not the real weekday of anchor minus k. The weekend peak lands on real Saturdays only when the session anchor is a Thursday. R4 \u00a74.3 and spec 03 say Mon..Sun. I ran spec 03's SES\u00d7DOW and Croston-SBA on the seed for Thu, Sat and Mon anchors. All three give the same at-risk set at horizon 7, {P01,P02,P03}, and hero days_to_stockout is 4 each time. The ML-6 gate and the hero gate are therefore safe. Only the 'weekend peak' story is wrong on 6 of 7 anchors. The implementer flagged this as a contract request.",
+  "fix": "The orchestrator decides and amends R4. Option 1: keep stable ids by keying draws to the day offset, as now, and record in R4 that weekday alignment holds only for Thursday anchors. Option 2: snap anchor to the nearest prior Thursday when the session is created. That keeps both the ids and calendar-true weekdays, but shifts 'yesterday'. Option 1 is the cheaper path. Do not switch to (anchor - k).weekday(): that changes the Poisson draws and breaks the frozen order-id constants.",
+  "source": "both"
+ },
+ {
+  "task": "P1-T3",
+  "severity": "medium",
+  "file": "tests/seed/test_generate.py",
+  "problem": "The tests check the frozen constants only as a group, so the ids can drift without a test failing. Lines 177-212: test_planted_anomalies never checks that the 5 A3 ids belong to one new customer within 40 minutes. test_velocity_only_planted checks that exactly 1 burst exists but not that it is the planted ids. Line 215: test_decoy_is_ordinary does not check full price. Line 114: test_trend_rising_and_falling never asserts that any product is falling, although R4 requires at least 1. Line 166: test_new_and_dead_products accepts any product, not P18 and P19 specifically. My probe today confirms the tag-to-id mapping (A3=O2634..O2640, A2=O2663, A4=O2671, A1=O2693, D1=O2694, DAMAGED=O2679), but nothing guards it against regression. ML-6 and the eval read these constants.",
+  "fix": "Add 4 assertions to tests/seed/test_generate.py: (1) the first 5 planted ids share one customer, that customer has no orders before the first of them, and they span at most 40 minutes. (2) A4 has 9\u00d7P09 at full price and is that customer's first order. (3) The D1 line's unit_price_cents equals price_cents. (4) At least 1 product is falling (late sum < 0.85 \u00d7 early sum), P18's first sale is exactly anchor\u22125, and P19 has no sales after anchor\u221290.",
+  "source": "both"
+ },
+ {
+  "task": "P1-T3",
+  "severity": "medium",
+  "file": "app/seed/generate.py",
+  "problem": "Line 65: R4 \u00a74.3 lists 12 regular + 5 slow + 1 new + 1 dead = 19 products but requires 20. The implementer added P20 (Chamomile Tea, $8) as a 13th regular. The code now differs from R4's literal '12 regular'. Separately, the seed refund ids RF0001..RF0006 follow a format R4 does not specify.",
+  "fix": "The orchestrator amends R4 \u00a74.3 to '13 regular (P20 filler)' and records the refund id format RF%04d. No code change.",
+  "source": "opus"
+ },
+ {
+  "task": "P5-I5",
+  "severity": "medium",
+  "file": "app/tools/send_email.py",
+  "problem": "Lines 50-65 and 119-123: the run() check for a tracking email only requires a non-empty tracking_number and never reads orders.status. The validator (app/agent/validator.py:98) does require status 'shipped', so the two checks disagree. I checked what can actually reach this. Codex's case, a 'paid' order that has a tracking number, cannot happen through normal flows: seed paid orders have no tracking number, and mark_shipped and its undo always set status and tracking together. Seeded 'refunded' orders do keep a tracking number (app/seed/generate.py:244,255), so a direct run() on one of them sends a 'Your order shipped' email. Today only the validator blocks this, and the plan requires money and limit checks inside run() as well as in the validator.",
+  "fix": "Add o.status to _ORDER_SQL/_COLS and make the tracking check fail with error='no_tracking' unless status == 'shipped' and tracking_number is set. Add one test: a refunded order with a tracking number fails with no_tracking.",
+  "source": "both"
+ },
+ {
+  "task": "P5-I7",
+  "severity": "medium",
+  "source": "opus",
+  "file": "app/tools/create_payment_link.py:76",
+  "problem": "The idempotency key `plink:{sh}:{target}:{amount}:{n_prior}` is reused after a store reset. Reset keeps the same session id (01-architecture \u00a74: same id, file rebuilt), so n_prior drops back to 0. Within 24 h, Stripe then replays the original link. If that link was undone earlier, run() reports 'Created ... payment link', inserts a row with active=1, and hands out a dead link. If the planner writes a different description for the same target and amount, the call fails with idempotency_conflict for 24 h. This is a likely flow during demo rehearsal (create, undo, reset, create again).",
+  "fix": "Make keys unique per store generation. One way: add a store-creation nonce from meta to the key (ask P1-T2/T3 for a `meta.store_nonce` row set on every create/reset). The other way: have stripe_client return `active` and fail when a replayed link is inactive. Add a test that simulates a reset by deleting the payment_links rows and then re-running."
+ },
+ {
+  "task": "P5-I7",
+  "severity": "medium",
+  "source": "opus",
+  "file": "app/tools/create_payment_link.py:102",
+  "problem": "undo() ignores `payment_links.mode`. Spec \u00a78 lets the presenter switch to STRIPE_MODE=mock and restart. After that, undoing a test-mode link only reaches the mock no-op, sets active=0 and reports 'Deactivated', while the real test link stays payable. That is a fake success, which Review Focus #3 forbids. In the other direction, undoing a `plink_mock_` link in test mode sends a mock id to Stripe and always fails.",
+  "fix": "Read `mode` together with `active`. If `row.mode != stripe_client.mode()`, return ok=False with error='changed_since' (or a mode_mismatch summary) and do not touch the row. Add one test per direction."
+ },
+ {
+  "task": "P5-I7",
+  "severity": "medium",
+  "source": "codex",
+  "file": "app/tools/create_payment_link.py:91",
+  "problem": "The undo token is only `{\"link_id\"}`. R22 (in the resolutions, which win over spec \u00a75) says each undoable tool stores prior **and** post state in its token and compares the live row to that post state. Today the post-state check is only `active == 1`. The practical impact is small, because nothing else mutates payment_links rows, but the token does not follow the contract.",
+  "fix": "Store `{link_id, post: {active: 1, amount_cents, url, order_id, customer_id}}` and compare the live row to it before deactivating. Add a test that changes amount_cents and expects `changed_since`."
+ },
+ {
+  "task": "P5-I7",
+  "severity": "medium",
+  "source": "opus",
+  "file": "app/tools/create_payment_link.py:37",
+  "problem": "The per-session Stripe write-cap counter `_writes_used` exists only inside this tool. refund_order (P5-I6, not written yet) has to count exactly the same way (non-`re_seed_` refunds, plus payment_links, plus orders with a PaymentIntent), or the two tools will enforce different 20-write caps. The undo deactivation call is also a Stripe write and is not counted. It is bounded at one per link, so this is acceptable.",
+  "fix": "Move the counter to one shared helper that both tools import, for example in stripe_client (I1 owner) or a small shared module. Make the P5-I6 review check that refund_order uses it."
+ },
+ {
+  "task": "P5-I3",
+  "severity": "medium",
+  "file": "app/integrations/export.py",
+  "problem": "Line 64: report_pdf puts every order in the PDF. The seeded store has about 2,732 orders, so the report runs to dozens of pages and takes about 0.6 s of CPU on a dev box (slower on a 512 MB free host). It is built on every request with no cache, and GET routes allow 120 requests/min/IP. One client could keep a CPU core busy. Spec \u00a710 sized the report at about 50 orders.",
+  "fix": "Show only the newest N orders (for example 200) in the PDF table, sorted by created_at DESC, and add a note such as 'showing newest 200 of 2,732' while keeping the full totals. Mark it with a `# ponytail:` comment. Leave the full list in orders_csv. Alternatively, P1-T6 can give /api/export/report_pdf a tighter rate limit.",
+  "source": "opus"
+ },
+ {
+  "task": "P2-T3",
+  "severity": "medium",
+  "file": "app/llm/client.py",
+  "problem": "Replay index drifts after a max_tokens retry (lines 234-241, 254). The first max_tokens response is appended to trace.calls, but only the final response goes to trace.recorded. Replay indexes by len(trace.calls). In live mode a later call in the same trace can hit budget or not_configured and fall back to replay. It then reads recording calls[n+1] instead of calls[n], so it returns the wrong recorded response or a replay_miss.",
+  "fix": "Keep a separate count of logical calls on Trace, add 1 only once per complete(), and index replay by that count. Alternatively, keep the discarded max_tokens attempt's usage out of trace.calls and add its cost to the final CallUsage. Add a test: call 1 hits max_tokens then succeeds, call 2 raises BudgetExceeded and must replay recording calls[1].",
+  "source": "codex"
+ },
+ {
+  "task": "P2-T3",
+  "severity": "medium",
+  "file": "app/llm/client.py",
+  "problem": "complete_json does not raise only LLMError, which the R25 contract promises ('raises LLMError on any failure'). ensure_budget and record_spend (lines 203, 235) can raise sqlite3.OperationalError when spend.db is locked past the 5 s timeout. In record mode, _write_recording (line 287) can raise ImportError or OSError. Those errors escape complete_json and complete. The guard's fail-closed handler presumably catches LLMError, so it would 500 instead of returning a guard_error verdict.",
+  "fix": "In complete_json, wrap the _call and recording-write path with `except LLMError: raise; except Exception as e: log.exception(...); raise LLMError('bad_request') from None`. Do the same in _attempt around ensure_budget, mapping sqlite3.Error to LLMError('busy'). Add a test that monkeypatches record_spend to raise sqlite3.OperationalError and asserts LLMError.",
+  "source": "opus"
+ },
+ {
+  "task": "P2-T3",
+  "severity": "medium",
+  "file": "app/llm/client.py",
+  "problem": "Guard recordings are not tied to the guard prompt (lines 251-260, 287-290). _replay never checks a version, and guard files are stamped with the planner's PROMPT_VERSION from app.llm.prompts. If P4 changes the guard system prompt or schema, test_recordings_fresh will not flag it, and replay keeps serving the old allowed/blocked verdict for the same text hash. Codex rated this high. I lowered it to medium because a recording only matches identical text (sha256), and the policy and evidence layers (R18, R50) still apply.",
+  "fix": "Store a guard_version = sha256(system + json.dumps(schema, sort_keys=True))[:8] in guard recordings. In _replay for stage 'guard', treat a mismatch as replay_miss, which fails closed. A cheaper option is for P4 to fold the prompt hash into replay_key. Add a test: a stale guard recording raises LLMError.",
+  "source": "codex"
+ },
+ {
+  "task": "P2-T3",
+  "severity": "medium",
+  "file": "tests/llm/test_client.py",
+  "problem": "The 60-calls/min sliding window (budget._calls) is shared across the whole test process and never reset. The test_client tests use 30 of the 60 slots (measured). Once P2-T8 planner tests also mock _send in live mode in the same pytest run, the window fills within a minute. llm_slot then raises Busy, or busy-spins for up to 10 s where tests have monkeypatched time.sleep, so CI becomes flaky.",
+  "fix": "Add an autouse fixture in test_client.py (and ask P1-T1 to add one to tests/conftest.py) that does `monkeypatch.setattr(budget, '_calls', collections.deque())`.",
+  "source": "opus"
+ },
+ {
+  "task": "P3-ML2",
+  "severity": "medium",
+  "file": "app/ml/anomaly.py",
+  "problem": "Spec 03 \u00a72.2 says skipped bad rows should 'add a warning', but those warnings (from price lines skipped in score_orders:172 and orphan orders in _load_orders:201) only go to logging. The frozen flag_anomalies return type is list[dict], so the ML-5 tool and UI cannot show them. The implementer already raised this as a contract request.",
+  "fix": "The integrator decides. One option is to keep flag_anomalies frozen and add flag_anomalies_with_warnings(ctx, since_days) -> (items, warnings) for ML-5 to call. Another is to accept log-only warnings and note it in the spec. No change is needed inside ML-2 until that decision is made.",
+  "source": "both"
+ },
+ {
+  "task": "P3-ML2",
+  "severity": "medium",
+  "file": "app/ml/anomaly.py",
+  "problem": "On the real seed, the 'total' signal scores below-median orders as well (|M| on log1p, as the spec requires), and it nearly flags small normal orders. Lowering THRESHOLD to 2.5 in a probe showed 4 coupon orders of $6.40 (O1038, O1388, O2119, O2418) at 3.3 and several $8.00 orders at 3.0. That is a 0.2 margin under the 3.5 threshold. A seed tweak such as a cheaper product or a bigger coupon would flag ordinary small orders with the reason 'Order total $6.40 is 0.11x the typical $56.00'. The code matches the spec, so this does not block approval.",
+  "fix": "There is no code change in ML-2. ML-6's precision gate on the full 180 days (>= 0.8) will catch any regression. If it trips, score the total only on the upper tail (max(0, zt)), matching how units is scored, and update spec \u00a72.2.",
+  "source": "opus"
+ },
+ {
+  "task": "P3-ML2",
+  "severity": "medium",
+  "file": "tests/ml/test_anomaly.py",
+  "problem": "Some spec \u00a72.2 guards have no tests. No test covers a line with a NULL catalog price or a deleted product, which is the LEFT JOIN products row returning price_cents None (the code at anomaly.py:65 does handle it). No test asserts that a warning is emitted. No test covers velocity orders exactly 60 minutes apart, the bisect window edge.",
+  "fix": "Add three short asserts. A line with price_cents=None gives price signal 0 and no crash. caplog contains 'price signal skipped'. Three orders at t, t+60m and t+120m give the middle order n=3, so its velocity score is 3.5 and it is flagged.",
+  "source": "codex"
+ },
+ {
+  "task": "P3-ML1",
+  "severity": "medium",
+  "file": "app/ml/forecast.py",
+  "problem": "Lines 218-232 of _load_series start the series at the first sale inside the 180-day window (first = min(by_day)), not at max(today-180, first sale ever) as spec 03 \u00a72.1.1 says. This drops the leading zero days for products whose sales lapsed. Example: a product last sold more than 180 days ago that then sells once 10 days ago gets n=10 and returns insufficient_history, where the spec gives a 180-day series and croston_sba. The same trimming also lowers ADI and history_days for older intermittent sellers. The seed is not affected (the slow sellers sell within the window's first days), so the demo still holds.",
+  "fix": "Add a query for SELECT MIN(substr(o.created_at,1,10)) over all non-cancelled sales of the product and set first = max(today - 180, that date), falling back to today when there are none. Add a DB test for a product with an old sale plus one recent sale.",
+  "source": "opus"
+ },
+ {
+  "task": "P3-ML1",
+  "severity": "medium",
+  "file": "tests/ml/test_forecast.py",
+  "problem": "No test pins the SQL contract of _load_series or forecast_demand. Nothing checks that cancelled orders are excluded, that today's partial day is excluded, the 180-day cutoff, that open PO qty becomes on_order (received or cancelled POs must not count), or the leading-zero start date. A regression in the query would still pass the 17 current tests while corrupting demand and reorder_qty, which ML-4 then turns into real POs.",
+  "fix": "Add 3-4 small tests on the seeded ctx: insert a cancelled order and an order dated ctx.today and assert the series does not change; insert open, received and cancelled POs and assert on_order equals the open qty only and reorder_qty drops by that amount.",
+  "source": "both"
+ },
+ {
+  "task": "P3-ML1",
+  "severity": "medium",
+  "file": "app/ml/forecast.py",
+  "problem": "_sanitise (line 23) accepts float('inf') because it is neither NaN nor negative. forecast_series([inf, 1.0, ...]) then raises AttributeError ('float' object has no attribute 'numerator'), reproduced locally, instead of the ValueError or typed result that plan constraint 5 requires. Malformed lead_time_days (None) or a non-int horizon_days (7.5) likewise escape as TypeError. The DB path cannot reach this, because the schema has CHECK qty>0 and lead_time_days>0 and the tool schema types horizon_days as an int. Only direct callers of the public pure function are exposed.",
+  "fix": "Use math.isfinite(u) in place of the not-isnan check in _sanitise. Also validate isinstance(horizon_days, int) and lead_time_days >= 0 at the top of forecast_series, raising ValueError.",
+  "source": "both"
+ },
+ {
+  "task": "P4-T2",
+  "severity": "medium",
+  "file": "app/safety/policy.py",
+  "problem": "The per-session-hour dollar cap reads `payload[\"amount_cents\"]` at the top level of each `execute` audit row (policy.py:165-167). The P2 executor contract (02-agent-core-plan.md:478) logs `{\"summary\", \"args\"}`, so that key is never there. For full refunds `args.amount_cents` is also null. In production `cents` is always 0, so `REFUND_CENTS_PER_SESSION_HOUR` is never applied. No money gets past it today: at most 5 refunds per hour times $200 each comes to exactly $1,000. But the cap is dead code, and `test_session_hour_refund_cents` (test_policy.py:160) builds a payload shape the real executor never writes, so the test hides the gap.",
+  "fix": "Count session-hour refund cents from the DB, which is the source of truth: `SELECT COALESCE(SUM(amount_cents),0), COUNT(*) FROM refunds WHERE created_at >= ?`. Or require P2-T10 to log `amount_cents` from `ToolResult.data` in the execute payload and have P4-T4 assert it end to end. Then change the test to seed the same shape the executor really writes.",
+  "source": "opus"
+ },
+ {
+  "task": "P4-T2",
+  "severity": "medium",
+  "file": "app/safety/policy.py",
+  "problem": "`_check_payment_link` (policy.py:115-120) checks only the amount. The schema allows `order_id` and `customer_id` both to be null, or both to be set, so policy approves a link with no target or with two. Spec 04 \u00a75.2 says \"Customer exists\", and 02-agent-core says \"exactly one of order_id, customer_id\". `app/tools/create_payment_link.py:48` rejects these at run time, so no side effect happens. But the UI shows the step as valid in the dry run, and then it fails at execute.",
+  "fix": "In `_check_payment_link`, return \"give exactly one of order_id or customer_id\" when `(args[\"order_id\"] is None) == (args[\"customer_id\"] is None)`. Add test cases for both-null and both-set to `test_payment_link_bounds`.",
+  "source": "both"
+ },
+ {
+  "task": "P5-I8",
+  "severity": "medium",
+  "file": "app/tools/export_report.py",
+  "problem": "Line 28: preview() returns after={\"url\": \"/api/export/{kind}\"}, but spec 05-integrations.md \u00a75 (preview table, line 116) says export_report after = {file: filename}. The plan diff therefore shows a URL rather than the filename that will download (for example orders-2026-10-15.csv). tests/tools/test_export_report.py:20 locks in the wrong shape. The resolutions file does not override this.",
+  "fix": "Return after={\"file\": f\"{stem}-{ctx.today.isoformat()}.{ext}\"} using a stem/ext mapping per kind that matches app/integrations/export.py:94-101 (orders-*.csv, refunds-*.csv, report-*.pdf). Don't call render() in preview, because it queries the DB and builds the PDF. Update the test to assert the filename. run() keeps returning data.url.",
+  "source": "both"
+ },
+ {
+  "task": "P1-T6",
+  "severity": "medium",
+  "file": "app/main.py:99-103",
+  "problem": "client_ip() reads only the first X-Forwarded-For header line via request.headers.get(). If a client sends its own XFF line and the edge adds a second line instead of appending to the first, the forged value is used as the key. Verified: headers [('x-forwarded-for','6.6.6.6'),('x-forwarded-for','9.9.9.9')] returns 6.6.6.6. That gets around every per-IP limit (R45), and the P4-T7 spoof check is a release blocker.",
+  "fix": "Use xff = \",\".join(request.headers.getlist(\"x-forwarded-for\")), then take the rightmost entry. Add a test that sends two separate XFF header lines.",
+  "source": "opus"
+ },
+ {
+  "task": "P1-T6",
+  "severity": "medium",
+  "file": "app/main.py:123-130,225-229",
+  "problem": "Sweep-then-create is not serialized. (a) Concurrent POST /api/session requests each run sweep_sessions() before any of them creates a store, so the file count can go past MAX_SESSIONS. (b) After a restart, the UI's parallel GETs (store, inbox, audit) each see the store missing and each reseed. The later os.replace swaps the file under a connection that is already open, so writes on that connection are lost (for example guard_verdicts from /api/inbox, or a saved plan, which then gives plan_not_found).",
+  "fix": "Put a module-level threading.Lock around the reseed in current_session and the sweep+create in post_session, and check store_exists() again inside the lock. Add a concurrent-create test that checks the cap.",
+  "source": "both"
+ },
+ {
+  "task": "P1-T6",
+  "severity": "medium",
+  "file": "app/main.py:225-229",
+  "problem": "POST /api/session with a valid cookie whose store file is gone recreates the store silently. The next GET /api/store then returns store_reset=false. The UI cannot read the HttpOnly cookie, so it cannot tell a restart wipe from a new visitor, and the R48/Review Focus #2 'store reset' banner never appears if the UI calls POST /api/session on load.",
+  "fix": "Return store_reset (or reseeded: true) from POST /api/session when a valid cookie had no file. Alternatively, keep a one-shot reset marker (for example a meta row) that the next GET /api/store reports and then clears. Test the sequence: unlink, POST /api/session, GET /api/store.",
+  "source": "codex"
+ },
+ {
+  "task": "P1-T6",
+  "severity": "medium",
+  "file": "app/main.py:127",
+  "problem": "The reseed in current_session charges the shared 10/min/IP 'session' bucket once for every concurrent request, not once per store. After a Render spin-down, which wipes the disk, about 3 page-load requests per grader behind one classroom NAT (R36 rationale) use up the bucket after about 3 graders. Everyone else gets 429 on GET /api/store. The extra limit is also not in R36 and has no test.",
+  "fix": "Charge the bucket only inside the serialized reseed, after the re-check confirms the file is still missing, so each store costs one hit. Add a test for the reseed hitting the limit and document it as an addition to R36.",
+  "source": "opus"
+ },
+ {
+  "task": "P1-T6",
+  "severity": "medium",
+  "file": "app/main.py:206-209",
+  "problem": "The ImportError/NotImplementedError handler returns 501 not_built without logging anything. Once W2 lands, a real runtime ImportError inside a feature module (for example a missing optional dependency such as reportlab in export) shows up as 'not built' and leaves no server-side trace.",
+  "fix": "Call log.warning(\"not_built path=%s: %r\", request.url.path, e) in _not_built before returning the envelope.",
+  "source": "opus"
+ },
+ {
+  "task": "P2-T4",
+  "severity": "medium",
+  "file": "tests/llm/test_live_smoke.py",
+  "problem": "Lines 22-28 and 74: the plan lists `claude_tool_defs()` as an input, but the test sends a hand-written LOOKUP_TOOL instead. So the strict-mode check never covers the real registry schemas (refund_order, send_email, create_payment_link and the others now in app/tools/). If a production schema uses a keyword strict mode rejects, or the full set goes over the strict-tool limit, this test still passes and the planner then fails in production. Plan Step 1 does say 'one tool {order_id: string}', so this is a partial deviation and does not block.",
+  "fix": "Add a 4th live test: call `registry.load_tools()`, then send `sorted(claude_tool_defs(), key=lambda t: t['name'])` in one planner call with output_format=PLAN_FMT and check that no LLMError is raised. Skip it if the registry is empty.",
+  "source": "both"
+ },
+ {
+  "task": "P2-T4",
+  "severity": "medium",
+  "file": "tests/llm/test_live_smoke.py",
+  "problem": "Line 71: the test is meant to decide go/no-go on betas + strict + output_format. On a 400, client._live/_wait_or_raise raises LLMError('bad_request') with `from None`, and _classify logs only the status and error type, not the API message. The failure output therefore can't show whether the beta, strict tools or output_config caused the rejection, and plan Step 3 (drop betas/fallbacks) has to be decided blind.",
+  "fix": "In the test, on LLMError, repeat the request directly with `client._sdk_send(client._build(...))` so the raw anthropic.BadRequestError message shows up. Alternatively, add 2 split variants (planner without tools; planner without output_format) so the failing feature can be told apart. client.py is not this task's file (R34), so the fix stays in the test.",
+  "source": "opus"
+ },
+ {
+  "task": "P4-T1",
+  "severity": "medium",
+  "file": "app/safety/inbound_guard.py",
+  "problem": "screen_inbox (lines ~195-205) does check-then-insert with no conflict handling. guard_verdicts.source_id is the PRIMARY KEY (app/db.py:72). If two first-time requests for the same session run at once (for example GET /api/inbox and the planner's list_inbox, or a double page load), both read 'no verdict', both screen, and the second INSERT fails. It either waits out the 5 s busy timeout and raises 'database is locked', or raises IntegrityError on the unique key. Either way the request returns HTTP 500, which breaks Review Focus #3 ('no 500'). Codex found this and I confirmed it by reading get_db (app/db.py:150-172: deferred transaction, timeout=5, commit only at request end).",
+  "fix": "Use `INSERT OR IGNORE` and check `cursor.rowcount`. Call log_action('guard_block') only when rowcount == 1. When rowcount == 0, re-read the stored row and return that verdict. Add a regression test with two connections to the same store: both calls return, and exactly 1 verdict row and 1 guard_block row are stored.",
+  "source": "both"
+ },
+ {
+  "task": "P4-T1",
+  "severity": "medium",
+  "file": "app/safety/inbound_guard.py",
+  "problem": "screen_inbox interleaves writes and LLM calls inside one loop. The first INSERT opens Python sqlite3's implicit deferred transaction, which then holds the session DB's RESERVED write lock while screen() makes Haiku calls for the remaining emails, each with an 8 s timeout. The lock is released only when get_db commits at the end of the request. If Haiku is slow or down, the lock can be held for about 3 x 8 s. Any other write in the same session during that time (plan save, audit append via log_action's BEGIN IMMEDIATE) waits out the 5 s busy timeout and fails with 'database is locked', which returns a 500.",
+  "fix": "Split it into two passes. First call screen() for every email that has no stored verdict, with no DB writes. Then do all the INSERT OR IGNORE and log_action calls together at the end, so the write transaction is short and never spans an LLM call. The same change fixes the issue above.",
+  "source": "opus"
+ },
+ {
+  "task": "P2-T7",
+  "severity": "medium",
+  "file": "app/agent/validator.py",
+  "problem": "validate_plan (lines 228-241) applies policy.check_plan plan-level caps (refund count/total, >20 steps, >20 emails) only after dependencies were checked against the provisional `accepted` list. A step that depends on a policy-rejected step still passes. Reproduced with a temp test: 4 owner-requested refunds plus a refund_confirmation email for one of them gives 4x 'bulk refund blocked; refund at most 3 orders per plan' and the email ok=True. The owner sees a valid 'your refund was processed' email for a refund that will never run. This is the same class as the round-1 fix #2, but for plan-level rejections.",
+  "fix": "Run policy.check_plan first (or iterate). Fold its per-step rejections into the loop so a step rejected by policy never joins `accepted`. Re-validate the dependents, or call validate_step for each step only after the policy verdict for earlier steps is known. Add test: 4 refunds + refund_confirmation for the first, and assert the email is rejected.",
+  "source": "codex"
+ },
+ {
+  "task": "P2-T7",
+  "severity": "medium",
+  "file": "app/agent/validator.py",
+  "problem": "In DB mode (seen_ids=None, which validate_plan uses at lines 71 and 216-225), any id in orders/inbox/products/customers counts as seen. An inbox email with no guard_verdicts row counts as not blocked, so `_refund_evidence_ok` treats it as an 'allowed email'. Reproduced: on a fresh seeded store with no screening run, validate_plan accepts a refund citing E001. Spec \u00a75 requires an *allowed* email and evidence 'seen in a tool result this plan'. The plan's seen_ids=None contract follows the plan, and staging catches this today. The gap matters only if the R1 executor re-check or another caller builds a DB-mode PlanContext, or if guard_verdicts is wiped (R48).",
+  "fix": "In _plan_context, add every inbox id that lacks a guard_verdicts row with allowed=1 to blocked_ids, so unscreened emails fail closed. Add test: an existing but unscreened email cited as refund evidence in validate_plan is rejected.",
+  "source": "both"
+ },
+ {
+  "task": "P5-I6",
+  "severity": "medium",
+  "file": "app/tools/refund_order.py",
+  "problem": "Lines 108-114: run() never checks re['status']. If stripe_client.refund returns status 'failed' or 'canceled', the tool still inserts the refund row, raises orders.refunded_cents, may set status='refunded', and returns ok=True. A later retry is then blocked by already_refunded or amount_exceeds_refundable. Codex rated this HIGH. I lowered it to medium: in test mode with pm_card_visa, Stripe card refunds come back 'succeeded' when created, and failures reach this code as StripeError (mapped to StripeFailure), not as a 'failed' status. So the risk is defensive, not a reachable demo bug.",
+  "fix": "After the refund call, if re['status'] is in ('failed','canceled'), return _fail('stripe_error', ...) before _record. Treat 'pending' and 'succeeded' as recorded. Add one parametrized test where FakeStripe returns status='failed' and assert ok=False, no refunds row, and refunded_cents=0.",
+  "source": "both"
+ },
+ {
+  "task": "P5-I6",
+  "severity": "medium",
+  "file": "app/tools/refund_order.py",
+  "problem": "Lines 107-112: when ensure_payment_intent succeeds and refund() then raises StripeFailure, the tool returns before it saves stripe_payment_intent_id. That is correct for 'ok=False leaves DB unchanged', but _writes_used() counts PaymentIntents only from orders.stripe_payment_intent_id. So each such failure, on a different order, makes one real Stripe write that STRIPE_MAX_WRITES_PER_SESSION never counts. Retrying the same order is safe because the pi:{sh}:{oid} idempotency key replays the same PaymentIntent. The cap can only be bypassed through repeated refund failures, which a user cannot easily cause.",
+  "fix": "Accept it and add a ponytail comment naming the gap. Alternatively, count attempted writes in a session-level counter that is outside the step transaction, such as budget.record_spend. Do not store the PaymentIntent id on the failure path, because R23 requires the DB to stay unchanged.",
+  "source": "codex"
+ },
+ {
+  "task": "P3-ML4",
+  "severity": "medium",
+  "file": "app/tools/create_restock_po.py",
+  "problem": "Line 54: with qty_source='forecast', a reorder quantity above RESTOCK_QTY_MAX is silently cut to min(rq, 500). The preview's before.forecast.reorder_qty and explanation still show the larger number (for example 'order now: 600 units') while after.qty shows 500, and the summary says nothing about the cap. Spec 03 \u00a73.3 and plan ML-4 say the PO qty equals the forecast's reorder_qty. This cannot happen on today's seed: the largest reorder_qty is 134 (P01) at horizon 60. Codex found this too.",
+  "fix": "Choose one: (a) reject with an error like 'forecast suggests N units, over the 500 cap; give a quantity' so the owner picks with qty_source='user', or (b) keep the cap but add after.capped_from=rq and say it in the summary. Add one test that monkeypatches forecast_demand to return reorder_qty=600.",
+  "source": "both"
+ },
+ {
+  "task": "P3-ML4",
+  "severity": "medium",
+  "file": "app/tools/create_restock_po.py",
+  "problem": "Lines 67 and 89: with a forecast quantity, run() works out qty again at execute time, so the executed PO can be larger than the amount the owner approved in the preview. Example: plan A is previewed while PO1 is open (on_order>0, preview qty 20). Within the 15-minute plan TTL the owner undoes PO1. Executing A then creates a PO for 134 units at a higher amount_cents than was shown, with no new confirmation on a destructive step. The tool cannot fix this alone because run(args, ctx) never sees the stored diff.",
+  "fix": "Fix it at the executor (P2-T10) or validator: compare StepResult.data.amount_cents/qty with the stored diff amount_cents for that step, and fail with 'changed_since_preview' if run would order more than was approved. Another option is for save_plan to freeze the resolved qty into the stored step args. Track this as a contract request; it does not block ML-4.",
+  "source": "opus"
+ },
+ {
+  "task": "P4-T3",
+  "severity": "medium",
+  "file": "app/safety/web.py:146",
+  "problem": "The slot is released on any non-200 response, 5xx included. In the real app, main.py's guard middleware turns every unhandled exception into a 500 `internal` (main.py:169-181). If make_plan raises LLMError after a paid planner turn, or validate_plan/dry_run crash after the LLM call, the money is spent but PLAN_DAILY_CAP is not charged. A request that reliably fails this way gets past the count backstop (R7). The $ budgets in P2-T2 still apply.",
+  "fix": "Release the slot only for rejections that happen before any LLM call: 401, 404 replay_miss, 422 bad_request, 429, and 503 from budget/busy. Keep the slot on 500. Change test_rejected_plans_do_not_burn_budget so that 500 asserts the count stays at 1.",
+  "source": "opus"
+ },
+ {
+  "task": "P4-T3",
+  "severity": "medium",
+  "file": "app/safety/web.py:96",
+  "problem": "The Origin check compares host only. Spec 04 \u00a77 requires an exact `{scheme}://{host}` match, and no R-row amends that yet. The deviation is deliberate: R45 runs Uvicorn without --proxy-headers, so the app sees http while browsers send https. The security impact is small, because the X-ShopPilot header already forces a preflight. It is still a spec/resolution mismatch.",
+  "fix": "The orchestrator adds an R-row (or amends spec 04 \u00a77): the Origin netloc must equal the Host header, and the scheme is ignored because of R45. No code change.",
+  "source": "opus"
+ },
+ {
+  "task": "P4-T3",
+  "severity": "medium",
+  "file": "app/main.py:165",
+  "problem": "install(app) is not called anywhere in the production app, so CSRF, the 16 KB body cap, the plan cap and the extra headers are inactive in prod. The task's tests build their own FastAPI app and call install themselves, so they cannot catch this. It is not a P4-T3 defect: R10 assigns the wiring to INT-1. Codex rated it high; it is downgraded here because it is out of this task's scope.",
+  "fix": "INT-1: add `from app.safety.web import install; install(app)` after main.py's @app.middleware('http') guard. Add tests against app.main:app: a POST /api/plan without X-ShopPilot returns 403 csrf, and the CSP on GET /api/store contains object-src 'none'.",
+  "source": "both"
+ },
+ {
+  "task": "P3-ML3",
+  "severity": "medium",
+  "file": "app/tools/forecast_demand.py",
+  "problem": "In all-products mode, every item is a full spec \u00a73.1 dict (band, stock and history arrays). I measured the seeded store: 86,086 bytes of JSON for 20 items at horizon_days=60 with only_at_risk=false, and 37,437 bytes at 14 days. If the planner loop sends ToolResult.data back to Claude as a tool_result, that is roughly 25k input tokens per call, which eats into the per-session LLM budget (R7). The tool follows the spec as written, so this does not block approval.",
+  "fix": "Integration/P2 decision: send the LLM only `summary` plus a compact projection of each item (product_id, name, days_to_stockout, stockout_range, reorder_qty, explanation), and keep the full data for the UI. Another option is to add an opt-in compact flag to the spec later. No change to ML-3 is needed now.",
+  "source": "opus"
+ },
+ {
+  "task": "P2-T6",
+  "severity": "medium",
+  "file": "app/tools/list_inbox.py",
+  "problem": "Line 134 puts the email `subject` into allowed `<untrusted_email>` tags, but `inbound_guard.screen_inbox` (app/safety/inbound_guard.py:199) screens only `body`. The subject is escaped, so it cannot break out of the tag, but it is customer text the guard never checked, and it reaches the planner. That goes against R24 (\"no unscreened text reaches the planner\"), and the spec 02 \u00a74.8 output example has no subject attribute. Nothing can exploit it today: the only write to `inbox` is the seed (app/seed/generate.py:339), and its subjects are harmless. Any future way to ingest email would open it.",
+  "fix": "Delete the `subject` attribute (line 134) so the output matches the \u00a74.8 example. If the subject is needed later, P4 should screen subject and body together. Add a test: an allowed email whose subject contains 'ignore your rules' must not show that text in llm_text.",
+  "source": "both"
+ },
+ {
+  "task": "P2-T6",
+  "severity": "medium",
+  "file": "app/tools/list_inbox.py",
+  "problem": "`_email_customers` (lines 120-125) uses COALESCE(o.customer_id, c.id), so an email is tied to the linked order's customer before the actual sender's customer. If `inbox.order_id` ever disagrees with `from_addr`, an email from someone else counts as refund evidence from that order's customer, which weakens the D5 rule that the email must come from the order's customer. The validator uses the same rule (app/agent/validator.py:47), so the two agree. Nothing exploits it now because the seed sets order_id to the sender's own order.",
+  "fix": "Tie evidence to the sender: map the email to a customer only when the sender's customer and the order's customer match, or use `c.id` (the sender) alone. Change the validator to the same join (that is P2-T7's file), and add a test where sender and order do not match.",
+  "source": "codex"
+ },
+ {
+  "task": "P2-T10",
+  "severity": "medium",
+  "file": "app/agent/executor.py",
+  "problem": "Line 109-111: the execute audit payload is {\"summary\",\"args\"}. policy._session_hour (spec 04 \u00a7line 168) sums top-level payload[\"amount_cents\"]. I confirmed with a probe that executor rows carry no top-level amount_cents, and args.amount_cents is null for full refunds, so the $1,000 per session-hour refund cap never adds up executed refunds. Today the 5-refunds/hour count cap times the $200/order cap happens to give the same bound, but that is coincidence: the dollar guard itself is dead.",
+  "fix": "Add \"amount_cents\": res.data.get(\"amount_cents\") to the execute payload when res.ok (refund_order already returns it in data). Add a test: run one refund through execute(), then check that policy._recent_executes picks up its amount.",
+  "source": "opus"
+ },
+ {
+  "task": "P2-T10",
+  "severity": "medium",
+  "file": "app/agent/executor.py",
+  "problem": "Line 42-43: claim_plan accepts status 'executed' and keeps it unchanged with a CASE. The frozen R1 text says status IN ('proposed','executing'). The deviation is deliberate and was flagged in contract_requests. Without it, double-clicking a single-step plan returns 404 instead of replayed=true, which would break Review Focus #1. It is safe, because every step of an executed plan has a step_runs row and so can only replay. It still changes the frozen interface and needs integrator sign-off.",
+  "fix": "The integrator amends R1 and \u00a72 ('re-callable while proposed|executing|executed') and tells P1-T6 and P4-T4. No code change.",
+  "source": "opus"
+ },
+ {
+  "task": "P2-T10",
+  "severity": "medium",
+  "file": "app/agent/executor.py",
+  "problem": "Line 40: BEGIN IMMEDIATE holds the session write lock while tool.run executes, and run can include Stripe network calls (SDK max_network_retries=2). get_db opens connections with timeout=5. If a double-click arrives while a slow Stripe call is in flight, the second request gets sqlite3.OperationalError 'database is locked' and a 500 internal, not the replayed result R1 promises. With mock Stripe the call is instant, so local tests cannot show this.",
+  "fix": "Cross-team, P1-T6/P1-T2. Either the route maps the 'database is locked' OperationalError to 409 or 503 with retry_after_s, or get_db's busy timeout goes above the worst-case Stripe call (about 30 s). Note it in the R1 amendment.",
+  "source": "opus"
+ },
+ {
+  "task": "P2-T10",
+  "severity": "medium",
+  "file": "tests/agent/test_executor.py",
+  "problem": "Nothing tests the SAVEPOINT rollback in _run_tool (executor.py:83-95), which is the guarantee that a failed or crashed tool leaves no partial writes. I checked it by hand: a tool that UPDATEs products and then returns ok=False leaves SUM(stock) unchanged. No regression test protects it.",
+  "fix": "Add a test with a fake tool that writes a row and then returns ok=False, and another that writes and then raises. Assert the DB state is unchanged and the step has no step_runs row.",
+  "source": "opus"
+ },
+ {
+  "task": "P2-T10",
+  "severity": "medium",
+  "file": "tests/agent/test_executor.py",
+  "problem": "Line 69-77: the _save helper inserts plans rows by hand instead of calling P2-T8 save_plan, which is not in the tree yet. The created_at format and the validations_json shape are assumed and have not been checked against the real writer. If save_plan writes a different timestamp format, or validations keyed differently, claim_plan's TTL parse or the stored-validation lookup could fail once integrated.",
+  "fix": "When P2-T8 lands, switch _save to save_plan(ctx, plan, validations, diff) and re-run the tests. Already listed as the implementer's next step.",
+  "source": "opus"
+ },
+ {
+  "task": "P2-T8",
+  "severity": "medium",
+  "file": "app/agent/planner.py",
+  "problem": "Record mode can save a misaligned recording (lines 110-115 and 255). If the router call fails with an LLMError in live record mode (overloaded, timeout, busy), route() falls open and nothing for that call goes into trace.recorded. The planner calls are recorded starting at index 0, the plan ends 'ready', and save_recording writes the file. Replay reads calls[len(trace.calls)], so the router gets the first planner response. The planner turns then run one step out of order, or the plan hits replay_miss. A judge LLMError also leaves its call out of the recording, so replay returns 'warn' where the live run gave a real verdict. Either way a recording that cannot replay correctly gets saved for the demo fallback or CI with no error.",
+  "fix": "In make_plan, save only when every stage was recorded: require trace.recorded[0]['stage'] == 'router' and, when plan.judge is set, require that the judge call was recorded (or have route()/judge() set a fell_back flag on the trace and skip the save when it is set). Add a test: in record mode, the router raises LLMError('overloaded') and save_recording is not called.",
+  "source": "opus"
+ },
+ {
+  "task": "P2-T8",
+  "severity": "medium",
+  "file": "app/agent/planner.py",
+  "problem": "Router refusals fall through to Sonnet (lines 107-116). When the router response has stop_reason == 'refusal' and no parseable text, _final_json raises ValueError. route() turns that into route='plan', so the request is sent to the more expensive planner. Spec 02 \u00a76.1 says a refusal gives Plan status='refused' with the message taken from stop_details.explanation when present. The loop's own refusal branch (line 200-201) also ignores r.stop_details and always returns the fixed text 'I can't help with that request.'",
+  "fix": "In route(), check r.stop_reason == 'refusal' before parsing and return {'route': 'reject', 'reply': explanation or default, 'reason': 'refusal'}. In _loop, use (r.stop_details or {}).get('explanation') or the default text. Add a test that a router refusal sends no planner call (script.models == [HAIKU]).",
+  "source": "both"
+ },
+ {
+  "task": "P2-T8",
+  "severity": "medium",
+  "file": "app/agent/planner.py",
+  "problem": "The usage summary is missing token and time totals that the HTTP contract requires (lines 217-223). Resolutions \u00a77.3 says POST /api/plan returns usage with input_tokens, cache_read_tokens, cache_write_tokens, output_tokens and ms. app/main.py:350 returns plan.usage unchanged, but _usage_summary only gives calls, total_cost_usd, cache_hit_pct and prompt_version. The UI fixture web/public/v2/fixtures/plan.json:204-210 reads usage.input_tokens, output_tokens and ms, so the cost chip shows blank values on live plans. This matches the Task 8 interface as written, but the resolutions win over the plan.",
+  "fix": "Add the five sums over trace.calls to _usage_summary: input_tokens, cache_read_tokens, cache_write_tokens, output_tokens and ms. Extend test_usage_summed to check them. Alternatively, route the change to the P1-T6 owner, but planner.py is the smallest place to make it.",
+  "source": "opus"
+ },
+ {
+  "task": "INT-1",
+  "severity": "medium",
+  "file": "tests/conftest.py",
+  "problem": "INT-1-owned file fails `ruff format --check` (Script.text dict literals, lines ~155-158). CI runs `uv run ruff check . && uv run ruff format --check .` (.github/workflows/ci.yml:12), so the gate INT-1 reported green is not CI parity. Repo-wide, 50 files would be reformatted (49 owned by other tasks). On push to main the CI `test` job goes red, and the `docker` job (`needs: test`) and deploy are blocked.",
+  "fix": "INT-1: run `uv run ruff format tests/conftest.py`. Orchestrator: after W2 lands, run one `uv run ruff format .` commit and add `ruff format --check .` to the INT gate so it matches CI.",
+  "source": "opus"
+ },
+ {
+  "task": "INT-1",
+  "severity": "medium",
+  "file": "pyproject.toml",
+  "problem": "addopts now includes `--cov=app --cov-fail-under=80`, as INT-1 item (3) requires. Every per-task command the orchestrator gives (`uv run pytest <files> -q`) now exits non-zero on coverage even when all tests pass. Live runs (`RUN_LIVE=1 uv run pytest -m live tests/x`) fail the same way. W3 agents will misread this as red.",
+  "fix": "Orchestrator updates the agent template to `uv run pytest <files> -q --no-cov`. The alternative is to move `--cov-fail-under` from addopts into the CI command only.",
+  "source": "opus"
+ },
+ {
+  "task": "INT-1",
+  "severity": "medium",
+  "file": "app/agent/validator.py",
+  "problem": "R50 evidence binding (line ~74) runs only when the step has an order or customer owner (`if owners and owners != {cust}`). A `create_restock_po` step that cites an allowed customer email has no owner, so a 'clean' injected email can steer a restock with no binding check. This passes the letter of R50 ('the step's order(s) must belong...') but not 'every write tool'. This is P2-T7 code, not INT-1, and has no test.",
+  "fix": "P2-T7: reject email evidence on steps that have no customer or order owner, or require OWNER evidence for create_restock_po. Add a validator test for restock with email evidence.",
+  "source": "codex"
+ },
+ {
+  "task": "INT-1",
+  "severity": "medium",
+  "file": "app/main.py",
+  "problem": "Pre-existing P1-T6 race (not an INT-1 change): `current_session` (lines ~127-135) checks `store_exists` and then calls `create_store` with no per-session lock. After a restart, two concurrent requests with the same cookie can both reseed. `os.replace` then swaps the file under a connection that was opened on the first copy, so a write on that connection succeeds but disappears. Both requests also report `store_reset`. The window is narrow (restart plus concurrent first requests, e.g. UI parallel GETs plus an execute).",
+  "fix": "Add a per-sid lock (dict of threading.Lock) around the exists-check and create_store, re-check inside the lock, and add a concurrent same-cookie reseed test. Can go with P7-D3 restart work (R48).",
+  "source": "codex"
+ },
+ {
+  "task": "INT-1",
+  "severity": "medium",
+  "file": "docs/plans/00-master-waves.md",
+  "problem": "The Day-1 checklist item 2 (line ~162) says Console limits are org $40/mo, prod $20/mo, dev $20/mo. R47 (00-contract-resolutions.md:292), which wins, says org $50/mo, prod $30/mo, dev $20/mo. A human following the checklist will set the wrong caps. INT-1 does not own this file.",
+  "fix": "Orchestrator updates checklist item 2 to the R47 values ($50 / $30 / $20).",
+  "source": "codex"
+ }
+]

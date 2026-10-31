@@ -1,0 +1,71 @@
+---
+// Hero bento cluster: the real plan card (tilted) with 4 overlapping tiles.
+// Server-rendered from demo data; CSS-only signature (pills tick, badge lands).
+import { plan, inbox, money, chartPaths, forecast, store, copy } from '../../data/demo';
+import Receipt from './Receipt.astro';
+import Icon from './Icon.astro';
+
+const blocked = inbox[0];
+const refund = plan.steps.find((s) => s.movesMoney)!;
+const p = chartPaths();
+const base = 104;
+---
+<figure class="cluster" data-ui aria-label={`Demo store plan for ${store.name}: 5 checked steps, ${money(refund.amountCents ?? 0)} refund awaiting approval`}>
+  <div class="cluster-bg" aria-hidden="true"><i></i></div>
+
+  <div class="hc hc-plan">
+    <div class="hc-head">
+      <p class="hc-title">Plan <code class="id">{plan.planId}</code></p>
+      <span class="tag">Demo store</span>
+    </div>
+    <p class="hc-req">{copy.request}</p>
+    <ol class="hc-steps">
+      {plan.steps.map((s) => (
+        <li class="hc-step">
+          <span class="step-n" aria-hidden="true">{s.n}</span>
+          <span class="hc-step-main">
+            <span class="hc-step-title">{s.title.split(' (')[0]}{s.title.includes(' (') && <> <span class="nw">({s.title.split(' (')[1]}</span></>}</span>
+            <code class="tool">{s.tool}</code>
+          </span>
+          {s.amountCents != null && <span class:list={['hc-money num', { 'is-money': s.movesMoney }]}>{money(s.amountCents)}{s.movesMoney ? '' : ' est.'}</span>}
+          <span class:list={['pill tick', s.movesMoney ? 'pill--approval' : 'pill--checked']}>
+            <span class="tick-a" aria-hidden="true">Planned</span>
+            <span class="tick-b">{s.movesMoney ? 'Needs approval' : 'Checked'}</span>
+          </span>
+        </li>
+      ))}
+    </ol>
+  </div>
+
+  <p class="hc hc-badge">
+    <Icon name="lock" />
+    <span><strong class="num">{money(refund.amountCents ?? 0)}</strong> awaiting approval</span>
+  </p>
+
+  <div class="hc hc-mail">
+    <div class="mail-head">
+      <span class="stamp">BLOCKED</span>
+      <span class="mail-from addr">{blocked.from}</span>
+    </div>
+    <p class="mail-subj">{blocked.subject}</p>
+    <p class="hc-guard"><code class="id">{blocked.label}</code> <span class="num">{blocked.score}</span></p>
+  </div>
+
+  <div class="hc hc-chart">
+    <p class="hc-chart-title">{forecast.product} <code class="id">{forecast.sku}</code></p>
+    <svg viewBox="0 0 280 120" role="img" aria-label={forecast.caption}>
+      <line class="chart-axis" x1="16" y1={base} x2="264" y2={base} />
+      <path class="chart-band" d={p.band} />
+      <path class="chart-p50" d={p.p50} />
+      <line class="chart-onhand" x1="16" y1={p.onHandY} x2="264" y2={p.onHandY} />
+      <line class="chart-marker" x1={p.markerX} y1="14" x2={p.markerX} y2={base} />
+      <text class="chart-lbl chart-lbl--money" x="262" y={p.onHandY - 5} text-anchor="end">{forecast.onHand} on hand</text>
+      <text class="chart-lbl" x={p.markerX + 5} y="24">Runs out, day {forecast.daysToStockout}</text>
+    </svg>
+  </div>
+
+  <div class="hc hc-receipt">
+    <p class="hc-receipt-title">Audit log</p>
+    <Receipt rows={3} />
+  </div>
+</figure>

@@ -1,0 +1,22 @@
+---
+// Audit receipt rows (safety.auditReceipt). Landing shows all; the console
+// renders them hidden and reveals each one after its step runs.
+import { safety } from '../../data/v2';
+import Icon from './Icon.astro';
+interface Props { hidden?: boolean; rows?: number }
+const { hidden = false, rows = safety.auditReceipt.length } = Astro.props;
+---
+<ol class="receipt">
+  {safety.auditReceipt.slice(0, rows).map((r) => (
+    <li class="receipt-row" data-tool={r.tool} hidden={hidden} data-after-run={hidden ? '' : undefined}>
+      <span class="receipt-ts num">{r.ts}</span>
+      <div class="receipt-main">
+        <p class="receipt-sum">{r.summary}</p>
+        <p class="receipt-ids"><code class="tool">{r.tool}</code> <code class="id">{r.id}</code></p>
+      </div>
+      {r.undo
+        ? <span class="receipt-undo"><Icon name="undo" />Undo available</span>
+        : <span class="pill pill--blocked">Irreversible</span>}
+    </li>
+  ))}
+</ol>

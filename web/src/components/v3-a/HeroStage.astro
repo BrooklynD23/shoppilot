@@ -1,0 +1,86 @@
+---
+// Hero composition, server-rendered from demo data (no fetch, no skeleton).
+// Layers back to front: glow, receipt side panel, plan card, floating chips.
+// Signature (CSS only, v3-a.css): pills tick Planned -> Checked 1..5, then the badge lands.
+import { plan, inbox, money, forecast, store } from '../../data/demo';
+import { safety } from '../../data/v2';
+import Icon from './Icon.astro';
+import ForecastChart from './ForecastChart.astro';
+
+const blocked = inbox[0];
+const refund = plan.steps.find((s) => s.movesMoney)!;
+const receipt = safety.auditReceipt.slice(0, 3);
+---
+<div class="stage" data-ui>
+  <div class="stage-glow" aria-hidden="true"></div>
+
+  <article class="hs-panel hs-receipt" aria-label="Audit log, demo store">
+    <header class="hs-head">
+      <p class="hs-title">Audit log</p>
+      <span class="tag">Demo store</span>
+    </header>
+    <ol class="hs-feed">
+      {receipt.map((r) => (
+        <li class="hs-feed-row">
+          <div class="hs-feed-main">
+            <p class="hs-feed-sum">{r.summary}</p>
+            <p class="receipt-ids"><span class="num">{r.ts}</span> <code class="tool">{r.tool}</code></p>
+          </div>
+          {r.undo
+            ? <span class="receipt-undo"><Icon name="undo" />Undo</span>
+            : <span class="pill pill--blocked">Irreversible</span>}
+        </li>
+      ))}
+    </ol>
+  </article>
+
+  <article class="hs-panel hs-plan" aria-label="Plan, demo store">
+    <header class="hs-head">
+      <p class="hs-title">Plan <code class="id">{plan.planId}</code></p>
+      <p class="hs-meta">{plan.steps.length} steps, 1 needs your approval</p>
+      <span class="tag">{store.name}, demo store</span>
+    </header>
+    <ol class="hs-steps">
+      {plan.steps.map((s) => (
+        <li class:list={['hs-step', { 'hs-step--money': s.movesMoney }]}>
+          <span class="step-n num" aria-hidden="true">{s.n}</span>
+          <div class="hs-step-main">
+            <p class="step-title">{s.title}</p>
+            <p class="step-meta"><code class="tool">{s.tool}</code></p>
+          </div>
+          {s.amountCents != null && (
+            <p class="step-money num">{money(s.amountCents)}{s.movesMoney ? '' : ' est.'}</p>
+          )}
+          <span class="tick">
+            <span class="pill pill--planned tick-from" aria-hidden="true">Planned</span>
+            {s.movesMoney
+              ? <span class="pill pill--approval tick-to">Needs approval</span>
+              : <span class="pill pill--checked tick-to">Checked</span>}
+          </span>
+          {s.movesMoney && (
+            <p class="hs-badge"><span class="num">{money(refund.amountCents ?? 0)}</span> awaiting approval</p>
+          )}
+        </li>
+      ))}
+    </ol>
+    <footer class="hs-foot">
+      <p class="hs-out">Money out if you run <span class="num">{money(0)}</span></p>
+      <p class="hs-meta">Stripe test mode</p>
+    </footer>
+  </article>
+
+  <article class="hs-chip hs-mail" aria-label="Blocked inbox email">
+    <div class="mail-head">
+      <span class="stamp">BLOCKED</span>
+      <span class="mail-from addr">{blocked.from}</span>
+    </div>
+    <p class="mail-subj">{blocked.subject}</p>
+    <p class="hs-mail-why"><Icon name="shield" />Never sent to the planner</p>
+  </article>
+
+  <div class="hs-chip hs-fc">
+    <p class="hs-fc-head"><span>{forecast.product}</span> <code class="id">{forecast.sku}</code></p>
+    <ForecastChart id="hs-fc" bare />
+    <p class="hs-fc-out">Runs out about day {forecast.daysToStockout}</p>
+  </div>
+</div>

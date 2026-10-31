@@ -1,0 +1,78 @@
+---
+// "Demo store walkthrough": a CSS-only 12 s loop over 5 states of the real console.
+// Pause checkbox sets animation-play-state: paused (WCAG 2.2.2). Reduced motion shows scene 5, static.
+import { plan, inbox, copy, money, moneyOutCents, store } from '../../data/demo';
+import { how } from '../../data/v3';
+import Icon from './Icon.astro';
+import Receipt from './Receipt.astro';
+
+const blocked = inbox[0];
+const refund = plan.steps.find((s) => s.movesMoney)!;
+---
+<figure class="wt" data-ui aria-labelledby="wt-label">
+  <div class="wt-top">
+    <ol class="wt-rail" aria-label="Steps">
+      {how.steps.map((s, i) => <li class={`wt-r wt-r--${i + 1}`}><span class="wt-rn num" aria-hidden="true">{i + 1}</span>{s}</li>)}
+    </ol>
+    <label class="wt-pause">
+      <input type="checkbox" />
+      <span class="wt-pause-ic"><Icon name="pause" class="ic-pause" /><Icon name="play" class="ic-play" /></span>
+      <span class="wt-pause-t">Pause</span>
+    </label>
+  </div>
+
+  <div class="wt-win">
+    <div class="wt-bar">
+      <span class="pc-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span id="wt-label" class="wt-label">{how.loopLabel}</span>
+      <span class="tag">{store.name}</span>
+    </div>
+
+    <div class="wt-stage">
+      <!-- 1. Request typed -->
+      <div class="wt-s wt-s--1">
+        <p class="wt-field-l">Ask ShopPilot+</p>
+        <p class="wt-field"><span class="wt-typed">{copy.request}</span></p>
+        <p class="wt-act"><span class="wt-btn">Plan it</span></p>
+      </div>
+
+      <!-- 2. Plan checked -->
+      <div class="wt-s wt-s--2">
+        <p class="wt-h">Plan <span>5 steps, 1 needs your approval</span></p>
+        <ol class="wt-steps">
+          {plan.steps.map((s) => (
+            <li><span class="pc-n" aria-hidden="true">{s.n}</span><span class="wt-st">{s.title}</span>
+              <span class:list={['pill', s.movesMoney ? 'pill--approval' : 'pill--checked']}>{s.movesMoney ? 'Needs approval' : 'Checked'}</span></li>
+          ))}
+        </ol>
+      </div>
+
+      <!-- 3. Email blocked -->
+      <div class="wt-s wt-s--3">
+        <div class="wt-mail">
+          <p class="wt-mail-top"><span class="stamp">BLOCKED</span><span class="addr">{blocked.from}</span></p>
+          <p class="wt-mail-subj">{blocked.subject}</p>
+          <p class="wt-mail-raw">{blocked.preview}</p>
+          <p class="wt-mail-v"><Icon name="alert" />{blocked.reason}</p>
+        </div>
+      </div>
+
+      <!-- 4. $24 approved -->
+      <div class="wt-s wt-s--4">
+        <div class="wt-approve">
+          <span class="fake-check" aria-hidden="true"><Icon name="tick" /></span>
+          <span>Approve refund of {money(refund.amountCents ?? 0)} on order 1038</span>
+          <span class="pill pill--blocked">Irreversible</span>
+        </div>
+        <p class="wt-out"><span>Money out if you run</span><span class="num">{money(moneyOutCents)}</span></p>
+        <p class="wt-act"><span class="wt-btn">Run approved steps</span></p>
+      </div>
+
+      <!-- 5. Run done + receipt -->
+      <div class="wt-s wt-s--5">
+        <p class="wt-done"><Icon name="tick" />Done. Every step is in the audit log.</p>
+        <Receipt rows={3} class="receipt--mini" />
+      </div>
+    </div>
+  </div>
+</figure>

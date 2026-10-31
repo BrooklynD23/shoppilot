@@ -1,0 +1,25 @@
+---
+// Forecast band chart from chartPaths(). `mini` drops the axis labels for the hero chip.
+import { chartPaths, forecast } from '../../data/demo';
+interface Props { id: string; label?: string; mini?: boolean; caption?: boolean }
+const { id, label, mini = false, caption = true } = Astro.props;
+const p = chartPaths();
+const base = 104; // y of 0 units (h - pad)
+---
+<figure class:list={['chart', { 'chart--mini': mini }]}>
+  <svg viewBox="0 0 280 120" role="img" aria-labelledby={`${id}-t ${id}-d`}>
+    <title id={`${id}-t`}>Demand forecast for {forecast.product} ({forecast.sku}), next 14 days</title>
+    <desc id={`${id}-d`}>Cumulative units sold. The likely range crosses the {forecast.onHand} on hand line between day {forecast.range[0]} and day {forecast.range[1]}; the middle estimate crosses at about day {forecast.daysToStockout}.</desc>
+    <line class="chart-axis" x1="16" y1={base} x2="264" y2={base} />
+    <path class="chart-band" d={p.band} />
+    <path class="chart-p50" d={p.p50} />
+    <line class="chart-onhand" x1="16" y1={p.onHandY} x2="264" y2={p.onHandY} />
+    <line class="chart-marker" x1={p.markerX} y1="14" x2={p.markerX} y2={base} />
+    <circle class="chart-dot" cx={p.markerX} cy={p.onHandY} r="3.5" />
+    <text class="chart-lbl chart-lbl--money" x="262" y={p.onHandY - 4} text-anchor="end">{forecast.onHand} on hand</text>
+    <text class="chart-lbl" x={p.markerX + 6} y="22">Runs out, day {forecast.daysToStockout}</text>
+    {!mini && <text class="chart-lbl" x="16" y="116">Today</text>}
+    {!mini && <text class="chart-lbl" x="264" y="116" text-anchor="end">Day 14</text>}
+  </svg>
+  {caption && <figcaption>{label && <span class="tag">{label}</span>} {forecast.caption}</figcaption>}
+</figure>

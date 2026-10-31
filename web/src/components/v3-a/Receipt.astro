@@ -1,0 +1,24 @@
+---
+// Audit receipt rows (safety.auditReceipt). Landing shows a pick; the console
+// renders all rows hidden and reveals each one after its step runs.
+// Refunds are irreversible: never an Undo on refund_order.
+import { safety } from '../../data/v2';
+import Icon from './Icon.astro';
+interface Props { hidden?: boolean; pick?: string[] }
+const { hidden = false, pick } = Astro.props;
+const rows = pick ? safety.auditReceipt.filter((r) => pick.includes(r.tool)) : safety.auditReceipt;
+---
+<ol class="receipt">
+  {rows.map((r) => (
+    <li class="receipt-row" data-tool={r.tool} hidden={hidden} data-after-run={hidden ? '' : undefined}>
+      <span class="receipt-ts num">{r.ts}</span>
+      <div class="receipt-main">
+        <p class="receipt-sum">{r.summary}</p>
+        <p class="receipt-ids"><code class="tool">{r.tool}</code> <code class="id">{r.id}</code></p>
+      </div>
+      {r.undo
+        ? <span class="receipt-undo"><Icon name="undo" />Undo available</span>
+        : <span class="pill pill--blocked">Irreversible</span>}
+    </li>
+  ))}
+</ol>

@@ -1,0 +1,47 @@
+---
+// One plan step. Used by the landing hero (compact, also the no-JS fallback)
+// and the console (full). src/scripts/v3-c/hero.ts builds the same compact DOM.
+import type { Step } from '../../data/demo';
+import { money } from '../../data/demo';
+import Icon from './Icon.astro';
+import ForecastChart from './ForecastChart.astro';
+
+interface Props { step: Step; variant?: 'compact' | 'full' }
+const { step: s, variant = 'full' } = Astro.props;
+const full = variant === 'full';
+const pill = s.movesMoney ? { kind: 'approval', text: 'Needs approval' } : { kind: 'checked', text: 'Checked' };
+const approveText = s.movesMoney && s.amountCents != null
+  ? `Approve refund of ${money(s.amountCents)} on ${s.title.replace(/^Refund /, '')}. Card refunds cannot be undone.`
+  : 'Run this step';
+---
+<li class:list={['step', `step--${variant}`]} data-step={s.id} data-tool={s.tool} data-money={s.movesMoney ? s.amountCents : undefined}>
+  <span class="step-n" aria-hidden="true">{s.n}</span>
+  <div class="step-body">
+    <div class="step-top">
+      <p class="step-title">{s.title}</p>
+      {s.amountCents != null && (
+        <p class="step-money"><span class="num">{money(s.amountCents)}</span>{s.movesMoney ? '' : ' est.'}</p>
+      )}
+      <span class={`pill pill--${pill.kind}`} data-pill>{pill.text}</span>
+      {full && <span class="valid"><Icon name="tick" />Valid</span>}
+    </div>
+    <p class="step-meta">
+      <code class="tool">{s.tool}</code>
+      <span class="diff"><span>{s.before}</span><Icon name="arrow" class="diff-arrow" /><span>{s.after}</span></span>
+    </p>
+    {full && (
+      <>
+        <p class="step-target">{s.target}</p>
+        <p class="step-why">Why: {s.why}</p>
+        {s.tool === 'forecast_demand' && <ForecastChart id={`fc-${s.id}`} />}
+        <div class="step-approve">
+          <label class="check">
+            <input type="checkbox" data-approve checked={s.approved} />
+            <span>{approveText}</span>
+          </label>
+          {!s.undoable && s.movesMoney && <span class="pill pill--blocked">Irreversible</span>}
+        </div>
+      </>
+    )}
+  </div>
+</li>

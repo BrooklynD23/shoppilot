@@ -9,6 +9,11 @@ const v2 = [
   { n: 5, name: 'Trust ledger, safety-first', line: 'Every dollar previewed, every action receipted; a "try to trick it" box.' },
   { n: 6, name: 'Recommended blend', line: "Approach 1's skin, 2's live hero, 5's safety copy, 4's product film slot." },
 ];
+const v3 = [
+  { k: 'a', name: 'Dark premium', line: 'Near-black, one luminous accent, glow behind a layered product hero.' },
+  { k: 'b', name: 'Vibrant light', line: 'Animated gradient-mesh hero, colourful accents, light cards with soft depth.' },
+  { k: 'c', name: 'Bento product-led', line: 'Neutral canvas; the page is mostly real product tiles in a bento grid.' },
+];
 const old = [
   { key: 'a', name: 'Carton' }, { key: 'b', name: 'Label' }, { key: 'c', name: 'Build Book' },
 ];
@@ -16,7 +21,17 @@ const old = [
 <Base title="ShopPilot+ approaches" description="Six landing approaches for ShopPilot+, plus the rejected first round.">
   <main class="idx">
     <h1>ShopPilot+ landing approaches</h1>
-    <p>Round 2: six approaches, each a full landing page and its matching console. Static demo data.</p>
+    <h2 class="round">Round 3: one page, three skins</h2>
+    <ol>
+      {v3.map((d) => (
+        <li>
+          <h2>{d.k.toUpperCase()}. {d.name}</h2>
+          <p>{d.line}</p>
+          <p class="links"><a href={`/v3/${d.k}/`}>Landing</a> <a href={`/v3/${d.k}/app/`}>Console</a></p>
+        </li>
+      ))}
+    </ol>
+    <h2 class="round">Round 2: six approaches</h2>
     <ol>
       {v2.map((d) => (
         <li>
@@ -32,6 +47,6 @@ const old = [
         <li><span>{d.key.toUpperCase()}. {d.name}</span> <a href={`/mockups/${d.key}/`}>Landing</a> <a href={`/mockups/${d.key}/console/`}>Console</a></li>
       ))}
     </ul>
-    <p class="note">Comparison and ranking: <code>shoppilot/web/DIRECTIONS-v2.md</code>.</p>
+    <p class="note">Comparison and ranking: <code>shoppilot/web/DIRECTIONS-v3.md</code> (round 3), <code>DIRECTIONS-v2.md</code> (round 2).</p>
   </main>
 </Base>

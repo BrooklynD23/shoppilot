@@ -1,0 +1,300 @@
+---
+import '@fontsource-variable/schibsted-grotesk';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '../../../styles/v3-c.css';
+import Base from '../../../layouts/Base.astro';
+import HeroCluster from '../../../components/v3-c/HeroCluster.astro';
+import Walkthrough from '../../../components/v3-c/Walkthrough.astro';
+import ForecastChart from '../../../components/v3-c/ForecastChart.astro';
+import Receipt from '../../../components/v3-c/Receipt.astro';
+import Icon from '../../../components/v3-c/Icon.astro';
+import { nav, hero, builtWith, proof, how, bento, safety, quote, pricingH2, faqH2, closing, footer } from '../../../data/v3';
+import { pricing, pricingLabel, faq, anomalies, safety as safety2 } from '../../../data/v2';
+import { plan, inbox, money, chartPaths, forecast } from '../../../data/demo';
+
+const BASE = '/v3/c/';
+const APP = `${BASE}app/`;
+const [blocked, ...allowed] = inbox;
+const refund = plan.steps.find((s) => s.movesMoney)!;
+const order = refund.title.replace(/^Refund /, '');
+const diffSteps = plan.steps.filter((s) => ['mark_shipped', 'send_email', 'create_restock_po'].includes(s.tool));
+const tiles = Object.fromEntries(bento.tiles.map((t) => [t.key, t.title]));
+const mini = chartPaths(280, 96, 8, 48);
+const shipRows = safety2.auditReceipt.filter((r) => r.tool === 'mark_shipped' || r.tool === 'send_email');
+const footLinks = footer.links.map((l) => ({ ...l, href: l.href.startsWith('/') ? l.href : `${BASE}${l.href}` }));
+const glyphs = ['ring', 'bars', 'tri', 'db'] as const;
+---
+<Base title="ShopPilot+: autopilot for your shop" description={hero.sub} themeLight="#eef0f2" themeDark="#121417">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-head">
+    <div class="wrap nav-row">
+      <a class="wordmark" href={BASE} aria-current="page"><span class="mark" aria-hidden="true"></span>ShopPilot+</a>
+      <nav aria-label="Main">
+        <ul class="nav">{nav.links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}</ul>
+      </nav>
+      <a class="btn btn-ink btn-sm" href={APP}>{nav.cta}</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- 1. Hero: compact text column + layered bento cluster -->
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <h1 id="hero-title">{hero.h1}</h1>
+        <p class="hero-sub" data-hero-sub>{hero.sub}</p>
+        <a class="btn btn-ink btn-lg" href={APP}>{hero.cta}</a>
+        <p class="hero-note">{hero.note}</p>
+      </div>
+      <HeroCluster />
+    </section>
+
+    <!-- 2. Built with: bordered cells -->
+    <section class="wrap strip-wrap" aria-label={builtWith.label}>
+      <ul class="strip">
+        <li class="strip-label">{builtWith.label}</li>
+        {builtWith.items.map((it, i) => (
+          <li class="strip-cell">
+            <svg class="glyph" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              {glyphs[i] === 'ring' && <><circle cx="10" cy="10" r="7" /><circle cx="10" cy="10" r="2.2" /></>}
+              {glyphs[i] === 'bars' && <><rect x="3" y="3" width="14" height="14" rx="3.5" /><path d="M7.5 13l5-6" /></>}
+              {glyphs[i] === 'tri' && <path d="M10 3l7.5 13h-15z" />}
+              {glyphs[i] === 'db' && <><ellipse cx="10" cy="5" rx="6.5" ry="2.5" /><path d="M3.5 5v10c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5V5M3.5 10c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5" /></>}
+            </svg>
+            <span class="strip-name">{it.name}</span>
+            <span class="strip-by">{it.by}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <!-- 3. Proof: 3 stat tiles, each over its UI -->
+    <section class="wrap section" aria-labelledby="proof-title">
+      <div class="sh"><h2 id="proof-title">{proof.h2}</h2><p>{proof.line}</p></div>
+      <div class="grid">
+        <article class="tile stat reveal">
+          <div class="stat-ui" data-ui>
+            <svg viewBox="0 0 280 96" role="img" aria-label={forecast.caption}>
+              <path class="chart-band" d={mini.band} />
+              <path class="chart-p50" d={mini.p50} />
+              <line class="chart-onhand" x1="8" y1={mini.onHandY} x2="272" y2={mini.onHandY} />
+            </svg>
+          </div>
+          <p class="stat-value num">{proof.stats[0].value}</p>
+          <p class="stat-label">{proof.stats[0].label}</p>
+          <p class="stat-src"><span class="tag">{proof.stats[0].source}</span></p>
+        </article>
+        <article class="tile stat reveal">
+          <div class="stat-ui" data-ui>
+            {anomalies.map((a) => (
+              <p class="mini-row"><span>Order <span class="num">{a.order}</span></span><span class="pill pill--approval">Flagged, score <span class="num">{a.score}</span></span></p>
+            ))}
+          </div>
+          <p class="stat-value num">{proof.stats[1].value}</p>
+          <p class="stat-label">{proof.stats[1].label}</p>
+          <p class="stat-src"><span class="tag">{proof.stats[1].source}</span></p>
+        </article>
+        <article class="tile stat reveal">
+          <div class="stat-ui" data-ui>
+            <p class="mini-row"><code class="id">{plan.planId}</code><span>5 steps, <span class="num">{plan.usage.tokens}</span> tokens</span></p>
+            <p class="mini-row"><span>Cache hit</span><span class="pill pill--checked"><span class="num">{plan.usage.cacheHitPct}%</span></span></p>
+          </div>
+          <p class="stat-value num">{proof.stats[2].value}</p>
+          <p class="stat-label">{proof.stats[2].label}</p>
+          <p class="stat-src"><span class="tag">{proof.stats[2].source}</span></p>
+        </article>
+      </div>
+    </section>
+
+    <!-- 4. How: one wide walkthrough tile with a step rail -->
+    <section class="wrap section" id="how" aria-labelledby="how-title">
+      <div class="sh"><h2 id="how-title">{how.h2}</h2><p>{how.line}</p></div>
+      <figure class="tile how-tile reveal">
+        <div class="how-side">
+          <ol class="rail-steps">
+            {how.steps.map((s, i) => <li class={`rail-${i + 1}`}><span class="rail-n num" aria-hidden="true">{i + 1}</span>{s}</li>)}
+          </ol>
+          <div class="how-cap">
+            <figcaption>{how.loopLabel}</figcaption>
+            <label class="pause"><input type="checkbox" /> Pause</label>
+          </div>
+        </div>
+        <div class="how-stage tint-sky">
+          <Walkthrough />
+        </div>
+      </figure>
+    </section>
+
+    <!-- 5. Bento: 6 tiles, varied spans -->
+    <section class="wrap section" id="product" aria-labelledby="product-title">
+      <div class="sh"><h2 id="product-title">{bento.h2}</h2><p>{bento.line}</p></div>
+      <div class="bento">
+        <article class="tile b-approve reveal">
+          <h3 class="tile-title">{tiles.approve}</h3>
+          <div class="b-ui" data-ui>
+            <div class="mini-step">
+              <span class="step-n" aria-hidden="true">{refund.n}</span>
+              <span class="hc-step-main"><span class="hc-step-title">{refund.title}</span><code class="tool">{refund.tool}</code></span>
+              <span class="hc-money num is-money">{money(refund.amountCents ?? 0)}</span>
+              <span class="pill pill--approval">Needs approval</span>
+            </div>
+            <div class="approve">
+              <span class="fake-box" aria-hidden="true"></span>
+              <span class="approve-text">Approve refund of {money(refund.amountCents ?? 0)} on {order}. Card refunds cannot be undone.</span>
+              <span class="pill pill--blocked">Irreversible</span>
+            </div>
+            <p class="out-line"><span>Money out if you run</span> <strong class="num">{money(0)}</strong></p>
+          </div>
+        </article>
+
+        <article class="tile b-guard reveal">
+          <h3 class="tile-title">{tiles.guard}</h3>
+          <div class="b-ui" data-ui>
+            <div class="mail mail--bad">
+              <div class="mail-head"><span class="stamp">BLOCKED</span><span class="mail-from addr">{blocked.from}</span></div>
+              <p class="mail-subj">{blocked.subject}</p>
+              <p class="mail-guard"><code class="id">{blocked.label}</code> <span class="num">{blocked.score}</span></p>
+            </div>
+            {allowed.map((m) => (
+              <div class="mail">
+                <div class="mail-head"><span class="pill pill--checked">Allowed</span><span class="mail-from addr">{m.from}</span></div>
+                <p class="mail-subj">{m.subject}</p>
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <article class="tile b-diff reveal">
+          <h3 class="tile-title">{tiles.diff}</h3>
+          <ul class="b-ui diffs" data-ui>
+            {diffSteps.map((s) => (
+              <li><code class="tool">{s.tool}</code><span class="diff"><span class="was">{s.before}</span><Icon name="arrow" class="diff-arrow" /><span>{s.after}</span></span></li>
+            ))}
+          </ul>
+        </article>
+
+        <article class="tile b-forecast reveal">
+          <h3 class="tile-title">{tiles.forecast}</h3>
+          <div class="b-ui" data-ui><ForecastChart id="fc-bento" label="Demo store" /></div>
+        </article>
+
+        <article class="tile b-anomaly reveal">
+          <h3 class="tile-title">{tiles.anomaly}</h3>
+          <ul class="b-ui anoms" data-ui>
+            {anomalies.map((a) => (
+              <li class="anom">
+                <p class="anom-head"><span>Order <span class="num">{a.order}</span></span><span class="pill pill--approval">Score <span class="num">{a.score}</span></span></p>
+                <p class="anom-why">{a.reason}</p>
+              </li>
+            ))}
+          </ul>
+        </article>
+
+        <article class="tile b-audit reveal">
+          <h3 class="tile-title">{tiles.audit}</h3>
+          <div class="b-ui" data-ui><Receipt /></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- 6. Safety: one split tile -->
+    <section class="wrap section" id="safety" aria-labelledby="safety-title">
+      <div class="sh"><h2 id="safety-title">{safety.h2}</h2><p>{safety.line}</p></div>
+      <div class="tile split reveal">
+        <div class="split-l tint-rose" data-ui>
+          <article class="mail mail--bad mail--big">
+            <div class="mail-head"><span class="stamp stamp--big">BLOCKED</span><span class="mail-from addr">{blocked.from}</span></div>
+            <p class="mail-subj">{blocked.subject}</p>
+            <p class="mail-raw">“{blocked.preview}”</p>
+            <p class="mail-verdict"><Icon name="lock" />{blocked.reason}</p>
+            <p class="mail-guard"><code class="id">{blocked.label}</code> <span class="num">{blocked.score}</span></p>
+          </article>
+        </div>
+        <div class="split-r" data-ui>
+          <ul class="caps">
+            {safety.caps.map((c) => <li><Icon name="tick" />{c}</li>)}
+          </ul>
+          <Receipt rows={1} />
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Quote next to the shipping receipts -->
+    <section class="wrap section" aria-label="Why we built it">
+      <div class="quote-row">
+        <figure class="tile quote reveal">
+          <blockquote><p>{quote.text}</p></blockquote>
+          <figcaption>{quote.source}</figcaption>
+        </figure>
+        <div class="tile inbox reveal" data-ui>
+          {allowed.map((m) => (
+            <div class="inbox-row">
+              <span class="pill pill--checked">Allowed</span>
+              <span class="inbox-main"><span class="mail-subj">{m.subject}</span><span class="mail-from addr">{m.from}</span></span>
+              <span class="tag">{m.reason}</span>
+            </div>
+          ))}
+          {shipRows.map((r) => (
+            <div class="inbox-row">
+              <span class="pill pill--done">Done</span>
+              <span class="inbox-main"><span class="mail-subj">{r.summary}</span><code class="tool">{r.tool}</code></span>
+              <span class="receipt-ts num">{r.ts}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. Pricing -->
+    <section class="wrap section" id="pricing" aria-labelledby="pricing-title">
+      <div class="sh"><h2 id="pricing-title">{pricingH2}</h2><p class="pricing-label">{pricingLabel}</p></div>
+      <div class="grid">
+        {pricing.map((t) => (
+          <article class:list={['tile tier', { 'tier--now': t.name === 'Demo' }]}>
+            <div class="tier-head">
+              <h3>{t.name}</h3>
+              <p class="tier-price num">{t.price}<span class="tier-period">{t.period}</span></p>
+            </div>
+            <ul class="tier-feats">{t.features.map((f) => <li><Icon name="tick" />{f}</li>)}</ul>
+            {t.name === 'Demo'
+              ? <a class="btn btn-ink" href={APP}>{t.cta}</a>
+              : <button class="btn" type="button" disabled>{t.cta}</button>}
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <!-- 9. FAQ -->
+    <section class="wrap section faq" id="faq" aria-labelledby="faq-title">
+      <h2 id="faq-title">{faqH2}</h2>
+      <div class="tile faq-list">
+        {faq.map((f) => <details class="qa"><summary>{f.q}</summary><p>{f.a}</p></details>)}
+      </div>
+    </section>
+
+    <!-- 10. Closing -->
+    <section class="wrap section" aria-labelledby="closing-title">
+      <div class="closing">
+        <div class="closing-copy">
+          <h2 id="closing-title">{closing.h2}</h2>
+          <p>{closing.line}</p>
+          <a class="btn btn-white btn-lg" href={APP}>{closing.cta}</a>
+        </div>
+        <div class="closing-ui" data-ui>
+          <div class="approve">
+            <span class="fake-box is-on" aria-hidden="true"><Icon name="tick" /></span>
+            <span class="approve-text">Approve refund of {money(refund.amountCents ?? 0)} on {order}. Card refunds cannot be undone.</span>
+            <span class="pill pill--blocked">Irreversible</span>
+          </div>
+          <p class="out-line"><span>Money out if you run</span> <strong class="num">{money(refund.amountCents ?? 0)}</strong></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap foot-row">
+      <ul class="foot-links">{footLinks.map((l) => <li><a href={l.href}>{l.label}</a></li>)}</ul>
+      <p class="foot-note">{footer.note}</p>
+    </div>
+  </footer>
+</Base>

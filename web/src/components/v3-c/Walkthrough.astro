@@ -1,0 +1,42 @@
+---
+// Pure-CSS walkthrough loop (12 s): request typed, plan checked, email blocked,
+// $24 approved, run done + receipt. Static markup is the FINAL state; keyframes
+// in v3-c.css replay the cycle. Reduced motion shows the final state.
+import { plan, copy, money, inbox } from '../../data/demo';
+import { safety } from '../../data/v2';
+import Icon from './Icon.astro';
+
+const refund = plan.steps.find((s) => s.movesMoney)!;
+const order = refund.title.replace(/^Refund /, '');
+const receipt = safety.auditReceipt[0];
+---
+<div class="wt" data-ui>
+  <div class="wt-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="wt-body">
+    <p class="wt-req"><span class="wt-type">{copy.request}</span></p>
+    <ol class="wt-steps">
+      {plan.steps.map((s) => (
+        <li class="wt-step">
+          <span class="step-n" aria-hidden="true">{s.n}</span>
+          <span class="wt-step-title">{s.title.split(' (')[0]}{s.title.includes(' (') && <> <span class="nw">({s.title.split(' (')[1]}</span></>}</span>
+          <span class="swap">
+            <span class:list={['pill wt-was', s.movesMoney ? 'pill--approval' : 'pill--checked']} aria-hidden="true">{s.movesMoney ? 'Needs approval' : 'Checked'}</span>
+            <span class="pill pill--done wt-now">Done</span>
+          </span>
+        </li>
+      ))}
+    </ol>
+    <p class="wt-blocked"><span class="stamp">BLOCKED</span><span class="addr">{inbox[0].from}</span></p>
+    <div class="wt-approve">
+      <span class="wt-box" aria-hidden="true"><Icon name="tick" /></span>
+      <span class="wt-approve-text">Approve refund of {money(refund.amountCents ?? 0)} on {order}</span>
+      <span class="pill pill--blocked">Irreversible</span>
+      <span class="wt-out">Money out <span class="swap"><strong class="num wt-was" aria-hidden="true">{money(0)}</strong><strong class="num wt-now">{money(refund.amountCents ?? 0)}</strong></span></span>
+    </div>
+    <div class="wt-receipt">
+      <span class="receipt-ts num">{receipt.ts}</span>
+      <span class="wt-receipt-sum">{receipt.summary} <code class="id">{receipt.id}</code></span>
+      <span class="pill pill--blocked">Irreversible</span>
+    </div>
+  </div>
+</div>

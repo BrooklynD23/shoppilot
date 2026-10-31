@@ -1,0 +1,129 @@
+---
+import '@fontsource-variable/mona-sans/wdth.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '../../../styles/v3-a.css';
+import Base from '../../../layouts/Base.astro';
+import StepRow from '../../../components/v3-a/StepRow.astro';
+import Receipt from '../../../components/v3-a/Receipt.astro';
+import Icon from '../../../components/v3-a/Icon.astro';
+import { chips, footer } from '../../../data/v2';
+import { store, plan, copy, inbox, money, moneyOutCents } from '../../../data/demo';
+
+const BASE = '/v3/a/';
+const [blocked, ...allowed] = inbox;
+const gated = plan.steps.filter((s) => s.movesMoney).length;
+const initialOutCents = plan.steps.filter((s) => s.movesMoney && s.approved).reduce((t, s) => t + (s.amountCents ?? 0), 0);
+---
+<Base title="ShopPilot+ console, Fern & Kiln demo store" description="Plan, check, approve and run shop work. Every dollar shown before it moves." themeLight="#07080a" themeDark="#07080a">
+  <a class="skip" href="#ask">Skip to request</a>
+  <header class="app-head">
+    <nav class="app-nav" aria-label="Main">
+      <a class="wordmark" href={BASE}>ShopPilot+</a>
+    </nav>
+    <p class="app-store">{store.name} <span class="tag">Demo store</span></p>
+    <p class="app-meta">Stripe test mode</p>
+    <p class="app-meta" id="cost-meter"><span class="num">${plan.usage.costUsd.toFixed(3)}</span> this plan, cache <span class="num">{plan.usage.cacheHitPct}%</span></p>
+    <button class="btn btn-quiet btn-sm app-reset" type="button" data-reset>Reset demo store</button>
+  </header>
+
+  <main class="console" id="main" data-console>
+    <h1 class="sr-only">ShopPilot+ console for {store.name}, demo store</h1>
+    <div class="task">
+      <form class="ask panel" id="ask" data-ask>
+        <label class="field-label" for="request">Ask ShopPilot+</label>
+        <textarea id="request" name="q" rows="3" maxlength="500" required>{copy.request}</textarea>
+        <div class="ask-row">
+          <ul class="chips" aria-label="Example requests">
+            {chips.map((c) => <li><button type="button" class="chip" data-prompt={c.prompt}>{c.label}</button></li>)}
+          </ul>
+          <button class="btn btn-primary" type="submit" data-plan>Plan it</button>
+        </div>
+      </form>
+
+      <section class="plan panel" aria-labelledby="plan-heading" data-plan-area data-state="ready">
+        <div class="plan-head">
+          <h2 id="plan-heading" tabindex="-1">Plan</h2>
+          <p class="plan-meta">{plan.steps.length} steps, {gated} needs your approval</p>
+          <p class="replay-note">Recorded plan (replay)</p>
+        </div>
+        <div class="plan-loading" aria-hidden="true">
+          <p class="plan-empty-msg">Planning</p>
+          <div class="sk"><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+        <div class="plan-body">
+          <p class="notice">
+            <Icon name="alert" />
+            <span>1 inbox email was blocked from this plan. <a href="#inbox" data-see-inbox>See it</a></span>
+          </p>
+          <ol class="steps">
+            {plan.steps.map((s) => <StepRow step={s} variant="full" />)}
+          </ol>
+          <p class="run-status" role="status" aria-live="polite" data-status>Nothing has run yet.</p>
+        </div>
+        <div class="run-bar">
+          <p class="out">
+            <span class="out-label">Money out if you run</span>
+            <span class="out-value num" data-out>{money(initialOutCents)}</span>
+            <span class="out-note" data-out-note>Stripe test mode. {money(moneyOutCents)} refund needs your approval.</span>
+          </p>
+          <button class="btn btn-primary" type="button" data-run>Run approved steps</button>
+        </div>
+      </section>
+    </div>
+
+    <aside class="rail" id="inbox" aria-label="Inbox, Outbox and Audit">
+      <div class="tabs" role="tablist" aria-label="Store activity">
+        <button class="tab" role="tab" id="tab-inbox" aria-controls="panel-inbox" aria-selected="true" type="button">Inbox <span class="tab-count">1 blocked</span></button>
+        <button class="tab" role="tab" id="tab-outbox" aria-controls="panel-outbox" aria-selected="false" tabindex="-1" type="button">Outbox</button>
+        <button class="tab" role="tab" id="tab-audit" aria-controls="panel-audit" aria-selected="false" tabindex="-1" type="button">Audit</button>
+      </div>
+
+      <div class="tab-panel" role="tabpanel" id="panel-inbox" aria-labelledby="tab-inbox">
+        <article class="mail">
+          <div class="mail-head">
+            <span class="stamp">BLOCKED</span>
+            <span class="mail-from"><span class="addr">{blocked.from}</span></span>
+          </div>
+          <p class="mail-subj">{blocked.subject}</p>
+          <p class="mail-verdict">{blocked.reason}</p>
+          <details class="more">
+            <summary>Technical details</summary>
+            <p class="mail-raw">“{blocked.preview}”</p>
+            <p>Guard label <code class="id">{blocked.label}</code>, score <span class="num">{blocked.score}</span>.</p>
+          </details>
+        </article>
+        {allowed.map((m) => (
+          <article class="mail mail--ok">
+            <div class="mail-head">
+              <span class="stamp stamp--ok">Allowed</span>
+              <span class="mail-from"><span class="addr">{m.from}</span></span>
+            </div>
+            <p class="mail-subj">{m.subject}</p>
+            <p class="mail-verdict">{m.reason}</p>
+          </article>
+        ))}
+      </div>
+
+      <div class="tab-panel" role="tabpanel" id="panel-outbox" aria-labelledby="tab-outbox" hidden>
+        <p class="rail-note">Never sent. Emails stay in this app.</p>
+        <p class="empty" data-before-run>Nothing queued yet. Step 2 adds 3 tracking emails when it runs.</p>
+        <article class="mail mail--ok" data-after-run data-tool="send_email" hidden>
+          <p class="mail-subj">3 tracking emails</p>
+          <p class="mail-verdict">To <span class="addr">{plan.steps[1].target}</span>. Undo from the Audit tab.</p>
+        </article>
+      </div>
+
+      <div class="tab-panel" role="tabpanel" id="panel-audit" aria-labelledby="tab-audit" hidden>
+        <p class="empty" data-before-run>Nothing has run yet. Every step you run writes a receipt here.</p>
+        <Receipt hidden />
+      </div>
+    </aside>
+  </main>
+  <footer class="app-foot">
+    <p>{footer.course} <a href={BASE}>Back to the overview</a></p>
+  </footer>
+</Base>
+
+<script>
+  import '../../../scripts/v3-a/console';
+</script>
