@@ -1,0 +1,57 @@
+---
+// One plan step as a ledger row. Used by the landing hero (step 5) and the console (all 5).
+import type { Step } from '../../data/demo';
+import { money } from '../../data/demo';
+import Icon from './Icon.astro';
+interface Props { step: Step; titleTag?: 'h3' | 'p' }
+const { step: s, titleTag = 'h3' } = Astro.props;
+const Title = titleTag;
+const irreversible = s.movesMoney && !s.undoable;
+const order = s.title.match(/\d+/)?.[0] ?? '';
+const target = s.target.replace(/ · /g, ', ');
+const approveLabel = s.movesMoney && s.amountCents !== null
+  ? `Approve refund of ${money(s.amountCents)} on order ${order}. Card refunds cannot be undone.`
+  : 'Run this step';
+const cb = `approve-${s.id}`;
+---
+<li class="step" data-step={s.id}>
+  <div class="step-head">
+    <span class="step-n"><span class="sr-only">Step </span>{s.n}</span>
+    <div class="step-what">
+      <Title class="step-title">{s.title}</Title>
+      <p class="step-target"><code class="tool">{s.tool}</code> <span class="wrap">{target}</span></p>
+    </div>
+    <div class="step-state">
+      {s.approved
+        ? <span class="pill pill-checked">Checked</span>
+        : <span class="pill pill-approval">Needs approval</span>}
+      {s.valid && <span class="valid"><Icon name="check" />Valid</span>}
+    </div>
+  </div>
+  <p class="step-why">{s.why}</p>
+  <dl class="ledger">
+    <div class="ledger-diff">
+      <div class="cell"><dt>Before</dt><dd class="num">{s.before}</dd></div>
+      <Icon name="arrow" class="diff-arrow" />
+      <div class="cell"><dt>After</dt><dd class="num">{s.after}</dd></div>
+    </div>
+    {s.amountCents !== null && (
+      s.movesMoney ? (
+        <div class="ledger-money">
+          <dt>Money out</dt>
+          <dd><span class="money">{money(s.amountCents)}</span>{irreversible && <span class="pill pill-irrev"><Icon name="lock" />Irreversible</span>}</dd>
+        </div>
+      ) : (
+        <div class="ledger-money is-draft">
+          <dt>Draft total</dt>
+          <dd><span class="num">{money(s.amountCents)}</span></dd>
+        </div>
+      )
+    )}
+  </dl>
+  <slot />
+  <div class={`approve${irreversible ? ' is-irrev' : ''}`}>
+    <input type="checkbox" id={cb} checked={s.approved} />
+    <label for={cb}>{approveLabel}</label>
+  </div>
+</li>

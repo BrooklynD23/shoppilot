@@ -1,0 +1,250 @@
+---
+import '@fontsource-variable/bricolage-grotesque/opsz.css';
+import '@fontsource-variable/hanken-grotesk/wght.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '../../../styles/v2-3.css';
+import Base from '../../../layouts/Base.astro';
+import StepRow from '../../../components/v2-3/StepRow.astro';
+import EmailRow from '../../../components/v2-3/EmailRow.astro';
+import Pill from '../../../components/v2-3/Pill.astro';
+import Icon from '../../../components/v2-3/Icon.astro';
+import StoryPanel from '../../../components/v2-3/StoryPanel.astro';
+import ForecastChart from '../../../components/v2-3/ForecastChart.astro';
+import { inbox, plan, store } from '../../../data/demo';
+import {
+  hero, problem, proof, proofNote, howSteps, pills, safety, anomalies, forecastCopy,
+  pricing, pricingLabel, faq, closing, footer,
+} from '../../../data/v2';
+
+const ROOT = '/v2/3/';
+const APP = '/v2/3/app/';
+const step = Object.fromEntries(howSteps.map((s) => [s.key, s]));
+// Hero inbox, newest first. Times are demo-store display times for the story.
+const heroMail = [
+  { e: inbox[0], time: 'Sun 9:47 pm' },
+  { e: inbox[1], time: 'Sun 9:44 pm' },
+  { e: inbox[2], time: 'Sun 9:41 pm' },
+];
+const chapters = [
+  { n: 1, parts: [{ name: step.plan.name, kind: 'planned', pill: step.plan.pill, text: `Sunday, 9:52 pm. ${step.plan.text}` }] },
+  { n: 2, parts: [{ name: step.check.name, kind: 'checked', pill: step.check.pill, text: step.check.text }] },
+  { n: 3, parts: [{ name: 'One email is stopped', kind: 'blocked', pill: pills.blocked, text: 'The URGENT email told the agent to refund every order. The guard screened it out before planning, so the plan never saw it.' }] },
+  { n: 4, parts: [{ name: step.approve.name, kind: 'approval', pill: step.approve.pill, text: `${step.approve.text} You tick the $24.00 refund yourself.` }] },
+  { n: 5, parts: [
+    { name: step.run.name, kind: 'done', pill: step.run.pill, text: step.run.text },
+    { name: step.undo.name, kind: 'undone', pill: step.undo.pill, text: step.undo.text },
+  ] },
+] as const;
+---
+<Base title="ShopPilot+ | Safe autopilot for your shop" description="ShopPilot+ plans your shop's busywork from one sentence and waits for your approval before any money moves." themeLight="#f4f2fb" themeDark="#f4f2fb">
+  <div class="v3">
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="nav-wrap">
+      <nav class="nav wrap" aria-label="Main">
+        <a class="wordmark" href={ROOT}>ShopPilot+</a>
+        <ul class="nav-links">
+          <li><a href="#how">How it works</a></li>
+          <li><a href="#safety">Safety</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+        </ul>
+        <a class="btn btn-primary btn-sm" href={APP}>{hero.cta}</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero wrap" aria-labelledby="hero-h">
+        <div class="hero-copy">
+          <h1 id="hero-h"><span>Safe autopilot for your shop.</span> <span>See every dollar before it moves.</span></h1>
+          <p class="hero-sub">{hero.sub}</p>
+          <a class="btn btn-primary btn-lg" href={APP}>{hero.cta}</a>
+          <p class="hero-note">{hero.ctaNote}</p>
+        </div>
+        <div class="hero-ui panel">
+          <div class="panel-bar">
+            <span class="panel-title">Inbox</span>
+            <span class="panel-store">{store.name}, Demo store</span>
+          </div>
+          <ul class="mails">
+            {heroMail.map(({ e, time }) => <EmailRow email={e} time={time} quiet />)}
+          </ul>
+          <div class="hero-wait">
+            <p class="panel-sub">Waiting for you in tonight's plan</p>
+            <ol class="steps steps-compact"><StepRow step={plan.steps[4]} compact /></ol>
+          </div>
+        </div>
+      </section>
+
+      <section class="problem" aria-labelledby="problem-h">
+        <div class="wrap problem-grid">
+          <h2 id="problem-h" class="sr-only">The problem</h2>
+          <figure class="quote">
+            <blockquote><p>{problem.quote}</p></blockquote>
+            <figcaption>{problem.source}</figcaption>
+          </figure>
+          <p class="fear">{problem.fear}</p>
+        </div>
+      </section>
+
+      <section class="proof wrap" aria-labelledby="proof-h">
+        <h2 id="proof-h">Measured on the prototype</h2>
+        <dl class="proof-row">
+          {proof.map((p) => (
+            <div class="proof-item">
+              <dt class="proof-value">{p.value}</dt>
+              <dd class="proof-label">{p.label}</dd>
+              <dd class="proof-source">{p.source}</dd>
+            </div>
+          ))}
+        </dl>
+        <p class="proof-note">{proofNote}</p>
+      </section>
+
+      <section id="how" class="story" aria-labelledby="how-h">
+        <div class="wrap">
+          <div class="story-head">
+            <h2 id="how-h">How a request runs</h2>
+            <p>One owner, one Sunday night, one sentence. This is the demo store, step by step.</p>
+          </div>
+          <div class="story-grid">
+            <ol class="chapters">
+              {chapters.map((c) => (
+                <li class={`chapter ch${c.n}`}>
+                  <div class="chapter-text">
+                    {c.parts.map((p) => (
+                      <div class="chapter-part">
+                        <h3>{p.name} <Pill kind={p.kind} text={p.pill} /></h3>
+                        <p>{p.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <StoryPanel n={c.n} class="panel-inline" />
+                </li>
+              ))}
+            </ol>
+            <div class="stage">
+              <div class="stage-stack">
+                {chapters.map((c) => <StoryPanel n={c.n} class={`panel-stage stage-${c.n}`} />)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="safety" class="safety wrap" aria-labelledby="safety-h">
+        <div class="safety-top">
+          <div>
+            <h2 id="safety-h">{safety.heading}</h2>
+            <p class="lede">{safety.body}</p>
+          </div>
+          <div class="panel safety-mail">
+            <div class="panel-bar">
+              <span class="panel-title">Screened before planning</span>
+              <span class="panel-store">Demo store</span>
+            </div>
+            <EmailRow email={inbox[0]} technical tag="div" />
+          </div>
+        </div>
+        <h3 class="safety-sub">Limits no email can talk its way past</h3>
+        <dl class="caps">
+          {safety.caps.map((c) => (
+            <div class="cap"><dt>{c.name}</dt><dd>{c.text}</dd></div>
+          ))}
+        </dl>
+        <h3 class="safety-sub">Audit receipt <span class="tag-src">Demo store</span></h3>
+        <ol class="receipt">
+          {safety.auditReceipt.map((r) => (
+            <li>
+              <span class="r-ts">{r.ts}</span>
+              <span class="tool">{r.tool}</span>
+              <span class="r-sum">{r.summary}</span>
+              <span class="id">{r.id}</span>
+              <span class="r-undo">
+                {r.undo ? <span class="undo-ok"><Icon name="undo" />Undo available</span> : <Pill kind="irreversible" text="Irreversible, no undo" />}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section class="forecast" aria-labelledby="fc-h">
+        <div class="wrap forecast-grid">
+          <div class="forecast-chart panel">
+            <div class="panel-bar">
+              <span class="panel-title">P-07 Lavender tin, next 14 days</span>
+              <span class="panel-store">Demo store</span>
+            </div>
+            <ForecastChart uid="fc-land" />
+          </div>
+          <div class="forecast-copy">
+            <h2 id="fc-h">{forecastCopy.heading}</h2>
+            <p class="lede">{forecastCopy.body}</p>
+            <h3>{forecastCopy.anomaliesHeading} <span class="tag-src">Demo store</span></h3>
+            <ul class="anoms">
+              {anomalies.map((a) => (
+                <li>
+                  <span class="anom-order">Order <span class="id">{a.order}</span></span>
+                  <span class="anom-reason">{a.reason}</span>
+                  <span class="anom-score">Flag score {a.score}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="pricing" class="pricing wrap" aria-labelledby="pricing-h">
+        <div class="pricing-head">
+          <h2 id="pricing-h">Planned pricing</h2>
+          <p class="pricing-label"><Icon name="alert" />{pricingLabel}</p>
+        </div>
+        <ul class="tiers">
+          {pricing.map((t, i) => (
+            <li class={`tier${i === 0 ? ' tier-demo' : ''}`}>
+              <h3>{t.name}</h3>
+              <p class="tier-price"><span class="tier-amount">{t.price}</span> {t.period && <span class="tier-period">{t.period}</span>}</p>
+              <p class="tier-blurb">{t.blurb}</p>
+              <ul class="tier-feats">
+                {t.features.map((f) => <li><Icon name="tick" />{f}</li>)}
+              </ul>
+              {i === 0
+                ? <a class="btn btn-primary" href={APP}>{t.cta}</a>
+                : <button class="btn btn-line" type="button" disabled>{t.cta}</button>}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section class="faq wrap" aria-labelledby="faq-h">
+        <h2 id="faq-h">Honest answers</h2>
+        <div class="faq-list">
+          {faq.map((f) => (
+            <details>
+              <summary>{f.q}<Icon name="arrow" class="faq-ico" /></summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      <section class="closing" aria-labelledby="close-h">
+        <div class="wrap closing-inner">
+          <div>
+            <h2 id="close-h">{closing.heading}</h2>
+            <p>{closing.body}</p>
+          </div>
+          <a class="btn btn-invert btn-lg" href={APP}>{hero.cta}</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap foot-inner">
+        <a class="wordmark" href={ROOT}>ShopPilot+</a>
+        <ul class="foot-links">
+          {footer.links.map((l) => <li><a href={l.href === 'app/' ? APP : l.href}>{l.label}</a></li>)}
+        </ul>
+        <p class="foot-course">{footer.course}</p>
+      </div>
+    </footer>
+  </div>
+</Base>

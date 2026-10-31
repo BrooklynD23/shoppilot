@@ -1,0 +1,14 @@
+---
+// One stroke family: 24 grid, 2.5 stroke, square caps (thermal print has no round ends).
+interface Props { name: 'tick' | 'cross' | 'arrow'; class?: string }
+const { name, class: cls = '' } = Astro.props;
+---
+{name === 'arrow' ? (
+  <svg class={`ic ic-arrow ${cls}`} viewBox="0 0 40 24" aria-hidden="true" focusable="false">
+    <path d="M3 12h32M27 5l8 7-8 7" />
+  </svg>
+) : (
+  <svg class={`ic ${cls}`} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    {name === 'tick' ? <path d="M4.5 12.5l5 5 10-11" /> : <path d="M6 6l12 12M18 6L6 18" />}
+  </svg>
+)}

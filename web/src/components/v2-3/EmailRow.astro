@@ -1,0 +1,31 @@
+---
+// One inbox email. quiet = hero (no verdict yet); otherwise the guard verdict shows.
+import Pill from './Pill.astro';
+import { inbox } from '../../data/demo';
+import { safety } from '../../data/v2';
+
+type Email = (typeof inbox)[number];
+interface Props { email: Email; time?: string; quiet?: boolean; technical?: boolean; tag?: 'li' | 'div' }
+const { email: e, time, quiet = false, technical = false, tag: Tag = 'li' } = Astro.props;
+const blocked = !e.allowed;
+---
+<Tag class={`mail${quiet ? ' mail-quiet' : ''}${blocked && !quiet ? ' mail-blocked' : ''}`}>
+  <div class="mail-head">
+    <span class="mail-from">{e.from}</span>
+    {time && <span class="mail-time">{time}</span>}
+  </div>
+  <p class="mail-subject">{e.subject}</p>
+  {quiet ? null : blocked ? (
+    <>
+      <p class="mail-verdict"><span class="stamp">BLOCKED</span><span>{e.reason}</span></p>
+      {technical && (
+        <details class="tech">
+          <summary>Technical detail</summary>
+          <p>{safety.technical}</p>
+        </details>
+      )}
+    </>
+  ) : (
+    <p class="mail-verdict mail-ok"><Pill kind="allowed" text="Allowed" /><span>{e.reason}</span></p>
+  )}
+</Tag>

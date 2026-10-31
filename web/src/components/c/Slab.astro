@@ -1,0 +1,11 @@
+---
+// One flat booklet part: front + side (+ top) faces in oblique projection.
+interface Props { x: number; y: number; w: number; h: number; dx: number; dy: number; kind?: 'paper' | 'new' | 'ghost'; top?: boolean; class?: string }
+const { x, y, w, h, dx, dy, kind = 'paper', top = false, class: cls } = Astro.props;
+---
+<g class:list={['slab', `slab-${kind}`, cls]}>
+  <path class="s-side" d={`M${x + w} ${y}l${dx} ${dy}v${h}l${-dx} ${-dy}z`} />
+  <path class="s-front" d={`M${x} ${y}h${w}v${h}h${-w}z`} />
+  {top && <path class="s-top" d={`M${x} ${y}l${dx} ${dy}h${w}l${-dx} ${-dy}z`} />}
+  <slot />
+</g>

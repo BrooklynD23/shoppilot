@@ -1,0 +1,65 @@
+---
+// One state of the product for the scroll story. Rendered twice per chapter:
+// inline (stacked fallback, phone, reduced motion) and on the sticky stage.
+import StepRow from './StepRow.astro';
+import EmailRow from './EmailRow.astro';
+import Pill from './Pill.astro';
+import Icon from './Icon.astro';
+import { plan, inbox, copy, store } from '../../data/demo';
+import { pills, safety } from '../../data/v2';
+
+interface Props { n: 1 | 2 | 3 | 4 | 5; class?: string }
+const { n, class: cls = '' } = Astro.props;
+const s5 = plan.steps[4];
+const titles = { 1: 'Ask ShopPilot+', 2: 'Plan', 3: 'Inbox, 1 blocked', 4: 'Step 5 of 5', 5: 'Run log' } as const;
+const receiptFor: Record<string, string> = Object.fromEntries(
+  [['s1', 'mark_shipped'], ['s2', 'send_email'], ['s4', 'create_restock_po'], ['s5', 'refund_order']].map(([id, tool]) => [
+    id, safety.auditReceipt.find((r) => r.tool === tool)?.id ?? '',
+  ]),
+);
+const undoable = safety.auditReceipt.filter((r) => r.undo).length;
+---
+<div class={`panel panel-${n} ${cls}`}>
+  <div class="panel-bar">
+    <span class="panel-title">{titles[n]}</span>
+    <span class="panel-store">{store.name}, Demo store</span>
+  </div>
+  {n === 1 && (
+    <div class="panel-body">
+      <p class="req">{copy.request}</p>
+      <p class="panel-foot"><Pill kind="planned" text={pills.planned} /><span>5 steps drafted from one sentence</span></p>
+    </div>
+  )}
+  {n === 2 && (
+    <div class="panel-body">
+      <p class="panel-sub">5 steps, 1 needs your approval</p>
+      <ol class="steps steps-compact">{plan.steps.map((s) => <StepRow step={s} compact />)}</ol>
+    </div>
+  )}
+  {n === 3 && (
+    <div class="panel-body">
+      <ul class="mails">{inbox.map((e) => <EmailRow email={e} />)}</ul>
+    </div>
+  )}
+  {n === 4 && (
+    <div class="panel-body">
+      <ol class="steps"><StepRow step={s5} swap /></ol>
+      <p class="approved-line"><Icon name="tick" />Approved by you. The refund runs with the plan.</p>
+    </div>
+  )}
+  {n === 5 && (
+    <div class="panel-body">
+      <ol class="runlog">
+        {plan.steps.map((s) => (
+          <li>
+            <span class="step-n">{s.n}</span>
+            <span class="runlog-title">{s.title}</span>
+            {receiptFor[s.id] ? <span class="id">{receiptFor[s.id]}</span> : <span class="runlog-note">read only</span>}
+            <Pill kind="done" text={pills.done} />
+          </li>
+        ))}
+      </ol>
+      <p class="panel-foot"><strong>Done. Every step logged.</strong><span>Undo is open on {undoable} receipts. The card refund is final.</span></p>
+    </div>
+  )}
+</div>

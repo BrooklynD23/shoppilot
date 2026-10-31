@@ -1,0 +1,18 @@
+---
+import { inbox } from '../../data/demo';
+import Icon from './Icon.astro';
+const em = inbox[0];
+---
+<article class="void" aria-labelledby={`${em.id}-subj`}>
+  <div class="void__in">
+    <p class="stamp stamp--blocked"><Icon name="cross" />BLOCKED</p>
+    <p class="void__from mono">{em.from}</p>
+    <h3 class="void__subj" id={`${em.id}-subj`}>{em.subject}</h3>
+    <p class="void__preview">“{em.preview}”</p>
+    <p class="void__reason">{em.reason}</p>
+    <dl class="void__meta">
+      <div><dt>Label</dt><dd class="mono">{em.label}</dd></div>
+      <div><dt>Score</dt><dd class="num">{em.score.toFixed(2)}</dd></div>
+    </dl>
+  </div>
+</article>

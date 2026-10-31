@@ -1,0 +1,104 @@
+---
+import '@fontsource-variable/big-shoulders-stencil';
+import '@fontsource-variable/atkinson-hyperlegible-next';
+import '@fontsource-variable/atkinson-hyperlegible-mono';
+import '../../../styles/a.css';
+import Base from '../../../layouts/Base.astro';
+import Mark from '../../../components/a/Mark.astro';
+import Flute from '../../../components/a/Flute.astro';
+import { copy, inbox } from '../../../data/demo';
+
+const blocked = inbox[0];
+const cut = copy.trust.indexOf('. ') + 1;
+const trustHead = copy.trust.slice(0, cut);
+const trustBody = copy.trust.slice(cut).trim();
+
+const handling = [
+  { kind: 'up', text: 'Plan before run' },
+  { kind: 'dry', text: 'Inbox screened' },
+  { kind: 'fragile', text: 'Moves money' },
+  { kind: 'record', text: 'Logged record' },
+  { kind: 'undo', text: 'Can undo' },
+] as const;
+
+const loopLines = [
+  { kind: 'up', line: 'One sentence becomes typed steps.' },
+  { kind: 'dry', line: 'A validator ticks every step.' },
+  { kind: 'fragile', line: 'Money steps wait for your OK.' },
+  { kind: 'record', line: 'Each step writes an audit record.' },
+  { kind: 'undo', line: 'Reverse it from the audit log.' },
+] as const;
+---
+<Base title="ShopPilot+ · Carton" description="ShopPilot+ plans the shop work, shows every change and dollar, and waits for your OK before money moves." themeLight="#c69c6d" themeDark="#2a2018">
+  <a class="skip" href="#ask">Skip to request</a>
+  <header class="bar">
+    <a class="wordmark" href="/mockups/a/" aria-current="page">ShopPilot+</a>
+    <nav aria-label="Main">
+      <ul class="nav">
+        <li><a href="/mockups/a/console/">Agent console</a></li>
+        <li><a href="/">How it works</a></li>
+        <li><a href="/">Report</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main">
+      <section class="hero" aria-labelledby="hero-h">
+        <h1 id="hero-h">{copy.h1}</h1>
+        <p class="sub">{copy.sub}</p>
+
+        <form class="label ask" method="get" action="/mockups/a/console/">
+          <span class="tape tape-seal" aria-hidden="true"></span>
+          <label class="ask-label" for="ask">Ask ShopPilot+</label>
+          <textarea id="ask" name="q" rows="4" maxlength="500" required>{copy.request}</textarea>
+          <button class="btn" type="submit">Plan it</button>
+        </form>
+
+        <figure class="slip">
+          <blockquote><p>&ldquo;{copy.quote}&rdquo;</p></blockquote>
+          <figcaption>{copy.quoteSource}</figcaption>
+        </figure>
+
+        <ul class="handling" aria-label="Handling marks">
+          {handling.map((h) => (
+            <li><Mark kind={h.kind} /><span>{h.text}</span></li>
+          ))}
+        </ul>
+      </section>
+
+  <div class="flap-panel">
+    <Flute id="flute-gate" />
+    <section class="gate" aria-labelledby="gate-h">
+      <div class="gate-top">
+        <div class="trust">
+          <h2 id="gate-h">{trustHead}</h2>
+          <p>{trustBody}</p>
+        </div>
+
+        <article class="label refused" aria-labelledby="em7-subject">
+          <div class="tape tape-red" aria-hidden="true">
+            <span>REFUSED</span><span>REFUSED</span><span>REFUSED</span><span>REFUSED</span>
+          </div>
+          <p class="stamp stamp-blocked"><Mark kind="stop" />BLOCKED</p>
+          <p class="mono from">{blocked.from}</p>
+          <h3 id="em7-subject" class="subject">{blocked.subject}</h3>
+          <p class="preview">{blocked.preview}</p>
+          <p class="reason">{blocked.reason}</p>
+          <p class="meta"><span class="mono">{blocked.label}</span> <span>score <span class="num">{blocked.score.toFixed(2)}</span></span></p>
+        </article>
+      </div>
+
+      <ol class="loop" aria-label="The gate, step by step">
+        {copy.loop.map((word, i) => (
+          <li class={`flap flap-${i + 1}`}>
+            <span class="flap-num" aria-hidden="true">{i + 1}</span>
+            <Mark kind={loopLines[i].kind} />
+            <h3>{word}</h3>
+            <p>{loopLines[i].line}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+  </div>
+  </main>
+</Base>

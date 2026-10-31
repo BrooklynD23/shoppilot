@@ -1,0 +1,71 @@
+---
+// The product: request box, plan, run bar. The landing hero and the console
+// task column both render this; demo.ts drives it on both pages.
+import StepRow from './StepRow.astro';
+import Icon from './Icon.astro';
+import { plan } from '../../data/demo';
+import { chips } from '../../data/v2';
+import { money } from '../../scripts/v2-2/view';
+interface Props { mode: 'hero' | 'console' }
+const { mode } = Astro.props;
+const hero = mode === 'hero';
+const app = '/v2/2/app/';
+const needs = plan.steps.filter((s) => s.movesMoney).length;
+const boxId = `ask-${mode}`;
+---
+<section
+  id={hero ? 'demo' : 'task'}
+  class:list={['demo', `demo--${mode}`]}
+  data-demo
+  data-start={hero ? 'empty' : undefined}
+  data-state="ready"
+  aria-label={hero ? 'Live demo on the demo store' : 'Request and plan'}
+>
+  {hero && <p class="demo-label">Demo store · recorded plan (replay), no AI cost</p>}
+  <form class="ask" action={app} method="get" data-ask>
+    <label class="ask-label" for={boxId}>Ask ShopPilot+</label>
+    <textarea id={boxId} name="q" rows="3" maxlength="500" required>{chips[0].prompt}</textarea>
+    <div class="ask-row">
+      <div class="chips" role="group" aria-label="Example requests">
+        {chips.map((c) => <button type="button" class="chip" data-prompt={c.prompt}>{c.label}</button>)}
+      </div>
+      <button type="submit" class="btn btn-ink">Plan it</button>
+    </div>
+  </form>
+
+  <div class="plan">
+    <p class="plan-empty" data-empty>Pick an example or write your own, then press Plan it. You see every step and every dollar before anything runs.</p>
+    <div class="skeleton" data-skeleton aria-hidden="true"><span></span><span></span><span></span></div>
+    <p class="plan-error" data-error>Could not load the recorded plan. <a href={app}>Open the console instead.</a></p>
+
+    <div class="plan-ready" data-ready>
+      <div class="plan-head">
+        <h2 class="plan-h" tabindex="-1" data-plan-h>Plan</h2>
+        <p class="plan-count" data-count>{plan.steps.length} steps, {needs} needs your approval</p>
+        <p class="replay">Recorded plan (replay)</p>
+      </div>
+      <p class="blocked" data-blocked><Icon name="shield" /><span>1 inbox email was blocked from this plan. <a href={hero ? '#safety' : '#inbox'}>See it</a></span></p>
+      <ol class="steps" data-steps>
+        {plan.steps.map((s) => <StepRow step={s} chart={!hero} />)}
+      </ol>
+      <div class="runbar" data-runbar>
+        <p class="runbar-sum">Money out if you run: <strong class="amt" data-kind="out" data-money-out>{money(0)}</strong> <span class="runbar-mode">(Stripe test mode)</span></p>
+        <button type="button" class="btn btn-cta" data-run>Run approved steps</button>
+      </div>
+      <div class="plan-done" data-done>
+        <p class="done-line"><Icon name="tick" />Done. Every step is in the audit log.</p>
+        <p class="done-links">
+          {hero && <a href={app}>Open the full console</a>}
+          <button type="button" class="linkbtn" data-reset>Reset</button>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <template data-tpl><StepRow step={plan.steps[4]} chart={!hero} /></template>
+  <p class="sr-only" aria-live="polite" data-live></p>
+</section>
+
+<script>
+  import '../../scripts/v2-2/demo';
+</script>

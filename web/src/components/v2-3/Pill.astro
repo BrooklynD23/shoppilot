@@ -1,0 +1,12 @@
+---
+import Icon from './Icon.astro';
+// State pills: text always carries the state; colour and icon only repeat it.
+export type PillKind = 'planned' | 'checked' | 'approval' | 'running' | 'done' | 'undone' | 'blocked' | 'irreversible' | 'allowed';
+interface Props { kind: PillKind; text: string }
+const { kind, text } = Astro.props;
+const icon = ({
+  planned: 'arrow', checked: 'tick', approval: 'lock', running: 'arrow', done: 'tick',
+  undone: 'undo', blocked: 'x', irreversible: 'alert', allowed: 'tick',
+} as const)[kind];
+---
+<span class={`pill pill-${kind}`}><Icon name={icon} />{text}</span>

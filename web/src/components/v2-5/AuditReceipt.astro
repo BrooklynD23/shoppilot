@@ -1,0 +1,37 @@
+---
+// Audit receipt rows. Undo marks the row Undone (demo store). Card refunds show Irreversible instead.
+import { safety } from '../../data/v2';
+import Icon from './Icon.astro';
+interface Props { class?: string }
+const { class: cls = '' } = Astro.props;
+---
+<ol class={`receipt ${cls}`}>
+  {safety.auditReceipt.map((r) => (
+    <li class="receipt-row">
+      <span class="receipt-ts num">{r.ts}</span>
+      <span class="receipt-sum">{r.summary}<span class="receipt-ids"><code class="tool">{r.tool}</code> <code class="rid">{r.id}</code></span></span>
+      <span class="receipt-act">
+        {r.undo ? (
+          <>
+            <button type="button" class="undo" data-undo aria-label={`Undo: ${r.summary}`}><Icon name="undo" />Undo</button>
+            <span class="pill pill-undone" tabindex="-1" hidden>Undone</span>
+          </>
+        ) : (
+          <span class="pill pill-irrev"><Icon name="lock" />Irreversible</span>
+        )}
+      </span>
+    </li>
+  ))}
+</ol>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-undo]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const done = btn.nextElementSibling as HTMLElement | null;
+      if (!done) return;
+      btn.hidden = true;
+      done.hidden = false;
+      done.focus();
+    });
+  });
+</script>

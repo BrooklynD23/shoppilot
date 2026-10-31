@@ -1,0 +1,208 @@
+---
+import '@fontsource-variable/schibsted-grotesk';
+import '@fontsource-variable/jetbrains-mono';
+import '../../../styles/v2-2.css';
+import Base from '../../../layouts/Base.astro';
+import Panel from '../../../components/v2-2/Panel.astro';
+import Forecast from '../../../components/v2-2/Forecast.astro';
+import Icon from '../../../components/v2-2/Icon.astro';
+import {
+  hero, proof, proofNote, howSteps, safety, anomalies, forecastCopy, problem,
+  pricing, pricingLabel, faq, closing, footer,
+} from '../../../data/v2';
+import { inbox, forecast } from '../../../data/demo';
+
+const app = '/v2/2/app/';
+const [h1a, h1b] = hero.h1.split(/(?<=\.) /);
+const pillKind: Record<string, string> = { plan: 'planned', check: 'checked', approve: 'approval', run: 'done', undo: 'undone' };
+const blocked = inbox[0];
+const href = (h: string) => (h === 'app/' ? app : h);
+---
+<Base
+  title="ShopPilot+: safe autopilot for your shop"
+  description="Run a real ShopPilot+ plan on a demo store, no signup. See every step and every dollar, approve the refund yourself."
+  themeLight="#f4f5f7"
+  themeDark="#f4f5f7"
+>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-head">
+    <nav class="nav wrap" aria-label="Main">
+      <a class="wordmark" href="/v2/2/">ShopPilot+</a>
+      <ul class="nav-links">
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#safety">Safety</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+      </ul>
+      <a class="btn btn-cta nav-cta" href={app} data-demo-cta>{hero.cta}</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero wrap" aria-labelledby="hero-h">
+      <h1 id="hero-h"><span>{h1a}</span> <span>{h1b}</span></h1>
+      <p class="hero-sub">{hero.sub}</p>
+      <Panel mode="hero" />
+      <div class="hero-cta">
+        <a class="btn btn-cta btn-lg" href={app}>{hero.cta}</a>
+        <p class="hero-note">{hero.ctaNote}</p>
+      </div>
+    </section>
+
+    <section class="proof wrap" aria-labelledby="proof-h">
+      <h2 id="proof-h" class="h-sm">What the prototype measured</h2>
+      <ul class="stats">
+        {proof.map((p) => (
+          <li class="stat">
+            <p class="stat-v">{p.value}</p>
+            <p class="stat-l">{p.label}</p>
+            <p class="src">{p.source}</p>
+          </li>
+        ))}
+      </ul>
+      <p class="proof-note">{proofNote}</p>
+    </section>
+
+    <section id="how" class="how" aria-labelledby="how-h">
+      <div class="wrap">
+        <h2 id="how-h">How a request runs</h2>
+        <ol class="how-steps">
+          {howSteps.map((s, i) => (
+            <li class="how-step">
+              <span class="how-n">{i + 1}</span>
+              <h3>{s.name}</h3>
+              <span class="pill" data-k={pillKind[s.key]}>{s.pill}</span>
+              <p>{s.text}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <section id="safety" class="safety wrap" aria-labelledby="safety-h">
+      <div class="safety-main">
+        <h2 id="safety-h">{safety.heading}</h2>
+        <p class="lede">{safety.body}</p>
+        <article class="mail-card" aria-label="The blocked email">
+          <p class="mail-top"><span class="stamp">BLOCKED</span><span class="mail-subj">{blocked.subject}</span></p>
+          <p class="mail-from">From {blocked.from}</p>
+          <p class="mail-verdict">{safety.verdictPlain}</p>
+          <details class="disclose">
+            <summary>Technical details<Icon name="plus" /></summary>
+            <p>{safety.technical}</p>
+          </details>
+        </article>
+      </div>
+      <div class="safety-side">
+        <h3>Audit receipt <span class="src">Demo store</span></h3>
+        <ol class="receipt">
+          {safety.auditReceipt.map((r) => (
+            <li>
+              <span class="r-ts">{r.ts}</span>
+              <code class="tool">{r.tool}</code>
+              <span class="r-sum">{r.summary}</span>
+              <code class="r-id">{r.id}</code>
+              {r.undo
+                ? <span class="r-undo"><Icon name="undo" />Undo available</span>
+                : <span class="pill" data-k="irrev">Irreversible, no undo</span>}
+            </li>
+          ))}
+        </ol>
+        <h3>Limits the agent cannot cross</h3>
+        <dl class="caps">
+          {safety.caps.map((c) => (
+            <div><dt>{c.name}</dt><dd>{c.text}</dd></div>
+          ))}
+        </dl>
+      </div>
+    </section>
+
+    <section class="forecast" aria-labelledby="fc-h">
+      <div class="wrap fc-grid">
+        <div class="fc-copy">
+          <h2 id="fc-h">{forecastCopy.heading}</h2>
+          <p class="lede">{forecastCopy.body}</p>
+        </div>
+        <div class="fc-fig">
+          <Forecast />
+          <p class="src">Demo store, {forecast.product} ({forecast.sku})</p>
+        </div>
+        <div class="anoms">
+          <h3>{forecastCopy.anomaliesHeading}</h3>
+          <ul>
+            {anomalies.map((a) => (
+              <li>
+                <p class="anom-top"><span>Order <code>{a.order}</code></span><span class="pill" data-k="approval">Flagged</span></p>
+                <p>{a.reason}</p>
+                <p class="src">Anomaly score {a.score}</p>
+              </li>
+            ))}
+          </ul>
+          <p class="src">Demo store</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="problem" aria-labelledby="problem-h">
+      <div class="wrap problem-grid">
+        <h2 id="problem-h" class="sr-only">Why shop owners need this</h2>
+        <figure class="quote">
+          <blockquote><p>“{problem.quote}”</p></blockquote>
+          <figcaption>{problem.source}</figcaption>
+        </figure>
+        <p class="fear">{problem.fear}</p>
+      </div>
+    </section>
+
+    <section id="pricing" class="pricing wrap" aria-labelledby="pricing-h">
+      <div class="pricing-head">
+        <h2 id="pricing-h">Pricing</h2>
+        <p class="pricing-label"><Icon name="info" />{pricingLabel}</p>
+      </div>
+      <ul class="tiers">
+        {pricing.map((t, i) => (
+          <li class="tier">
+            <h3>{t.name}</h3>
+            <p class="price"><span class="price-v">{t.price}</span>{t.period && <span> {t.period}</span>}</p>
+            <p class="tier-blurb">{t.blurb}</p>
+            <ul class="feat">{t.features.map((f) => <li><Icon name="tick" />{f}</li>)}</ul>
+            {i === 0
+              ? <a class="btn btn-cta" href={app}>{t.cta}</a>
+              : <button type="button" class="btn btn-ghost" disabled>Planned</button>}
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section class="faq wrap" aria-labelledby="faq-h">
+      <h2 id="faq-h">Questions and honest limits</h2>
+      <div class="faq-list">
+        {faq.map((f) => (
+          <details class="disclose">
+            <summary>{f.q}<Icon name="plus" /></summary>
+            <p>{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+
+    <section class="closing" aria-labelledby="closing-h">
+      <div class="wrap closing-in">
+        <div>
+          <h2 id="closing-h">{closing.heading}</h2>
+          <p>{closing.body}</p>
+        </div>
+        <a class="btn btn-cta btn-lg" href={app}>{hero.cta}</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap foot-in">
+      <a class="wordmark" href="/v2/2/">ShopPilot+</a>
+      <nav aria-label="Footer">
+        <ul>{footer.links.map((l) => <li><a href={href(l.href)}>{l.label}</a></li>)}</ul>
+      </nav>
+      <p class="foot-note">{footer.course}</p>
+    </div>
+  </footer>
+</Base>

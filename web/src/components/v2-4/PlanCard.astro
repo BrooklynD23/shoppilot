@@ -1,0 +1,71 @@
+---
+// One plan card for both pages. compact = landing hero (s5 expanded, others one line);
+// full = console step rows with tool, target, why, diff, money, Valid and approve box.
+import { plan, money, store } from '../../data/demo';
+import ForecastChart from './ForecastChart.astro';
+interface Props { compact?: boolean; idp: string; form?: string }
+const { compact = false, idp, form } = Astro.props;
+const Title = compact ? 'p' : 'h2';
+const needsApproval = plan.steps.filter((s) => s.movesMoney && !s.approved).length;
+const approveLabel = (s: (typeof plan.steps)[number]) =>
+  s.movesMoney
+    ? `Approve refund of ${money(s.amountCents ?? 0)} on ${s.title.replace(/^Refund /, '')}. Card refunds cannot be undone.`
+    : 'Run this step';
+const moneyNote = (s: (typeof plan.steps)[number]) =>
+  s.movesMoney ? 'awaiting approval' : 'estimate, no money moves yet';
+---
+<div class:list={['pc', compact && 'pc--compact']}>
+  <div class="pc-head">
+    <div>
+      <Title class="pc-title" id={`${idp}-title`} tabindex={compact ? undefined : '-1'}>Plan</Title>
+      <p class="pc-sub">{plan.steps.length} steps, {needsApproval} needs your approval</p>
+    </div>
+    <p class="pc-store"><span class="pc-store-name">{store.name}</span> <span class="tag">Demo store</span></p>
+  </div>
+  <slot />
+  <ol class="steps" aria-labelledby={`${idp}-title`}>
+    {plan.steps.map((s) => {
+      const open = !compact || s.movesMoney;
+      return (
+        <li class:list={['step', open ? 'step--open' : 'step--line', s.movesMoney && 'step--money', compact && (s.n === 2 || s.n === 3) && 'step--hide-sm']}>
+          <span class="step-n" aria-hidden="true">{s.n}</span>
+          <div class="step-body">
+            <div class="step-top">
+              <p class="step-title"><span class="sr-only">Step {s.n}: </span>{s.title}</p>
+              <span class="pills">
+                {s.movesMoney ? <span class="pill pill--approval">Needs approval</span> : <span class="pill pill--checked">Checked</span>}
+                {s.movesMoney && !s.undoable && <span class="pill pill--irreversible">Irreversible</span>}
+              </span>
+            </div>
+            {!compact && (
+              <p class="step-meta"><code class="tool">{s.tool}</code><span class="step-target">{s.target}</span></p>
+              <p class="step-why">{s.why}</p>
+            )}
+            {open && s.amountCents !== null && (
+              <p class="step-money"><span class="money">{money(s.amountCents)}</span> <span class="step-money-note">{moneyNote(s)}</span></p>
+            )}
+            {open && (
+              <p class="diff">
+                <span class="diff-before"><span class="sr-only">Before: </span>{s.before}</span>
+                <svg class="icon diff-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6" /></svg>
+                <span class="diff-after"><span class="sr-only">After: </span>{s.after}</span>
+              </p>
+            )}
+            {!compact && s.n === 3 && <ForecastChart idp={`${idp}-s3`} />}
+            {open && (
+              <div class="step-foot">
+                {!compact && s.valid && (
+                  <span class="valid"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>Valid</span>
+                )}
+                <label class="approve">
+                  <input type="checkbox" name="approve" value={s.id} checked={s.approved} form={form} data-money={s.movesMoney ? s.amountCents : undefined} />
+                  <span>{approveLabel(s)}</span>
+                </label>
+              </div>
+            )}
+          </div>
+        </li>
+      );
+    })}
+  </ol>
+</div>

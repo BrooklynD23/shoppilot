@@ -1,0 +1,17 @@
+---
+// One stroke family: 24 grid, 2px round strokes, currentColor.
+interface Props { name: 'tick' | 'cross' | 'coin' | 'undo' | 'eye'; class?: string }
+const { name, class: cls } = Astro.props;
+const shapes: Record<Props['name'], { d?: string[]; c?: [number, number, number][] }> = {
+  tick: { d: ['M5 12.5l4.5 4.5L19 7.5'] },
+  cross: { d: ['M6 6l12 12', 'M18 6L6 18'] },
+  coin: { d: ['M12 8v8'], c: [[12, 12, 8]] },
+  undo: { d: ['M9 5L4 10l5 5', 'M4 10h10.5a5.5 5.5 0 0 1 0 11H11'] },
+  eye: { d: ['M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z'], c: [[12, 12, 3]] },
+};
+const s = shapes[name];
+---
+<svg class:list={['ic', cls]} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+  {s.c?.map(([cx, cy, r]) => <circle cx={cx} cy={cy} r={r} />)}
+  {s.d?.map((d) => <path d={d} />)}
+</svg>

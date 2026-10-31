@@ -1,0 +1,16 @@
+---
+// The wrong piece: a jagged part that cannot seat on the build, crossed out.
+import Slab from './Slab.astro';
+interface Props { class?: string }
+const { class: cls } = Astro.props;
+---
+<svg class:list={['misfit-art', cls]} viewBox="0 0 160 128" aria-hidden="true" focusable="false">
+  <Slab x={18} y={92} w={104} h={28} dx={16} dy={-12} top />
+  <g class="slab slab-paper wrong">
+    <path class="s-front" d="M30 18h90v26l-9 10-9-10-9 10-9-10-9 10-9-10-9 10-9-10-9 10-9-10z" />
+  </g>
+  <path class="guide-static" d="M76 62v16" />
+  <g class="xmark">
+    <path d="M52 10l64 52M116 10L52 62" />
+  </g>
+</svg>

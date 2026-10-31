@@ -1,0 +1,31 @@
+---
+// Forecast band chart, spec 06 §6. Same markup on the landing and in console step 3.
+import { forecast, chartPaths } from '../../data/demo';
+
+interface Props { id: string; class?: string }
+const { id, class: cls } = Astro.props;
+const c = chartPaths();
+const base = 104;
+const ticks = [
+  { d: 0, anchor: 'start' },
+  { d: 7, anchor: 'middle' },
+  { d: 14, anchor: 'end' },
+] as const;
+---
+<figure class:list={['chart', cls]}>
+  <svg viewBox="0 0 280 120" role="img" aria-labelledby={`${id}-t ${id}-d`}>
+    <title id={`${id}-t`}>Demand forecast for {forecast.product}</title>
+    <desc id={`${id}-d`}>{forecast.caption}</desc>
+    <path class="c-band" d={c.band} />
+    <line class="c-axis" x1="16" x2="264" y1={base} y2={base} />
+    <line class="c-onhand" x1="16" x2="264" y1={c.onHandY} y2={c.onHandY} />
+    <text class="c-lbl c-lbl--onhand" x="20" y={c.onHandY - 5}>On hand {forecast.onHand}</text>
+    <line class="c-marker" x1={c.markerX} x2={c.markerX} y1="14" y2={base} />
+    <text class="c-lbl" x={c.markerX + 4} y="22">Runs out ~day {forecast.daysToStockout}</text>
+    <path class="c-p50" d={c.p50} />
+    {ticks.map((t) => (
+      <text class="c-tick" x={c.x(t.d)} y="117" text-anchor={t.anchor}>Day {t.d}</text>
+    ))}
+  </svg>
+  <figcaption>{forecast.caption}</figcaption>
+</figure>

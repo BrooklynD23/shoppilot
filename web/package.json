@@ -1,0 +1,26 @@
+{
+  "name": "shoppilot-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --host 127.0.0.1 --port 4321",
+    "build": "astro build",
+    "preview": "astro preview --host 127.0.0.1 --port 4321"
+  },
+  "dependencies": {
+    "@fontsource-variable/archivo": "5.3.0",
+    "@fontsource-variable/atkinson-hyperlegible-mono": "5.3.0",
+    "@fontsource-variable/atkinson-hyperlegible-next": "5.3.0",
+    "@fontsource-variable/big-shoulders-stencil": "5.3.0",
+    "@fontsource-variable/bricolage-grotesque": "5.3.0",
+    "@fontsource-variable/hanken-grotesk": "5.3.0",
+    "@fontsource-variable/hubot-sans": "5.3.0",
+    "@fontsource-variable/jetbrains-mono": "5.3.0",
+    "@fontsource-variable/mona-sans": "5.3.0",
+    "@fontsource-variable/public-sans": "5.3.0",
+    "@fontsource-variable/red-hat-display": "5.3.0",
+    "@fontsource-variable/red-hat-text": "5.3.0",
+    "@fontsource-variable/schibsted-grotesk": "5.3.0",
+    "astro": "7.4.4"
+  }
+}

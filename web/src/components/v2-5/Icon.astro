@@ -1,0 +1,19 @@
+---
+// One stroke family (24 grid, 1.75 stroke, round caps). Always decorative: text carries meaning.
+interface Props { name: 'check' | 'arrow' | 'lock' | 'undo' | 'shield' | 'alert' | 'info'; class?: string }
+const { name, class: cls = '' } = Astro.props;
+const ring = 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z';
+const paths: Record<Props['name'], string[]> = {
+  check: ['M5 12.5l4.5 4.5L19 7.5'],
+  arrow: ['M5 12h14', 'M13 6l6 6-6 6'],
+  lock: ['M7 11h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2z', 'M8 11V8a4 4 0 0 1 8 0v3'],
+  undo: ['M9 14L4 9l5-5', 'M4 9h10.5a5.5 5.5 0 0 1 0 11H11'],
+  shield: ['M12 3l7 3v6c0 4.5-3 7.5-7 9c-4-1.5-7-4.5-7-9V6z', 'M9 12l2 2 4-4'],
+  alert: [ring, 'M12 7.5v5.5', 'M12 16.5h.01'],
+  info: [ring, 'M12 11v5', 'M12 7.5h.01'],
+};
+---
+<svg class={`icon ${cls}`} viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+  stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  {paths[name].map((d) => <path d={d} />)}
+</svg>

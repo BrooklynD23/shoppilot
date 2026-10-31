@@ -1,0 +1,245 @@
+{
+  "plan_id": "plan_7f3a",
+  "source": "replay",
+  "plan": {
+    "status": "ok",
+    "request": "Ship yesterday's orders, email buyers tracking, restock what will run out this week, refund anything damaged.",
+    "steps": [
+      {
+        "id": "s1",
+        "tool": "mark_shipped",
+        "title": "Mark 3 orders shipped",
+        "target": "Orders 1041, 1042, 1043 by USPS",
+        "rationale": "Paid yesterday, not shipped yet."
+      },
+      {
+        "id": "s2",
+        "tool": "send_email",
+        "title": "Email 3 buyers their tracking",
+        "target": "dana@example.com and 2 more",
+        "rationale": "Each shipped order gets one tracking email."
+      },
+      {
+        "id": "s3",
+        "tool": "forecast_demand",
+        "title": "Forecast Lavender tin (P-07)",
+        "target": "Next 14 days",
+        "rationale": "9 on hand, sells about 2 a day."
+      },
+      {
+        "id": "s4",
+        "tool": "create_restock_po",
+        "title": "Draft restock PO",
+        "target": "P-07 Lavender tin, 48 units",
+        "rationale": "Covers the p90 forecast plus lead time."
+      },
+      {
+        "id": "s5",
+        "tool": "refund_order",
+        "title": "Refund order 1038",
+        "target": "Dana R., box arrived crushed",
+        "rationale": "Damaged on arrival, inside the 30-day window."
+      }
+    ],
+    "blocked_inputs": [
+      {
+        "source_id": "em_7",
+        "allowed": false,
+        "label": "prompt_injection",
+        "reason": "Tries to make the agent ignore its rules and refund every order. Never sent to the planner.",
+        "score": 0.98,
+        "subject": "URGENT: action required on all orders",
+        "from": "support-team@fernkiln-help.example"
+      }
+    ]
+  },
+  "validations": [
+    {
+      "step_id": "s1",
+      "ok": true,
+      "reason": null
+    },
+    {
+      "step_id": "s2",
+      "ok": true,
+      "reason": null
+    },
+    {
+      "step_id": "s3",
+      "ok": true,
+      "reason": null
+    },
+    {
+      "step_id": "s4",
+      "ok": true,
+      "reason": null
+    },
+    {
+      "step_id": "s5",
+      "ok": true,
+      "reason": null
+    }
+  ],
+  "diff": [
+    {
+      "step_id": "s1",
+      "before": "paid",
+      "after": "shipped",
+      "amount_cents": null
+    },
+    {
+      "step_id": "s2",
+      "before": "0 in Outbox",
+      "after": "3 in Outbox",
+      "amount_cents": null
+    },
+    {
+      "step_id": "s3",
+      "before": "9 on hand",
+      "after": "Runs out ~day 4 (3 to 6)",
+      "amount_cents": null,
+      "forecast": {
+        "on_hand": 9,
+        "days_to_stockout": 4,
+        "range": [
+          3,
+          6
+        ],
+        "band": {
+          "p10": [
+            0,
+            1.6,
+            3.2,
+            4.8,
+            6.4,
+            8,
+            9.6,
+            11.2,
+            12.8,
+            14.4,
+            16,
+            17.6,
+            19.2,
+            20.8,
+            22.4
+          ],
+          "p50": [
+            0,
+            2.4,
+            4.8,
+            7.2,
+            9.6,
+            12,
+            14.4,
+            16.8,
+            19.2,
+            21.6,
+            24,
+            26.4,
+            28.8,
+            31.2,
+            33.6
+          ],
+          "p90": [
+            0,
+            3.2,
+            6.4,
+            9.6,
+            12.8,
+            16,
+            19.2,
+            22.4,
+            25.6,
+            28.8,
+            32,
+            35.2,
+            38.4,
+            41.6,
+            44.8
+          ]
+        }
+      }
+    },
+    {
+      "step_id": "s4",
+      "before": "No open PO",
+      "after": "PO draft, est. $312.00",
+      "amount_cents": 31200
+    },
+    {
+      "step_id": "s5",
+      "before": "$24.00 captured",
+      "after": "$24.00 refunded",
+      "amount_cents": 2400
+    }
+  ],
+  "tools": {
+    "mark_shipped": {
+      "destructive": false,
+      "moves_money": false,
+      "undoable": true
+    },
+    "send_email": {
+      "destructive": false,
+      "moves_money": false,
+      "undoable": true
+    },
+    "forecast_demand": {
+      "destructive": false,
+      "moves_money": false,
+      "undoable": false
+    },
+    "create_restock_po": {
+      "destructive": false,
+      "moves_money": false,
+      "undoable": true
+    },
+    "refund_order": {
+      "destructive": true,
+      "moves_money": true,
+      "undoable": false
+    }
+  },
+  "clarify": null,
+  "usage": {
+    "total_cost_usd": 0.014,
+    "cache_hit_pct": 81,
+    "input_tokens": 1840,
+    "output_tokens": 620,
+    "ms": 8400
+  },
+  "execute": {
+    "s1": {
+      "ok": true,
+      "summary": "Mark 3 orders shipped: done",
+      "audit_id": "a_s1",
+      "data": {}
+    },
+    "s2": {
+      "ok": true,
+      "summary": "Email 3 buyers their tracking: done",
+      "audit_id": "a_s2",
+      "data": {}
+    },
+    "s3": {
+      "ok": true,
+      "summary": "Forecast Lavender tin (P-07): done",
+      "audit_id": "a_s3",
+      "data": {}
+    },
+    "s4": {
+      "ok": true,
+      "summary": "Draft restock PO: done",
+      "audit_id": "a_s4",
+      "data": {}
+    },
+    "s5": {
+      "ok": true,
+      "summary": "Refunded $24.00 on order 1038",
+      "audit_id": "a_s5",
+      "data": {
+        "refund_id": "re_test_fixture01"
+      }
+    }
+  }
+}

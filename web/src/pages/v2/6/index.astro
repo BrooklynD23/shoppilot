@@ -1,0 +1,240 @@
+---
+import '@fontsource-variable/mona-sans/wdth.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '../../../styles/v2-6.css';
+import Base from '../../../layouts/Base.astro';
+import HeroDemo from '../../../components/v2-6/HeroDemo.astro';
+import ForecastChart from '../../../components/v2-6/ForecastChart.astro';
+import Receipt from '../../../components/v2-6/Receipt.astro';
+import Icon from '../../../components/v2-6/Icon.astro';
+import {
+  positioning, hero, problem, proof, proofNote, howSteps, safety, anomalies, forecastCopy,
+  pricing, pricingLabel, faq, closing, footer,
+} from '../../../data/v2';
+import { inbox } from '../../../data/demo';
+
+const BASE = '/v2/6/';
+const APP = `${BASE}app/`;
+const [h1a, h1b] = hero.h1.split('. ').map((s, i) => (i === 0 ? `${s}.` : s));
+const blocked = inbox[0];
+const pillKind = { plan: 'planned', check: 'checked', approve: 'approval', run: 'done', undo: 'undone' } as const;
+const caps = [
+  { rule: 'Refund cap per order', limit: '$200', what: 'A bigger refund cannot be planned at all, whatever an email says.' },
+  { rule: 'Refund cap per plan', limit: '$500', what: 'Refunds that add up past $500 in one plan cannot be planned.' },
+  { rule: 'Refund window', limit: '30 days', what: 'Older orders are refused by the validator, with the reason shown.' },
+  { rule: 'Approval gate', limit: 'Every money step', what: 'The step waits for your checkbox. Nothing runs until you tick it.' },
+];
+const footLinks = footer.links.map((l) => ({ ...l, href: l.href.startsWith('/') ? l.href : `${BASE}${l.href}` }));
+---
+<Base title="ShopPilot+: safe autopilot for your shop" description={positioning}>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-head">
+    <div class="wrap nav-row">
+      <a class="wordmark" href={BASE} aria-current="page">ShopPilot+</a>
+      <nav aria-label="Main">
+        <ul class="nav">
+          <li><a href="#how">How it works</a></li>
+          <li><a href="#safety">Safety</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+        </ul>
+      </nav>
+      <a class="btn btn-primary btn-sm" href="#demo">{hero.cta}</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- 1. Hero: copy left, live demo right -->
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <h1 id="hero-title"><span>{h1a}</span> <span>{h1b}</span></h1>
+        <p class="hero-sub">{hero.sub}</p>
+        <a class="btn btn-primary btn-lg" href="#demo">{hero.cta}</a>
+        <p class="hero-note">{hero.ctaNote}</p>
+      </div>
+      <HeroDemo appHref={APP} />
+    </section>
+
+    <!-- 2. Proof: measured numbers, each with its source -->
+    <section class="proof band" aria-labelledby="proof-title">
+      <div class="wrap proof-grid">
+        <div class="proof-intro">
+          <h2 id="proof-title">Measured on the prototype, not promised.</h2>
+          <p>{proofNote}</p>
+        </div>
+        <dl class="proof-stats">
+          {proof.map((p) => (
+            <div class="stat">
+              <dt class="stat-label">{p.label}</dt>
+              <dd class="stat-value num">{p.value}</dd>
+              <dd class="stat-src">{p.source}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
+
+    <!-- 3. How a request runs, next to the product film slot -->
+    <section class="how wrap" id="how" aria-labelledby="how-title">
+      <div class="how-steps">
+        <h2 id="how-title">How a request runs</h2>
+        <ol class="how-list">
+          {howSteps.map((s, i) => (
+            <li class="how-item">
+              <span class="how-n num" aria-hidden="true">{i + 1}</span>
+              <div>
+                <h3>{s.name} <span class={`pill pill--${pillKind[s.key]}`}>{s.pill}</span></h3>
+                <p>{s.text}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <figure class="film">
+        <div class="film-frame">
+          <!--
+            Swap in the real recording after the 11-02 build freeze:
+            <video class="film-video" preload="none" controls poster="/v2/6/film-poster.png">
+              <source src="/v2/6/console-30s.mp4" type="video/mp4" />
+            </video>
+          -->
+          <button class="film-play" type="button" disabled aria-label="Play product film (not recorded yet)">
+            <Icon name="play" />
+          </button>
+          <p class="film-label">Product film: 30 s screen recording of the real console, recorded after the 11-02 build freeze</p>
+        </div>
+        <figcaption>Placeholder. No footage yet; until then the live demo above is the real thing.</figcaption>
+      </figure>
+    </section>
+
+    <!-- 4. Safety: the blocked email in plain words, caps ledger, audit receipt -->
+    <section class="safety band-line" id="safety" aria-labelledby="safety-title">
+      <div class="wrap safety-grid">
+        <div class="safety-story">
+          <h2 id="safety-title">{safety.heading}</h2>
+          <p class="lede">{safety.body}</p>
+          <article class="mail" aria-label="Blocked email">
+            <div class="mail-head">
+              <span class="stamp">BLOCKED</span>
+              <span class="mail-from">From <span class="addr">{blocked.from}</span></span>
+            </div>
+            <p class="mail-subj">{blocked.subject}</p>
+            <p class="mail-verdict">{safety.verdictPlain}</p>
+            <details class="more">
+              <summary>Technical details</summary>
+              <p class="mail-raw">“{blocked.preview}”</p>
+              <p>{safety.technical}</p>
+            </details>
+          </article>
+        </div>
+        <div class="safety-proof">
+          <table class="ledger">
+            <caption>Limits the agent cannot cross</caption>
+            <thead><tr><th scope="col">Rule</th><th scope="col">Limit</th><th scope="col">What happens</th></tr></thead>
+            <tbody>
+              {caps.map((c) => (
+                <tr><th scope="row">{c.rule}</th><td class="num ledger-limit">{c.limit}</td><td>{c.what}</td></tr>
+              ))}
+            </tbody>
+          </table>
+          <div class="audit">
+            <h3>Audit log after one run <span class="tag">Demo store</span></h3>
+            <Receipt />
+            <p class="audit-note">Shipping marks, emails and restock orders can be undone from here. Card refunds are final, so the refund checkbox says so before you tick it.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Forecast + anomalies -->
+    <section class="forecast band" aria-labelledby="fc-title">
+      <div class="wrap fc-grid">
+        <div class="fc-main">
+          <h2 id="fc-title">{forecastCopy.heading}</h2>
+          <p class="lede">{forecastCopy.body}</p>
+          <ForecastChart id="fc-landing" label="Demo store" />
+        </div>
+        <div class="fc-side">
+          <h3>{forecastCopy.anomaliesHeading}</h3>
+          <ul class="anoms">
+            {anomalies.map((a) => (
+              <li class="anom">
+                <p class="anom-head"><span>Order <code class="id">{a.order}</code></span><span class="anom-score num">Score {a.score}</span></p>
+                <p>{a.reason}</p>
+              </li>
+            ))}
+          </ul>
+          <p class="src-note"><span class="tag">Demo store</span> Flagged orders wait for you; nothing ships until you look.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Problem quote -->
+    <section class="problem wrap" aria-labelledby="problem-title">
+      <h2 id="problem-title" class="sr-only">Why this exists</h2>
+      <figure class="quote">
+        <blockquote><p>“{problem.quote}”</p></blockquote>
+        <figcaption>{problem.source}</figcaption>
+      </figure>
+      <p class="fear">{problem.fear}</p>
+    </section>
+
+    <!-- 7. Planned pricing -->
+    <section class="pricing wrap" id="pricing" aria-labelledby="pricing-title">
+      <div class="pricing-head">
+        <h2 id="pricing-title">Planned pricing</h2>
+        <p class="pricing-label"><Icon name="alert" />{pricingLabel}</p>
+      </div>
+      <ul class="tiers">
+        {pricing.map((t, i) => (
+          <li class:list={['tier', { 'tier--now': i === 0 }]}>
+            <h3>{t.name}</h3>
+            <p class="tier-price"><span class="num">{t.price}</span>{t.period && <span class="tier-period"> {t.period}</span>}</p>
+            <p class="tier-blurb">{t.blurb}</p>
+            <ul class="tier-feats">
+              {t.features.map((f) => <li><Icon name="tick" />{f}</li>)}
+            </ul>
+            {i === 0
+              ? <a class="btn btn-primary" href={APP}>{t.cta}</a>
+              : <button class="btn" type="button" disabled>{t.cta}</button>}
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <!-- 8. FAQ / honest limits -->
+    <section class="faq band-line" aria-labelledby="faq-title">
+      <div class="wrap faq-grid">
+        <h2 id="faq-title">Straight answers</h2>
+        <div class="faq-list">
+          {faq.map((f) => (
+            <details class="qa">
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- 9. Closing CTA -->
+    <section class="closing band" aria-labelledby="closing-title">
+      <div class="wrap closing-row">
+        <div>
+          <h2 id="closing-title">{closing.heading}</h2>
+          <p>{closing.body}</p>
+        </div>
+        <a class="btn btn-primary btn-lg" href={APP}>{hero.cta}</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap foot-row">
+      <span class="wordmark">ShopPilot+</span>
+      <ul class="foot-links">
+        {footLinks.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+      </ul>
+      <p class="foot-course">{footer.course}</p>
+    </div>
+  </footer>
+</Base>

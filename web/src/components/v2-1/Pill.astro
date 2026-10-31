@@ -1,0 +1,10 @@
+---
+// Agent state pill. Text always carries the state; colour only reinforces it.
+import { pills } from '../../data/v2';
+
+export type PillState = keyof typeof pills | 'irreversible';
+interface Props { state: PillState; class?: string; decorative?: boolean }
+const { state, class: cls, decorative = false } = Astro.props;
+const label = state === 'irreversible' ? 'Irreversible' : pills[state];
+---
+<span class:list={['pill', `pill--${state}`, cls]} data-state={state} aria-hidden={decorative ? 'true' : undefined}>{label}</span>

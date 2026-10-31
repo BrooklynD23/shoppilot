@@ -1,0 +1,21 @@
+---
+import { chartPaths, forecast } from '../../data/demo';
+interface Props { idp: string }
+const { idp } = Astro.props;
+const c = chartPaths();
+---
+<figure class="fc">
+  <svg viewBox="0 0 280 120" role="img" aria-labelledby={`${idp}-fc-t ${idp}-fc-d`}>
+    <title id={`${idp}-fc-t`}>{forecast.product} ({forecast.sku}) demand forecast, next 14 days</title>
+    <desc id={`${idp}-fc-d`}>Cumulative units sold, with a low to high range. The middle line crosses the {forecast.onHand} units on hand at about day {forecast.daysToStockout}; the range crosses between day {forecast.range[0]} and day {forecast.range[1]}.</desc>
+    <path class="fc-band" d={c.band} />
+    <line class="fc-onhand" x1="16" x2="264" y1={c.onHandY} y2={c.onHandY} />
+    <line class="fc-marker" x1={c.markerX} x2={c.markerX} y1="16" y2="104" />
+    <path class="fc-p50" d={c.p50} />
+    <text class="fc-label" x="264" y={c.onHandY + 10} text-anchor="end">{forecast.onHand} on hand</text>
+    <text class="fc-label fc-label--marker" x={c.markerX + 4} y="22">day {forecast.daysToStockout}</text>
+    <text class="fc-label" x="16" y="116">Today</text>
+    <text class="fc-label" x="264" y="116" text-anchor="end">Day 14</text>
+  </svg>
+  <figcaption>{forecast.caption}</figcaption>
+</figure>

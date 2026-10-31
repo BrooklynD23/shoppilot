@@ -1,0 +1,102 @@
+---
+// The plan card. One component, two sizes:
+//   hero: compact rows (tool, title, $, pill) + the $24.00 approval gate, carries the landing signature.
+//   full: the console card with target, why, before/after, Valid, approve checkboxes and the step 3 chart.
+import Pill from './Pill.astro';
+import ForecastChart from './ForecastChart.astro';
+import { store, copy, plan, money } from '../../data/demo';
+
+interface Props { variant: 'hero' | 'full'; appHref?: string }
+const { variant, appHref = '/v2/1/app/' } = Astro.props;
+const hero = variant === 'hero';
+const needApproval = plan.steps.filter((s) => !s.approved).length;
+const refund = plan.steps.find((s) => s.movesMoney)!;
+const refundAmt = money(refund.amountCents ?? 0);
+const approveLabel = (s: (typeof plan.steps)[number]) =>
+  s.movesMoney ? `Approve refund of ${money(s.amountCents ?? 0)} on order 1038. Card refunds cannot be undone.` : 'Run this step';
+---
+<div class:list={['plan', `plan--${variant}`]} id={hero ? undefined : 'plan'} data-state="ready">
+  {hero ? (
+    <div class="plan__head">
+      <p class="plan__store"><span class="tag">Demo store</span> {store.name}</p>
+      <p class="plan__req">{copy.request}</p>
+    </div>
+  ) : (
+    <div class="plan__head plan__head--full">
+      <div class="plan__titles">
+        <h2 id="plan-heading" tabindex="-1">Plan</h2>
+        <p class="plan__count">{plan.steps.length} steps, {needApproval} needs your approval</p>
+        <p class="tag">Recorded plan (replay)</p>
+      </div>
+      <p class="notice" id="plan-blocked">
+        <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.75 14.25 13H1.75Z M8 6v3.25 M8 11.1v.15" /></svg>
+        <span>1 inbox email was blocked from this plan. <a href="#inbox">See it</a></span>
+      </p>
+    </div>
+  )}
+
+  <ol class="plan__steps">
+    {plan.steps.map((s) => (
+      <li class:list={['step', { 'step--money': s.movesMoney }]} data-step={s.id}>
+        <div class="step__row">
+          <span class="step__n">{s.n}</span>
+          <span class="step__main">
+            <span class="step__title">{s.title}</span>
+            <code class="step__tool">{s.tool}</code>
+          </span>
+          {s.amountCents !== null && (
+            s.movesMoney
+              ? <span class="step__amt money">{money(s.amountCents)}</span>
+              : <span class="step__amt step__amt--est money"><span>est.</span> {money(s.amountCents)}</span>
+          )}
+          {hero ? (
+            <span class="sig">
+              <Pill state="planned" class="sig__from" decorative />
+              {s.movesMoney && <Pill state="checked" class="sig__mid" decorative />}
+              <Pill state={s.approved ? 'checked' : 'approval'} class="sig__to" />
+            </span>
+          ) : (
+            <span class="step__state" data-pill-slot><Pill state={s.approved ? 'checked' : 'approval'} /></span>
+          )}
+        </div>
+
+        {hero && s.movesMoney && (
+          <div class="gate">
+            <p class="gate__amt"><strong class="money">{refundAmt}</strong> awaiting your approval</p>
+            <p class="gate__note"><Pill state="irreversible" /> <span>Card refunds cannot be undone.</span></p>
+            <a class="btn btn--approve" href={appHref} aria-label={`Approve ${refundAmt} in the live demo`}>Approve {refundAmt}</a>
+          </div>
+        )}
+
+        {!hero && (
+          <div class="step__body">
+            <dl class="facts">
+              <div><dt>Target</dt><dd class="wrap-any">{s.target}</dd></div>
+              <div><dt>Why</dt><dd>{s.why}</dd></div>
+              <div>
+                <dt>Change</dt>
+                <dd class="diff">
+                  <span class="diff__before">{s.before}</span>
+                  <svg class="ico ico--arrow" viewBox="0 0 16 16" aria-label="becomes" role="img"><path d="M2.5 8h11 M9.5 4l4 4-4 4" /></svg>
+                  <span class="diff__after">{s.after}</span>
+                </dd>
+              </div>
+            </dl>
+            {s.tool === 'forecast_demand' && <ForecastChart id="fc-app" class="chart--step" />}
+            <div class="step__foot">
+              <span class="valid">
+                <svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5" /></svg>
+                Valid
+              </span>
+              {s.movesMoney && <Pill state="irreversible" />}
+              <label class:list={['approve', { 'approve--money': s.movesMoney }]}>
+                <input type="checkbox" name="approved" value={s.id} checked={s.approved} data-money={s.movesMoney ? s.amountCents : undefined} />
+                <span>{approveLabel(s)}</span>
+              </label>
+            </div>
+          </div>
+        )}
+      </li>
+    ))}
+  </ol>
+</div>

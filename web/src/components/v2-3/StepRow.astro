@@ -1,0 +1,65 @@
+---
+// One plan step. Shared by the landing story and the console so both read as the same product.
+// interactive: real checkbox (console). Otherwise the approve box is drawn (landing).
+import Icon from './Icon.astro';
+import Pill from './Pill.astro';
+import { money, type Step } from '../../data/demo';
+import { pills } from '../../data/v2';
+
+interface Props { step: Step; interactive?: boolean; ticked?: boolean; compact?: boolean; swap?: boolean }
+const { step: s, interactive = false, compact = false, swap = false } = Astro.props;
+const ticked = Astro.props.ticked ?? s.approved;
+const target = s.target.replaceAll(' · ', ', ');
+const needsApproval = s.movesMoney && !s.approved;
+const irreversible = s.movesMoney && !s.undoable;
+const approveLabel = s.movesMoney
+  ? `Approve refund of ${money(s.amountCents ?? 0)} on order 1038. Card refunds cannot be undone.`
+  : 'Run this step';
+const moneyLabel = s.movesMoney ? 'Money out' : 'Estimate, nothing charged';
+---
+{compact ? (
+  <li class="step step-compact">
+    <span class="step-n">{s.n}</span>
+    <span class="step-title">{s.title}</span>
+    {s.amountCents !== null && <span class="money">{money(s.amountCents)}</span>}
+    {needsApproval ? <Pill kind="approval" text={pills.approval} /> : <Pill kind="checked" text={pills.checked} />}
+  </li>
+) : (
+  <li class="step" data-step={s.id}>
+    <span class="step-n">{s.n}</span>
+    <div class="step-body">
+      <div class="step-head">
+        <span class="tool">{s.tool}</span>
+        {needsApproval ? <Pill kind="approval" text={pills.approval} /> : <Pill kind="checked" text={pills.checked} />}
+        {irreversible && <Pill kind="irreversible" text="Irreversible" />}
+        {s.valid && <span class="valid"><Icon name="tick" />Valid</span>}
+      </div>
+      <p class="step-title">{s.title}</p>
+      <p class="step-target">{target}</p>
+      <p class="step-why">{s.why}</p>
+      <p class="diff">
+        <span class="sr-only">Before:</span><span class="diff-before">{s.before}</span>
+        <Icon name="arrow" class="diff-arrow" />
+        <span class="sr-only">After:</span><span class="diff-after">{s.after}</span>
+      </p>
+      {s.amountCents !== null && (
+        <p class="step-money"><span class="money">{money(s.amountCents)}</span> <span class="step-money-label">{moneyLabel}</span></p>
+      )}
+      <slot />
+      {interactive ? (
+        <label class={`approve${s.movesMoney ? ' approve-money' : ''}`}>
+          <input type="checkbox" name="approve" value={s.id} checked={s.approved} data-money={s.amountCents ?? 0} />
+          <span>{approveLabel}</span>
+        </label>
+      ) : (
+        <p class={`approve${s.movesMoney ? ' approve-money' : ''}`}>
+          {swap ? (
+            <span class="approve-swap"><Icon name="box" class="approve-box" /><Icon name="box-ticked" class="approve-box approve-on" /></span>
+          ) : <Icon name={ticked ? 'box-ticked' : 'box'} class="approve-box" />}
+          <span>{approveLabel}</span>
+          {s.movesMoney && !swap && <span class="sr-only">{ticked ? '(approved)' : '(not approved yet)'}</span>}
+        </p>
+      )}
+    </div>
+  </li>
+)}

@@ -1,0 +1,34 @@
+---
+// One plan step. Used server side (no-JS final plan, console) and as the
+// <template> the client clones, so landing and console rows are identical.
+import Icon from './Icon.astro';
+import Forecast from './Forecast.astro';
+import { stepView, type StepIn } from '../../scripts/v2-2/view';
+interface Props { step: StepIn & { id: string; n: number; tool: string; why: string; before: string; after: string }; chart?: boolean }
+const { step: s, chart = false } = Astro.props;
+const v = stepView(s);
+---
+<li class="step" data-step={s.id} data-state={v.state} data-money={s.movesMoney ? '' : undefined}>
+  <span class="step-n" data-f="n">{s.n}</span>
+  <div class="step-main">
+    <code class="tool" data-f="tool">{s.tool}</code>
+    <p class="step-title" data-f="title">{s.title}</p>
+    <p class="step-target" data-f="target">{v.target}</p>
+    <p class="step-why" data-f="why">{s.why}</p>
+  </div>
+  <div class="step-change">
+    <p class="diff"><span data-f="before">{s.before}</span><Icon name="arrow" /><span class="sr-only"> becomes </span><span class="diff-after" data-f="after">{s.after}</span></p>
+    <p class="amt" data-f="money" data-kind={v.moneyKind}>{v.money}</p>
+  </div>
+  <div class="step-status">
+    <span class="pill pill-state" data-f="pill">{v.pill}</span>
+    <span class="valid" data-f="valid"><Icon name="tick" />Valid</span>
+    <span class="pill" data-k="irrev" data-f="irrev" hidden={!v.irreversible}>Irreversible</span>
+  </div>
+  <label class="approve">
+    <input type="checkbox" data-f="approve" checked={v.checked} data-cents={s.movesMoney ? s.amountCents : undefined} />
+    <span data-f="approve-label">{v.approve}</span>
+  </label>
+  <p class="result" data-f="result" hidden><Icon name="tick" /><span data-f="result-text"></span></p>
+  {chart && <div class="step-chart" data-f="chart" hidden={s.tool !== 'forecast_demand'}><Forecast /></div>}
+</li>

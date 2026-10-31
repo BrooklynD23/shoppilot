@@ -1,0 +1,32 @@
+---
+// Deterministic Code-128-looking bars from a string. Decorative only.
+// ponytail: fake symbology (6 elements per char, widths 1..4 summing 11), not scannable.
+interface Props { value: string; class?: string }
+const { value, class: cls = '' } = Astro.props;
+
+let seed = [...value].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0, 2166136261);
+const rnd = (n: number) => {
+  seed = (Math.imul(seed, 1103515245) + 12345) >>> 0;
+  return (seed >>> 16) % n;
+};
+const widths = [2, 1, 1, 2, 1, 4]; // start guard
+for (const _ of value) {
+  const w = [1, 1, 1, 1, 1, 1];
+  for (let extra = 5; extra > 0; ) {
+    const i = rnd(6);
+    if (w[i] < 4) { w[i]++; extra--; }
+  }
+  widths.push(...w);
+}
+widths.push(2, 3, 3, 1, 1, 1, 2); // stop guard, ends on a bar
+
+let x = 0;
+let d = '';
+widths.forEach((w, i) => {
+  if (i % 2 === 0) d += `M${x} 0h${w}v10h-${w}z`;
+  x += w;
+});
+---
+<svg class={`bc ${cls}`} viewBox={`0 0 ${x} 10`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
+  <path d={d} />
+</svg>

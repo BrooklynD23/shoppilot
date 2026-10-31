@@ -1,0 +1,13 @@
+---
+// One stroke family: 24 grid, 2px round stroke, currentColor.
+interface Props { name: 'arrow' | 'tick' | 'shield' | 'undo' | 'info' | 'plus'; class?: string }
+const { name, class: cls } = Astro.props;
+---
+<svg class:list={['ico', cls]} viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  {name === 'arrow' && <path d="M4 12h15M13 6l6 6-6 6" />}
+  {name === 'tick' && <path d="M5 12.5l4.5 4.5L19 7.5" />}
+  {name === 'shield' && <><path d="M12 3l7 3v6c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6z" /><path d="M9.5 9.5l5 5M14.5 9.5l-5 5" /></>}
+  {name === 'undo' && <path d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 010 11H11" />}
+  {name === 'info' && <><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 7.5v.5" /></>}
+  {name === 'plus' && <path d="M12 5v14M5 12h14" />}
+</svg>

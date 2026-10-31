@@ -1,0 +1,91 @@
+---
+// Live hero panel. Server-renders the final pending plan (works with no JS).
+// src/scripts/v2-6/hero.ts resets it to idle, then replays /v2/fixtures/plan.json.
+import { plan, copy, money, moneyOutCents } from '../../data/demo';
+import { chips } from '../../data/v2';
+import StepRow from './StepRow.astro';
+import Icon from './Icon.astro';
+
+interface Props { appHref: string }
+const { appHref } = Astro.props;
+const refund = plan.steps.find((s) => s.movesMoney)!;
+const order = refund.title.replace(/^Refund /, '');
+---
+<section class="demo" id="demo" tabindex="-1" aria-labelledby="demo-title" data-demo data-state="ready">
+  <div class="demo-bar">
+    <span class="tag">Demo store</span>
+    <span class="demo-src">Recorded plan (replay), no AI cost</span>
+  </div>
+
+  <form class="ask" action={appHref} method="get" data-ask>
+    <label class="field-label" for="hero-ask">Ask ShopPilot+</label>
+    <textarea id="hero-ask" name="q" rows="2" maxlength="500" required>{copy.request}</textarea>
+    <div class="ask-row">
+      <ul class="chips" aria-label="Example requests">
+        {chips.map((c) => <li><button type="button" class="chip" data-prompt={c.prompt}>{c.label}</button></li>)}
+      </ul>
+      <button class="btn btn-primary" type="submit" data-plan>Plan it</button>
+    </div>
+  </form>
+
+  <div class="plan">
+    <div class="plan-head">
+      <h2 id="demo-title">Plan</h2>
+      <p class="plan-meta" data-meta>5 steps, 1 needs your approval</p>
+    </div>
+
+    <div class="plan-empty" data-empty hidden>
+      <p class="plan-empty-msg" data-empty-msg>Pick a request and press Plan it. You see every step and every dollar before anything runs.</p>
+      <div class="sk" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+
+    <ol class="steps" data-steps>
+      {plan.steps.map((s) => <StepRow step={s} variant="compact" />)}
+    </ol>
+
+    <p class="notice" data-notice>
+      <Icon name="alert" />
+      <span>1 inbox email was blocked from this plan. It tried to refund every order. <a href="#safety">See how</a></span>
+    </p>
+
+    <div class="approve" data-approve-box>
+      <label class="check">
+        <input type="checkbox" data-approve />
+        <span>Approve refund of {money(refund.amountCents ?? 0)} on {order}. Card refunds cannot be undone.</span>
+      </label>
+      <span class="pill pill--blocked">Irreversible</span>
+    </div>
+
+    <div class="demo-foot" data-foot>
+      <p class="out">
+        <span class="out-label">Money out if you run</span>
+        <span class="out-value num" data-out>{money(0)}</span>
+        <span class="out-note" data-out-note>Stripe test mode. {money(moneyOutCents)} waits for your approval.</span>
+      </p>
+      <button class="btn btn-primary js-only" type="button" data-run>Run approved steps</button>
+      <a class="link nojs-only" href={appHref}>Run it in the full console</a>
+    </div>
+
+    <div class="demo-done" data-done hidden>
+      <p class="done-msg" tabindex="-1" data-done-msg><Icon name="tick" />Done. Every step is in the audit log.</p>
+      <div class="done-actions">
+        <a class="btn btn-quiet" href={appHref}>Open the full console</a>
+        <button class="btn btn-quiet" type="button" data-reset>Reset</button>
+      </div>
+    </div>
+
+    <div class="demo-error" data-error hidden>
+      <p><Icon name="alert" />Could not load the recorded plan. Check your connection and try again.</p>
+      <div class="done-actions">
+        <button class="btn btn-quiet" type="button" data-retry>Try again</button>
+        <a class="btn btn-quiet" href={appHref}>Open the full console</a>
+      </div>
+    </div>
+  </div>
+
+  <p class="sr-only" role="status" aria-live="polite" data-status></p>
+</section>
+
+<script>
+  import '../../scripts/v2-6/hero';
+</script>

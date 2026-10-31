@@ -1,0 +1,188 @@
+---
+import '@fontsource-variable/big-shoulders-stencil';
+import '@fontsource-variable/atkinson-hyperlegible-next';
+import '@fontsource-variable/atkinson-hyperlegible-mono';
+import '../../../styles/a.css';
+import Base from '../../../layouts/Base.astro';
+import Mark from '../../../components/a/Mark.astro';
+import { store, copy, plan, inbox, forecast, money, moneyOutCents, chartPaths } from '../../../data/demo';
+
+const c = chartPaths();
+const records = new Set(['send_email', 'create_restock_po']);
+const needApproval = plan.steps.filter((s) => !s.approved).length;
+const blockedMail = inbox.filter((m) => !m.allowed);
+const chips = [
+  { name: 'Sunday cleanup', prompt: copy.request },
+  { name: 'Stockout check', prompt: 'What will stock out in the next 14 days? Draft restock orders for those.' },
+  { name: 'WISMO replies', prompt: 'Answer every "where is my order" email with tracking.' },
+];
+const approveLabel = (s: (typeof plan.steps)[number]) =>
+  s.movesMoney && s.amountCents ? `Approve refund of ${money(s.amountCents)} on order 1038` : 'Run this step';
+const ticks = [0, 7, 14];
+---
+<Base title="ShopPilot+ · Carton" description="ShopPilot+ agent console: plan, check, approve, run and undo on the Fern & Kiln demo store." themeLight="#c69c6d" themeDark="#2a2018">
+  <a class="skip" href="#request-input">Skip to request</a>
+  <header class="bar con-bar">
+    <a class="wordmark" href="/mockups/a/">ShopPilot+</a>
+    <p class="store" id="store-name"><strong>{store.name}</strong> <span>{store.note}</span></p>
+    <p class="test-tag" id="stripe-tag">Stripe <b>TEST</b></p>
+    <nav aria-label="Main">
+      <ul class="nav">
+        <li><a href="/mockups/a/console/" aria-current="page">Agent console</a></li>
+        <li><a href="/">How it works</a></li>
+        <li><a href="/">Report</a></li>
+      </ul>
+    </nav>
+    <p class="meter num" id="cost-meter">${plan.usage.costUsd.toFixed(3)} · {plan.usage.tokens} tok · cache {plan.usage.cacheHitPct}%</p>
+    <button class="btn-line" id="reset-btn" type="button">Reset demo store</button>
+  </header>
+
+  <main class="con" id="main">
+    <div class="task">
+      <h1 class="sr-only">Agent console</h1>
+      <form class="sheet req" id="request-form" method="get" action="/mockups/a/console/">
+        <label for="request-input">Ask ShopPilot+</label>
+        <textarea id="request-input" name="q" rows="3" maxlength="500" required>{copy.request}</textarea>
+        <div class="req-row">
+          <button class="btn" id="plan-btn" type="submit">Plan it</button>
+          <ul class="chips" id="suggestions" aria-label="Suggested requests">
+            {chips.map((ch) => <li><button class="chip" type="button" data-prompt={ch.prompt}>{ch.name}</button></li>)}
+          </ul>
+        </div>
+      </form>
+
+      <section class="sheet" id="plan" data-state="ready" aria-labelledby="plan-heading">
+        <div class="plan-head">
+          <h2 id="plan-heading" tabindex="-1">Plan</h2>
+          <p class="plan-meta num">{plan.steps.length} steps · {needApproval} needs your approval</p>
+          <p class="mono plan-id">{plan.planId}</p>
+        </div>
+        <p class="notice" id="plan-blocked">
+          <Mark kind="stop" />
+          <span>{blockedMail.length} inbox email was blocked from this plan.<a href="#inbox">See it</a></span>
+        </p>
+        <ul class="legend" aria-label="Handling marks on steps">
+          <li><Mark kind="fragile" />Moves money</li>
+          <li><Mark kind="undo" />Can undo</li>
+          <li><Mark kind="record" />Creates a record</li>
+        </ul>
+
+        <ol class="steps" id="steps">
+          {plan.steps.map((s) => (
+            <li class="step" id={`step-${s.id}`}>
+              <span class="step-num" aria-hidden="true">{s.n}</span>
+              <div class="step-body">
+                <div class="step-top">
+                  <p class="mono tool">{s.tool}</p>
+                  <span class="marks">
+                    {s.movesMoney && <Mark kind="fragile" label="Moves money" />}
+                    {records.has(s.tool) && <Mark kind="record" label="Creates a record" />}
+                    {s.undoable && <Mark kind="undo" label="Can undo" />}
+                  </span>
+                  {!s.undoable && !s.movesMoney && <span class="ro">Read only</span>}
+                </div>
+                <h3>{s.title}</h3>
+                <p class="target">{s.target}</p>
+                <p class="why">{s.why}</p>
+                <p class="diff">
+                  <span class="diff-tag">Dry run</span>
+                  <span class="before">{s.before}</span>
+                  <Mark kind="arrow" label="becomes" />
+                  <span class="after">{s.after}</span>
+                </p>
+                {s.tool === 'forecast_demand' && (
+                  <figure class="chart">
+                    <svg viewBox="0 0 280 120" role="img" aria-labelledby="fc-title fc-desc">
+                      <title id="fc-title">Demand forecast for {forecast.product}</title>
+                      <desc id="fc-desc">{forecast.caption}</desc>
+                      <line class="axis" x1="16" x2="264" y1="104" y2="104" />
+                      <path class="band" d={c.band} />
+                      <path class="p50" d={c.p50} />
+                      <line class="onhand" x1="16" x2="264" y1={c.onHandY} y2={c.onHandY} />
+                      <text x="264" y={c.onHandY - 5} text-anchor="end">On hand {forecast.onHand}</text>
+                      <line class="marker" x1={c.markerX} x2={c.markerX} y1="14" y2="104" />
+                      <text x={c.markerX + 5} y="22">Runs out ~day {forecast.daysToStockout}</text>
+                      {ticks.map((d) => (
+                        <>
+                          <line class="axis" x1={c.x(d)} x2={c.x(d)} y1="104" y2="108" />
+                          <text class="tick" x={c.x(d)} y="118" text-anchor="middle">{d === 0 ? 'Day 0' : d}</text>
+                        </>
+                      ))}
+                    </svg>
+                    <figcaption>{forecast.caption}</figcaption>
+                  </figure>
+                )}
+              </div>
+              <div class="step-side">
+                {s.amountCents !== null && (
+                  s.movesMoney ? (
+                    <p class="money-out">
+                      <Mark kind="fragile" />
+                      <span class="money"><span class="money-label">Money out</span><span class="money-fig">{money(s.amountCents)}</span></span>
+                    </p>
+                  ) : (
+                    <p class="money"><span class="money-label">Draft estimate</span><span class="money-fig">{money(s.amountCents)}</span></p>
+                  )
+                )}
+                <p class="valid"><Mark kind="tick" />Valid</p>
+                <label class={s.movesMoney ? 'approve approve-money' : 'approve'}>
+                  <input type="checkbox" name="approve" value={s.id} checked={s.approved} />
+                  <span>{approveLabel(s)}</span>
+                </label>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+    </div>
+
+    <div class="runbar" id="run-bar">
+      <p class="money-line" id="money-out">Money out if you run: <strong>{money(moneyOutCents)}</strong> (Stripe test mode)</p>
+      <button class="btn" id="run-btn" type="button">Run approved steps</button>
+    </div>
+
+    <aside class="rail" id="inbox" aria-labelledby="rail-h">
+      <h2 id="rail-h">Mail and log</h2>
+      <div class="tabs" role="tablist" aria-label="Mail and log">
+        <button class="tab" role="tab" id="tab-inbox" aria-selected="true" aria-controls="panel-inbox" tabindex="0">
+          Inbox <span class="tab-count">({blockedMail.length} blocked)</span>
+        </button>
+        <button class="tab" role="tab" id="tab-outbox" aria-selected="false" aria-controls="panel-outbox" tabindex="-1">Outbox</button>
+        <button class="tab" role="tab" id="tab-audit" aria-selected="false" aria-controls="panel-audit" tabindex="-1">Audit</button>
+      </div>
+
+      <div role="tabpanel" id="panel-inbox" aria-labelledby="tab-inbox">
+        <ul class="mail" id="inbox-list">
+          {inbox.map((m) => m.allowed ? (
+            <li class="mail-ok">
+              <div class="mail-top">
+                <p class="stamp stamp-ok"><Mark kind="tick" />ALLOWED</p>
+                <p class="mono from">{m.from}</p>
+              </div>
+              <h3 class="subject">{m.subject}</h3>
+              <p class="preview">{m.preview}</p>
+            </li>
+          ) : (
+            <li class="label mail-blocked">
+              <div class="tape tape-red" aria-hidden="true"><span>REFUSED</span><span>REFUSED</span><span>REFUSED</span></div>
+              <div class="mail-top">
+                <p class="stamp stamp-blocked"><Mark kind="stop" />BLOCKED</p>
+              </div>
+              <p class="mono from">{m.from}</p>
+              <h3 class="subject">{m.subject}</h3>
+              <p class="preview">{m.preview}</p>
+              <p class="reason">{m.reason}</p>
+              <p class="meta"><span class="mono">{m.label}</span> <span>score <span class="num">{m.score.toFixed(2)}</span></span></p>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div role="tabpanel" id="panel-outbox" aria-labelledby="tab-outbox" hidden>
+        <p class="empty-note">Never sent. Emails stay in this app.</p>
+      </div>
+      <div role="tabpanel" id="panel-audit" aria-labelledby="tab-audit" hidden>
+        <p class="empty-note">Nothing has run yet.</p>
+      </div>
+    </aside>
+  </main>
+</Base>

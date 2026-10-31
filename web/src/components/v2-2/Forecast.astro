@@ -1,0 +1,19 @@
+---
+import { forecast, chartPaths } from '../../data/demo';
+const c = chartPaths();
+const ticks = [0, 7, 14];
+---
+<figure class="fc">
+  <svg viewBox="0 0 280 120" role="img">
+    <title>Demand forecast for {forecast.product}</title>
+    <desc>{forecast.caption}</desc>
+    <path class="fc-band" d={c.band} />
+    <path class="fc-p50" d={c.p50} />
+    <path class="fc-hand" d={`M${c.x(0)} ${c.onHandY}H${c.x(14)}`} />
+    <text class="fc-t fc-t-bad" x={c.x(14)} y={c.onHandY + 11} text-anchor="end">On hand {forecast.onHand}</text>
+    <path class="fc-mark" d={`M${c.markerX} 10V104`} />
+    <text class="fc-t" x={c.markerX + 5} y={17}>Runs out ~day {forecast.daysToStockout}</text>
+    {ticks.map((d) => <text class="fc-tick" x={c.x(d)} y={116} text-anchor="middle">Day {d}</text>)}
+  </svg>
+  <figcaption>{forecast.caption}</figcaption>
+</figure>

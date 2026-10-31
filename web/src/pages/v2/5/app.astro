@@ -1,0 +1,130 @@
+---
+import '@fontsource-variable/public-sans/wght.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '../../../styles/v2-5.css';
+import Base from '../../../layouts/Base.astro';
+import Icon from '../../../components/v2-5/Icon.astro';
+import StepRow from '../../../components/v2-5/StepRow.astro';
+import AuditReceipt from '../../../components/v2-5/AuditReceipt.astro';
+import ForecastChart from '../../../components/v2-5/ForecastChart.astro';
+import { chips, footer } from '../../../data/v2';
+import { plan, inbox, store, copy, money, moneyOutCents } from '../../../data/demo';
+
+const needApproval = plan.steps.filter((s) => !s.approved).length;
+const [blocked, ...allowed] = inbox;
+---
+<Base title="ShopPilot+ console | Demo store" description="Plan, check and approve shop tasks on a demo store." themeLight="#fbfbf8">
+  <a class="skip" href="#request-input">Skip to request</a>
+  <header class="app-head">
+    <div class="app-head-in">
+      <nav aria-label="Main"><a class="wordmark" href="/v2/5/">ShopPilot+</a></nav>
+      <p class="app-store"><strong>{store.name}</strong> <span class="tag">Demo store</span></p>
+      <p class="muted">Stripe test mode</p>
+      <p class="cost num" id="cost-meter">${plan.usage.costUsd} this plan, cache {plan.usage.cacheHitPct}%</p>
+      <button type="button" class="btn btn-ghost btn-sm" id="reset-btn">Reset demo store</button>
+    </div>
+  </header>
+
+  <div class="console">
+    <main class="task" id="main">
+      <h1 class="sr-only">ShopPilot+ console</h1>
+      <form class="sheet request" id="request-form">
+        <label for="request-input">Ask ShopPilot+</label>
+        <textarea id="request-input" rows="3" maxlength="500" required>{copy.request}</textarea>
+        <div class="request-row">
+          <button type="submit" class="btn btn-primary">Plan it</button>
+          <div class="chips" role="group" aria-label="Suggested requests">
+            {chips.map((c) => <button type="button" class="chip" data-prompt={c.prompt}>{c.label}</button>)}
+          </div>
+        </div>
+        <p class="muted" id="request-status" aria-live="polite"></p>
+      </form>
+
+      <section class="sheet plan" id="plan" aria-labelledby="plan-h">
+        <div class="plan-head">
+          <h2 id="plan-h" tabindex="-1">Plan</h2>
+          <p class="plan-count">{plan.steps.length} steps, {needApproval} needs your approval</p>
+          <span class="pill pill-planned">Recorded plan (replay)</span>
+        </div>
+        <p class="notice"><Icon name="alert" /><span>1 inbox email was blocked from this plan. <a href="#inbox">See it</a></span></p>
+        <ol class="steps">
+          {plan.steps.map((s) => (
+            <StepRow step={s}>
+              {s.tool === 'forecast_demand' && <ForecastChart idPrefix="afc" />}
+            </StepRow>
+          ))}
+        </ol>
+      </section>
+
+      <div class="run-bar">
+        <p>Money out if you run: <span class="money">{money(moneyOutCents)}</span> <span class="muted">(Stripe test mode)</span></p>
+        <button type="button" class="btn btn-primary" id="run-btn">Run approved steps</button>
+        <p class="muted run-status" id="run-status" aria-live="polite"></p>
+      </div>
+    </main>
+
+    <aside class="rail" id="inbox" aria-label="Inbox, outbox and audit">
+      <div class="rail-in sheet">
+        <div class="tabs" role="tablist" aria-label="Rail">
+          <button type="button" role="tab" id="tab-inbox" aria-controls="panel-inbox" aria-selected="true">Inbox (1 blocked)</button>
+          <button type="button" role="tab" id="tab-outbox" aria-controls="panel-outbox" aria-selected="false" tabindex="-1">Outbox</button>
+          <button type="button" role="tab" id="tab-audit" aria-controls="panel-audit" aria-selected="false" tabindex="-1">Audit</button>
+        </div>
+
+        <div role="tabpanel" id="panel-inbox" aria-labelledby="tab-inbox" class="panel">
+          <article class="mail is-blocked" id={blocked.id} tabindex="-1">
+            <div class="email-head">
+              <span class="stamp">BLOCKED</span>
+              <code class="rid">{blocked.id}</code>
+            </div>
+            <p class="email-subj">{blocked.subject}</p>
+            <p class="email-from wrap">From {blocked.from}</p>
+            <p class="email-why">{blocked.reason}</p>
+            <details class="tech">
+              <summary>Technical detail</summary>
+              <p>Guard label <code class="tool">{blocked.label}</code>, score <span class="num">{blocked.score}</span>.</p>
+              <p class="wrap">Preview, shown as text: {blocked.preview}</p>
+            </details>
+          </article>
+          {allowed.map((m) => (
+            <article class="mail">
+              <div class="email-head">
+                <span class="pill pill-checked"><Icon name="check" />Allowed</span>
+                <code class="rid">{m.id}</code>
+              </div>
+              <p class="email-subj">{m.subject}</p>
+              <p class="email-from wrap">From {m.from}</p>
+              <p class="muted">{m.reason}</p>
+            </article>
+          ))}
+        </div>
+
+        <div role="tabpanel" id="panel-outbox" aria-labelledby="tab-outbox" class="panel" hidden>
+          <p>Never sent. Emails stay in this app.</p>
+          <p class="muted">No emails yet. Step 2 drafts 3 tracking emails when you run the plan.</p>
+        </div>
+
+        <div role="tabpanel" id="panel-audit" aria-labelledby="tab-audit" class="panel" hidden>
+          <p class="muted">Last run on the demo store. Undo works on every row except the card refund.</p>
+          <AuditReceipt />
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="footer app-foot">
+    <div class="wrapx footer-in">
+      <ul class="footer-links">
+        <li><a href="/v2/5/">Home</a></li>
+        <li><a href="/how-it-works/">How it works</a></li>
+        <li><a href="/report/">Report</a></li>
+      </ul>
+      <p class="muted">{footer.course}</p>
+    </div>
+  </footer>
+</Base>
+
+<script>
+  import { initConsole } from '../../../scripts/v2-5/console';
+  initConsole();
+</script>
