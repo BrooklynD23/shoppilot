@@ -28,6 +28,7 @@ class Plan(BaseModel):
     judge: dict | None = None
     prompt_version: str = ""
     source: Literal["live", "replay"] = "live"
+    trace: list[dict] = []  # spec 09: display-only agent events, never fed back to a model
 
 
 class DiffItem(BaseModel):

@@ -18,6 +18,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, FastAPI, Request, Response
 from fastapi import Path as PathParam
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, StringConstraints
@@ -180,6 +181,10 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="ShopPilot+", lifespan=lifespan)
+# Added first = innermost: sees each route's real body, so minimum_size holds (the
+# BaseHTTPMiddleware guards stream every body). Their headers wrap it unchanged. Skips partial,
+# media and text/event-stream responses. Bodies hold no secrets (cookie session, header CSRF).
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 api = APIRouter(prefix="/api", dependencies=[Depends(rate_limit("api", API_LIMIT))])
 
 
@@ -348,7 +353,7 @@ def post_plan(body: PlanRequest, ctx: SessionCtx):
     return {
         "plan_id": plan_id,
         "source": plan.source,
-        "plan": plan.model_dump(),
+        "plan": plan.model_dump(exclude={"trace"}),
         "validations": [v.model_dump() for v in validations],
         "diff": [d.model_dump() for d in diff],
         "tools": {
@@ -361,6 +366,7 @@ def post_plan(body: PlanRequest, ctx: SessionCtx):
         },
         "clarify": clarify,
         "usage": plan.usage,
+        "trace": plan.trace,  # spec 09
     }
 
 

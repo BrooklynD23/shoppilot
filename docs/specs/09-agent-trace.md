@@ -1,6 +1,6 @@
 # 09 — Agent trace on the plan response (proposed)
 
-Console team, 2026-10-31. Status: **proposed**, for the backend team to implement next. The UI already reads it when present, and falls back to today's fields when it is missing. Nothing in `app/` changed for this.
+Console team, 2026-10-31. Status: **implemented** 2026-10-31 (`app/agent/planner.py`, `app/main.py`, tests in `tests/agent/test_trace.py`). The UI falls back to the older fields when `trace` is missing.
 
 ## 1. Why
 
@@ -45,7 +45,7 @@ Limits: at most 60 events (drop extra `read` events first). The UI reads the fir
 
 | Where | Events |
 |---|---|
-| `planner.route()` | `router start` before the call; `router pass` on `route == "plan"`; `router reject` with the reply on `route == "reject"` |
+| `planner.route()` | `router start` before the call; `router pass` on `route == "plan"`; `router reject` with fixed text on `route == "reject"` (never the model's reply, §4) |
 | `planner._loop()` each turn | `planner start` ("Turn n: ...") |
 | `planner._run_read()` | `planner read` ("list_orders: 3 paid orders"); for each new blocked verdict `guard block` ("E002 blocked as injection"); for `forecast_demand` and `flag_anomalies` a `forecaster read` with days to stockout or the anomaly count |
 | `planner._stage()` | `planner staged`, then `validator pass` or `validator reject` with `v.reason`, and `planner` gets `REJECTED again` as today |
