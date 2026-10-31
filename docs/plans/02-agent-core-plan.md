@@ -304,7 +304,7 @@ def test_user_turn_yesterday(): assert '"yesterday" = 2026-10-14' in user_turn("
 def test_tool_descriptions_cover_all(): assert set(TOOL_DESCRIPTIONS) == {"list_orders","list_inbox","forecast_demand","flag_anomalies","mark_shipped","send_email","create_restock_po","refund_order","create_payment_link","export_report"}
 ```
 
-- [ ] **Step 2:** Run → FAIL. **Step 3:** Write the five `.md` files from the spec (**R18/R6 wording overrides in `policy.md`:** "More than 3 refunds, any refund over $200.00, or more than $500.00 total in one request: ask the owner to confirm the list first"; restock uses `qty_source="forecast"` unless the owner gave a number; `TOOL_DESCRIPTIONS` for `forecast_demand`/`create_restock_po`/`flag_anomalies` follow the schemas in resolutions §3) and the loader (`Path(__file__).with_name(...)`, read once at import). **Step 4:** Run → PASS.
+- [ ] **Step 2:** Run → FAIL. **Step 3:** Write the five `.md` files from the spec (**R18/R6 wording overrides in `policy.md`:** "More than 3 refunds, any refund over $200.00, or more than $500.00 total in one request is rejected by policy. Tell the owner and propose the allowed subset." (R46); restock uses `qty_source="forecast"` unless the owner gave a number; `TOOL_DESCRIPTIONS` for `forecast_demand`/`create_restock_po`/`flag_anomalies` follow the schemas in resolutions §3) and the loader (`Path(__file__).with_name(...)`, read once at import). **Step 4:** Run → PASS.
 - [ ] **Step 5: Commit** `feat: planner, router and judge prompts with version hash`.
 
 ---
@@ -373,7 +373,7 @@ def test_unseen_evidence(ctx): assert "not in any tool result" in validate_step(
 def test_six_refunds_capped(ctx, six_shipped_ids):
     plan = Plan(request="refund " + " ".join(six_shipped_ids), steps=[refund(o, None, ["owner_request"]) for o in six_shipped_ids])
     assert any(not v.ok and "at most 3" in v.reason for v in validate_plan(plan, ctx))
-def test_refund_total_cap(ctx): ...         # two refunds summing > 20000 -> "$200.00"
+def test_refund_total_cap(ctx): ...         # two refunds summing > 50000 -> "$500.00" (R46)
 def test_bad_args_schema(ctx): ...          # ship carrier "dhl" -> not ok, jsonschema message
 def test_read_tool_as_step(ctx): ...        # Step(tool="list_orders") -> "read tools are not plan steps"
 def test_duplicate_step(ctx): ...

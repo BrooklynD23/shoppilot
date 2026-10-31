@@ -116,7 +116,7 @@ Render sets `PORT` (default 10000) and `RENDER_GIT_COMMIT`. Session cookies use 
 
 1. **W0 overlap with P1 Task 0** (manual Render setup). P7 replaces it with `render.yaml` (task D1). Integrator: drop P1 Task 0 and keep D1. P1 still owns `Dockerfile`, `ci.yml`, `app/main.py`.
 2. **`/healthz` `version` value:** P7 needs `version = os.environ.get("RENDER_GIT_COMMIT", "dev")[:7]` so the smoke test can tell when the new deploy is live. This only adds to P1's `{"ok": true, "version": str}`.
-3. **Dockerfile `CMD`** must bind `--port ${PORT:-8000}` (shell form, or `sh -c`), because Render injects `PORT`. Keep `--workers 1 --proxy-headers --forwarded-allow-ips='*'`.
+3. **Dockerfile `CMD`** must bind `--port ${PORT:-8000}` (shell form, or `sh -c`), because Render injects `PORT`. Keep `--workers 1`.
 4. **CI workflow name:** `deploy.yml` triggers on `workflow_run: workflows: ["CI"]`. P1's `ci.yml` must have `name: CI` and jobs `test` and `docker`.
 5. **Global LLM cap:** a public anonymous URL can burn the budget. Ask P1/the LLM planner to add `llm_max_plans_per_day: int = 300` (≈ $7.50/day at $0.025/turn) and return the friendly error `{"error": {"code": "demo_budget_reached", ...}}`. Also treat the Console spend-limit 400 and the spend-cap 429 as non-retryable.
 6. **numba:** flagged. It means JIT warm-up on 0.1–0.5 CPU and extra RAM in a 512 MB box. Use plain numpy/scikit-learn (ML planner).

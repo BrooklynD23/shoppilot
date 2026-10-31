@@ -1,0 +1,27 @@
+name: CI
+on: [push, pull_request]
+permissions: { contents: read }
+concurrency: { group: "ci-${{ github.ref }}", cancel-in-progress: true }
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - run: uv run ruff check . && uv run ruff format --check .
+      - run: uv run pytest -m "not live"
+        env: { APP_ENV: test }
+  docker:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: docker build -t shoppilot .
+      - run: |
+          docker run -d -p 8000:8000 --name sp shoppilot
+          sleep 5
+          curl -fsS localhost:8000/healthz
+          docker stats --no-stream sp
+          docker image ls shoppilot

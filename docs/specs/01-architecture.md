@@ -227,7 +227,7 @@ COPY app ./app
 RUN pip install . && useradd --create-home --uid 10001 app
 USER app
 EXPOSE 8000
-CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --workers 1 --proxy-headers --forwarded-allow-ips='*'"]
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --workers 1"]
 ```
 
 `pyproject.toml` uses setuptools with `[tool.setuptools.packages.find] include = ["app*"]`. Budget: image < 700 MB, idle RSS < 250 MB, measured in plan Task 1 Step 8. Skipped: multi-stage build and dependency-layer caching (add if deploys get slow).

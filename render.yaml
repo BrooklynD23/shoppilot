@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: shoppilot
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeployTrigger: "off"
+    envVars:
+      - key: APP_ENV
+        value: prod
+      - key: DATA_DIR
+        value: /tmp/shoppilot
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
