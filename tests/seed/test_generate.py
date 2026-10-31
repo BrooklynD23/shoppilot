@@ -5,7 +5,7 @@ import secrets
 import sqlite3
 import statistics
 import time
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from app.db import create_store, init_schema, store_exists
 from app.seed.generate import (
@@ -305,3 +305,59 @@ def test_seed_fast(anchor):
     t = time.perf_counter()
     seed(anchor)
     assert time.perf_counter() - t < 0.5
+
+
+def test_a3_velocity_ids_frozen(seeded):
+    ids = PLANTED_ANOMALY_ORDER_IDS[:5]
+    assert ids == ("O2634", "O2635", "O2637", "O2639", "O2640")
+    q = ",".join("?" * 5)
+    rows = seeded.execute(
+        f"SELECT customer_id, created_at FROM orders WHERE id IN ({q}) ORDER BY id", ids
+    ).fetchall()
+    assert len(rows) == 5 and len({c for c, _ in rows}) == 1
+    cust = rows[0][0]
+    prior = "SELECT count(*) FROM orders WHERE customer_id=? AND id<?"
+    assert one(seeded, prior, cust, ids[0]) == 0
+    ts = [datetime.fromisoformat(t) for _, t in rows]
+    assert max(ts) - min(ts) <= timedelta(minutes=40)
+
+
+def test_a4_id_frozen(seeded):
+    oid = "O2671"
+    assert oid in PLANTED_ANOMALY_ORDER_IDS
+    lines = seeded.execute(
+        "SELECT i.product_id, i.qty, i.unit_price_cents, p.price_cents FROM order_items i"
+        " JOIN products p ON p.id=i.product_id WHERE order_id=?",
+        (oid,),
+    ).fetchall()
+    assert len(lines) == 1
+    pid, qty, paid, listed = lines[0]
+    assert (pid, qty) == ("P09", 9) and paid == listed
+    cust = one(seeded, "SELECT customer_id FROM orders WHERE id=?", oid)
+    assert one(seeded, "SELECT count(*) FROM orders WHERE customer_id=? AND id<?", cust, oid) == 0
+
+
+def test_decoy_full_price(seeded):
+    assert DECOY_ORDER_IDS == ("O2694",)
+    rows = seeded.execute(
+        "SELECT i.unit_price_cents, p.price_cents FROM order_items i"
+        " JOIN products p ON p.id=i.product_id WHERE order_id=?",
+        DECOY_ORDER_IDS,
+    ).fetchall()
+    assert rows and all(paid == listed for paid, listed in rows)
+
+
+def test_falling_new_dead_exact(seeded, anchor):
+    falling = 0
+    for (pid,) in seeded.execute("SELECT id FROM products"):
+        u = daily_units(seeded, pid, anchor, 180)  # u[0] = yesterday
+        late, early = sum(u[:60]), sum(u[120:])
+        if early and late < 0.85 * early:
+            falling += 1
+    assert falling >= 1
+    span = (
+        "SELECT min(substr(o.created_at,1,10)), max(substr(o.created_at,1,10)) FROM order_items i"
+        " JOIN orders o ON o.id=i.order_id WHERE i.product_id=?"
+    )
+    assert seeded.execute(span, ("P18",)).fetchone()[0] == str(anchor - timedelta(5))
+    assert seeded.execute(span, ("P19",)).fetchone()[1] <= str(anchor - timedelta(90))

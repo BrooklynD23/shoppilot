@@ -8,8 +8,17 @@ from app.integrations import export
 
 @pytest.mark.parametrize(
     "v,out",
-    [("=1+1", "'=1+1"), ("+x", "'+x"), ("-x", "'-x"), ("@x", "'@x"),
-     ("\tx", "'\tx"), ("\rx", "'\rx"), ("ok", "ok"), (42, "42"), (None, "")],
+    [
+        ("=1+1", "'=1+1"),
+        ("+x", "'+x"),
+        ("-x", "'-x"),
+        ("@x", "'@x"),
+        ("\tx", "'\tx"),
+        ("\rx", "'\rx"),
+        ("ok", "ok"),
+        (42, "42"),
+        (None, ""),
+    ],
 )
 def test_csv_injection_guard(v, out):
     assert export._safe_cell(v) == out
@@ -38,8 +47,15 @@ def _add_refund(ctx):
     oid = ctx.db.execute("SELECT id FROM orders LIMIT 1").fetchone()[0]
     ctx.db.execute(
         "INSERT INTO refunds VALUES (?,?,?,?,?,?,?)",
-        ("rf_1", oid, 500, "requested_by_customer", "re_test123", "mock",
-         "2026-10-15T09:00:00+00:00"),
+        (
+            "rf_1",
+            oid,
+            500,
+            "requested_by_customer",
+            "re_test123",
+            "mock",
+            "2026-10-15T09:00:00+00:00",
+        ),
     )
     return oid
 
@@ -71,3 +87,19 @@ def test_pdf_survives_non_latin_name(ctx):
 def test_unknown_kind_raises(ctx):
     with pytest.raises(ValueError):
         export.render("audit_csv", ctx)
+
+
+def test_pdf_caps_orders_table(ctx, monkeypatch):
+    seen = []
+    real = export._table
+    monkeypatch.setattr(export, "_table", lambda h, rows: seen.append(rows) or real(h, rows))
+    texts = []
+    real_p = export.Paragraph
+    monkeypatch.setattr(export, "Paragraph", lambda t, s: texts.append(t) or real_p(t, s))
+    n = ctx.db.execute("SELECT COUNT(*) FROM orders").fetchone()[0]
+    newest = ctx.db.execute("SELECT id FROM orders ORDER BY created_at DESC, id DESC").fetchone()[0]
+    export.render("report_pdf", ctx)
+    assert n > export.PDF_MAX_ORDERS and len(seen[0]) == export.PDF_MAX_ORDERS
+    assert seen[0][0][0] == newest
+    assert any(f"showing newest {export.PDF_MAX_ORDERS} of {n}" in t for t in texts)
+    assert any(f"Orders: {n} " in t for t in texts)  # totals stay full

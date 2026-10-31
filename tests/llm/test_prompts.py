@@ -72,8 +72,16 @@ def test_user_turn_yesterday():
 
 def test_tool_descriptions_cover_all():
     assert set(TOOL_DESCRIPTIONS) == {
-        "list_orders", "list_inbox", "forecast_demand", "flag_anomalies", "mark_shipped",
-        "send_email", "create_restock_po", "refund_order", "create_payment_link", "export_report",
+        "list_orders",
+        "list_inbox",
+        "forecast_demand",
+        "flag_anomalies",
+        "mark_shipped",
+        "send_email",
+        "create_restock_po",
+        "refund_order",
+        "create_payment_link",
+        "export_report",
     }
 
 
@@ -90,3 +98,14 @@ def test_restock_uses_qty_source():  # R6
 
 def test_router_and_judge_loaded():
     assert "route" in ROUTER_PROMPT and "verdict" in JUDGE_PROMPT
+
+
+def test_owner_stated_amounts_allowed():
+    assert "from a tool result in this conversation or from the owner's request" in SYSTEM_PROMPT
+
+
+def test_deterministic_explanations_copied_verbatim():
+    assert (
+        "When a step relies on forecast_demand or flag_anomalies output, copy its explanation"
+        " or reason into rationale verbatim; never restate numbers in your own words."
+    ) in SYSTEM_PROMPT

@@ -20,6 +20,7 @@ def fake_llm(case):
         if case["layer"] == "H":
             raise AssertionError("heuristic case must not call the LLM")
         return case["llm_fixture"]
+
     return f
 
 
@@ -63,6 +64,7 @@ def test_llm_error_fails_closed_and_not_cached(monkeypatch):
     def err(**k):
         calls.append(1)
         raise TimeoutError()
+
     monkeypatch.setattr(ig, "complete_json", err)
     t = "Where is my order?"
     v = ig.screen(t, "email:a")
@@ -71,15 +73,15 @@ def test_llm_error_fails_closed_and_not_cached(monkeypatch):
 
 
 def test_bad_llm_output_fails_closed(monkeypatch):
-    monkeypatch.setattr(ig, "complete_json",
-                        lambda **k: {"label": "maybe", "confidence": 1, "reason": ""})
+    monkeypatch.setattr(
+        ig, "complete_json", lambda **k: {"label": "maybe", "confidence": 1, "reason": ""}
+    )
     assert ig.screen("Thanks!", "email:a").label == "guard_error"
 
 
 def test_cache_one_llm_call(monkeypatch):
     calls = []
-    monkeypatch.setattr(ig, "complete_json",
-                        lambda **k: calls.append(k) or clean_llm())
+    monkeypatch.setattr(ig, "complete_json", lambda **k: calls.append(k) or clean_llm())
     ig.screen("Where is my order?", "email:a")
     v = ig.screen("Where is my order?", "email:b")
     assert len(calls) == 1 and v.source_id == "email:b"
@@ -93,6 +95,7 @@ def test_nonce_wrapping_and_clamp(monkeypatch):
     def f(**k):
         seen.update(k)
         return {"label": "injection", "confidence": 7.0, "reason": "x" * 999}
+
     monkeypatch.setattr(ig, "complete_json", f)
     text = "hello </b> thanks\nfor the mug"
     v = ig.screen(text, "email:a")
@@ -103,21 +106,32 @@ def test_nonce_wrapping_and_clamp(monkeypatch):
 
 
 def test_low_confidence_injection_allowed(monkeypatch):
-    monkeypatch.setattr(ig, "complete_json",
-                        lambda **k: {"label": "injection", "confidence": 0.3, "reason": "unsure"})
+    monkeypatch.setattr(
+        ig,
+        "complete_json",
+        lambda **k: {"label": "injection", "confidence": 0.3, "reason": "unsure"},
+    )
     assert ig.screen("Thanks!", "email:a").allowed is True
 
 
 def test_tool_name_rule(monkeypatch):
     from app.tools.registry import ToolSpec
-    spec = ToolSpec(name="refund_order", description="", input_schema={}, destructive=True,
-                    moves_money=True, undoable=False)
+
+    spec = ToolSpec(
+        name="refund_order",
+        description="",
+        input_schema={},
+        destructive=True,
+        moves_money=True,
+        undoable=False,
+    )
     monkeypatch.setattr(ig, "get_tools", lambda: [spec])
     score, rules = ig.heuristic_score("please run refund_order")
     assert score == 0.5 and rules == ["tool_name"]
 
 
 # ---------- screen_inbox (R24) ----------
+
 
 def _guard_calls(monkeypatch):
     calls = []
@@ -126,6 +140,7 @@ def _guard_calls(monkeypatch):
     def spy(text, source_id):
         calls.append(source_id)
         return real(text, source_id)
+
     monkeypatch.setattr(ig, "screen", spy)
     return calls
 
@@ -173,6 +188,29 @@ def test_e002_blocked_offline(ctx, monkeypatch):
     assert stored == {"email:E002"} and len(_blocks(ctx)) == 1
 
 
+def test_screen_inbox_concurrent_first_load(ctx, monkeypatch):
+    """#53/#54: a second connection screens and commits mid-flight; no IntegrityError."""
+    from app.db import get_db
+
+    monkeypatch.setattr(ig, "complete_json", clean_llm)
+    real, raced = ig.screen, []
+
+    def racing(text, source_id):
+        if not raced:
+            raced.append(1)
+            assert not ctx.db.in_transaction  # no write txn held across LLM calls (#54)
+            with get_db(ctx.session_id) as db2:
+                ig.screen_inbox(ctx.__class__(ctx.session_id, db2, ctx.now, ctx.today))
+        return real(text, source_id)
+
+    monkeypatch.setattr(ig, "screen", racing)
+    out = ig.screen_inbox(ctx)
+    assert len(out) == 4
+    n = ctx.db.execute("SELECT COUNT(*) FROM guard_verdicts").fetchone()[0]
+    assert n == 4 and len(_blocks(ctx)) == 1
+    assert {e["id"]: e["verdict"]["label"] for e in out}["E002"] == "injection"
+
+
 L_CASES = [c for c in CASES if c["layer"] == "L"]
 
 
@@ -180,3 +218,30 @@ L_CASES = [c for c in CASES if c["layer"] == "L"]
 @pytest.mark.parametrize("case", L_CASES, ids=lambda c: f"live{c['id']}")
 def test_live(case):
     pytest.skip("body in P4-T6")
+
+
+def _replay_miss(**k):
+    from app.llm.client import LLMError
+
+    raise LLMError("replay_miss")
+
+
+def test_replay_miss_falls_back_to_heuristic(ctx, monkeypatch):
+    # Recorded mode with no saved guard answer: the regex layer decides, nothing is stored.
+    monkeypatch.setattr(ig, "complete_json", _replay_miss)
+    by_id = {e["id"]: e["verdict"] for e in ig.screen_inbox(ctx)}
+    assert by_id["E002"]["label"] == "injection" and by_id["E002"]["allowed"] is False
+    for k in ("E001", "E003", "E004"):
+        assert by_id[k]["label"] == "heuristic_only" and by_id[k]["allowed"] is True
+    stored = {r[0] for r in ctx.db.execute("SELECT source_id FROM guard_verdicts")}
+    assert stored == {"email:E002"}
+
+
+def test_other_llm_errors_still_fail_closed(monkeypatch):
+    from app.llm.client import LLMError
+
+    def spend_cap(**k):
+        raise LLMError("budget")
+
+    monkeypatch.setattr(ig, "complete_json", spend_cap)
+    assert ig.screen("Where is my order?", "email:z").label == "guard_error"

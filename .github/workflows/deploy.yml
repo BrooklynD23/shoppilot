@@ -8,8 +8,11 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: "Commit SHA to deploy"
+        description: "Commit SHA or branch to deploy (resolved to full SHA)"
         required: false
+
+permissions:
+  contents: read
 
 concurrency:
   group: deploy
@@ -27,11 +30,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.SHA }}
+          persist-credentials: false
+      - name: Resolve full SHA
+        id: sha
+        # Fails fast (before the hook) on a bad ref; hook + smoke.sh get the exact 40-hex commit.
+        run: |
+          full=$(git rev-parse --verify 'HEAD^{commit}')
+          echo "sha=$full" >> "$GITHUB_OUTPUT"
       - name: Trigger Render deploy
         env:
           HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          SHA: ${{ steps.sha.outputs.sha }}
         run: curl -fsS -X POST "$HOOK&ref=$SHA" -o /dev/null
       - name: Smoke test
         env:
           APP_URL: ${{ vars.APP_URL }}
-        run: scripts/smoke.sh "$APP_URL" "$SHA" 600
+          SHA: ${{ steps.sha.outputs.sha }}
+          SMOKE_FULL: "1"
+        run: bash scripts/smoke.sh "$APP_URL" "$SHA" 600

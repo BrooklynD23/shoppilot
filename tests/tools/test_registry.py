@@ -18,8 +18,12 @@ from app.tools.registry import (
     validate_args,
 )
 
-SCHEMA = {"type": "object", "properties": {"order_id": {"type": "string"}},
-          "required": ["order_id"], "additionalProperties": False}
+SCHEMA = {
+    "type": "object",
+    "properties": {"order_id": {"type": "string"}},
+    "required": ["order_id"],
+    "additionalProperties": False,
+}
 
 
 @pytest.fixture(autouse=True)
@@ -32,15 +36,26 @@ def _reset():
 
 
 def spec(name="mark_shipped", schema=SCHEMA, **kw):
-    return ToolSpec(name=name, description="d", input_schema=schema,
-                    destructive=kw.get("destructive", False),
-                    moves_money=kw.get("moves_money", False),
-                    undoable=kw.get("undoable", False))
+    return ToolSpec(
+        name=name,
+        description="d",
+        input_schema=schema,
+        destructive=kw.get("destructive", False),
+        moves_money=kw.get("moves_money", False),
+        undoable=kw.get("undoable", False),
+    )
 
 
-def run(args, ctx): return ToolResult(ok=True, summary="ok")
-def preview(args, ctx): return None
-def undo(token, ctx): return ToolResult(ok=True, summary="u")
+def run(args, ctx):
+    return ToolResult(ok=True, summary="ok")
+
+
+def preview(args, ctx):
+    return None
+
+
+def undo(token, ctx):
+    return ToolResult(ok=True, summary="u")
 
 
 def test_register_and_list():
@@ -127,22 +142,34 @@ def test_flags_required():
 
 
 def test_root_property_missing_from_required():
-    bad = {"type": "object", "properties": {"a": {"type": "string"}},
-           "required": [], "additionalProperties": False}
+    bad = {
+        "type": "object",
+        "properties": {"a": {"type": "string"}},
+        "required": [],
+        "additionalProperties": False,
+    }
     with pytest.raises(ValueError):
         register(spec(schema=bad), run, preview)
 
 
 def test_nested_object_must_be_strict():
-    bad = {"type": "object", "required": ["o"], "additionalProperties": False,
-           "properties": {"o": {"type": "object", "properties": {}}}}
+    bad = {
+        "type": "object",
+        "required": ["o"],
+        "additionalProperties": False,
+        "properties": {"o": {"type": "object", "properties": {}}},
+    }
     with pytest.raises(ValueError):
         register(spec(schema=bad), run, preview)
 
 
 def test_date_format_checked():
-    s = {"type": "object", "required": ["d"], "additionalProperties": False,
-         "properties": {"d": {"type": "string", "format": "date"}}}
+    s = {
+        "type": "object",
+        "required": ["d"],
+        "additionalProperties": False,
+        "properties": {"d": {"type": "string", "format": "date"}},
+    }
     register(spec(schema=s), run, preview)
     assert validate_args("mark_shipped", {"d": "yesterday"}) is not None
     assert validate_args("mark_shipped", {"d": "2026-10-15"}) is None
@@ -152,3 +179,38 @@ def test_defs_are_copies():
     register(spec(), run, preview)
     claude_tool_defs()[0]["input_schema"]["properties"]["rationale"] = {"type": "string"}
     assert validate_args("mark_shipped", {"order_id": "O1"}) is None
+
+
+def test_ref_defs_rejected():
+    s = {
+        "type": "object",
+        "properties": {"o": {"$ref": "#/$defs/O"}},
+        "required": ["o"],
+        "additionalProperties": False,
+        "$defs": {"O": {"type": "object", "properties": {}}},
+    }
+    with pytest.raises(ValueError):
+        register(spec(schema=s), run, preview)
+
+
+def test_untyped_object_node_must_be_strict():
+    s = {
+        "type": "object",
+        "properties": {"o": {"properties": {"a": {"type": "string"}}}},
+        "required": ["o"],
+        "additionalProperties": False,
+    }
+    with pytest.raises(ValueError):
+        register(spec(schema=s), run, preview)
+
+
+def test_get_tools_returns_copies():
+    register(spec(), run, preview)
+    get_tools()[0].input_schema["required"] = []
+    assert validate_args("mark_shipped", {}) is not None
+    assert claude_tool_defs()[0]["input_schema"]["required"] == ["order_id"]
+
+
+def test_name_trailing_newline_rejected():
+    with pytest.raises(ValueError):
+        register(spec(name="mark_shipped\n"), run, preview)

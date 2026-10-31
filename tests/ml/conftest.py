@@ -1,4 +1,5 @@
 """ML fixtures. `ctx` (seeded store, today=2026-10-15) comes from tests/conftest.py (R30)."""
+
 import math
 import random
 
@@ -20,8 +21,13 @@ def synth():
     """synth(base, trend=0, n=180, seed=4680) -> daily Poisson units with DOW multipliers."""
     from datetime import date, timedelta
 
-    def make(base: float, trend: float = 0.0, n: int = 180, seed: int = 4680,
-             first: date = date(2026, 4, 18)) -> list[float]:
+    def make(
+        base: float,
+        trend: float = 0.0,
+        n: int = 180,
+        seed: int = 4680,
+        first: date = date(2026, 4, 18),
+    ) -> list[float]:
         rng = random.Random(seed)  # noqa: S311 - deterministic test data
         out = []
         for i in range(n):

@@ -17,7 +17,21 @@ def test_each_kind_returns_route_url(kind, ctx):
     r = er.run({"kind": kind}, ctx)
     assert r.ok and r.data["url"] == f"/api/export/{kind}"
     assert r.undo_token is None
-    assert er.preview({"kind": kind}, ctx).after["url"] == f"/api/export/{kind}"
+    stem, ext = {
+        "orders_csv": ("orders", "csv"),
+        "refunds_csv": ("refunds", "csv"),
+        "report_pdf": ("report", "pdf"),
+    }[kind]
+    assert er.preview({"kind": kind}, ctx).after == {"file": f"{stem}-2026-10-15.{ext}"}
+
+
+@pytest.mark.parametrize("kind", EXPORT_KINDS)
+def test_preview_file_matches_render(kind, ctx, monkeypatch):
+    from app.integrations import export
+
+    want = export.render(kind, ctx)[2]
+    monkeypatch.setattr(export, "render", lambda *a: (_ for _ in ()).throw(AssertionError))
+    assert er.preview({"kind": kind}, ctx).after["file"] == want
 
 
 def test_unknown_kind_fails(ctx):

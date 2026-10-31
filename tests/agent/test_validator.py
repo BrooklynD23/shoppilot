@@ -1,4 +1,5 @@
 """P2-T7: deterministic plan validator (spec 02 §5, R18, R46, R50)."""
+
 from datetime import timedelta
 
 import pytest
@@ -21,24 +22,58 @@ _NI = {"anyOf": [{"type": "integer"}, {"type": "null"}]}
 
 
 def _obj(props):
-    return {"type": "object", "additionalProperties": False,
-            "required": list(props), "properties": props}
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "required": list(props),
+        "properties": props,
+    }
 
 
 # Contract §3 schemas, used only while the owning task has not landed.
 _STUBS = {
-    "refund_order": (True, True, False, _obj({
-        "order_id": {"type": "string"}, "amount_cents": _NI,
-        "reason": {"type": "string",
-                   "enum": ["duplicate", "fraudulent", "requested_by_customer"]}})),
-    "create_restock_po": (True, False, True, _obj({
-        "product_id": {"type": "string"},
-        "qty_source": {"type": "string", "enum": ["forecast", "user"]}, "qty": _NI})),
-    "list_orders": (False, False, False, _obj({
-        "status": {"type": "string", "enum": ["any", "paid", "shipped", "refunded"]},
-        "created_from": _NS, "created_to": _NS,
-        "order_ids": {"anyOf": [{"type": "array", "items": {"type": "string"}},
-                                {"type": "null"}]}})),
+    "refund_order": (
+        True,
+        True,
+        False,
+        _obj(
+            {
+                "order_id": {"type": "string"},
+                "amount_cents": _NI,
+                "reason": {
+                    "type": "string",
+                    "enum": ["duplicate", "fraudulent", "requested_by_customer"],
+                },
+            }
+        ),
+    ),
+    "create_restock_po": (
+        True,
+        False,
+        True,
+        _obj(
+            {
+                "product_id": {"type": "string"},
+                "qty_source": {"type": "string", "enum": ["forecast", "user"]},
+                "qty": _NI,
+            }
+        ),
+    ),
+    "list_orders": (
+        False,
+        False,
+        False,
+        _obj(
+            {
+                "status": {"type": "string", "enum": ["any", "paid", "shipped", "refunded"]},
+                "created_from": _NS,
+                "created_to": _NS,
+                "order_ids": {
+                    "anyOf": [{"type": "array", "items": {"type": "string"}}, {"type": "null"}]
+                },
+            }
+        ),
+    ),
 }
 
 
@@ -47,10 +82,21 @@ def tools(monkeypatch):
     registry.load_tools()
     for name, (destr, money, undo, schema) in _STUBS.items():
         if name not in registry._TOOLS:
-            spec = ToolSpec(name=name, description="stub", input_schema=schema,
-                            destructive=destr, moves_money=money, undoable=undo)
-            monkeypatch.setitem(registry._TOOLS, name, Registered(
-                spec, lambda *a: None, lambda *a: None, (lambda *a: None) if undo else None))
+            spec = ToolSpec(
+                name=name,
+                description="stub",
+                input_schema=schema,
+                destructive=destr,
+                moves_money=money,
+                undoable=undo,
+            )
+            monkeypatch.setitem(
+                registry._TOOLS,
+                name,
+                Registered(
+                    spec, lambda *a: None, lambda *a: None, (lambda *a: None) if undo else None
+                ),
+            )
 
 
 _n = iter(range(1, 10**6))
@@ -61,29 +107,48 @@ def _step(tool, args, evidence=()):
 
 
 def ship(ids, carrier="usps", evidence=None):
-    return _step("mark_shipped", {"order_ids": ids, "carrier": carrier},
-                 ids if evidence is None else evidence)
+    return _step(
+        "mark_shipped",
+        {"order_ids": ids, "carrier": carrier},
+        ids if evidence is None else evidence,
+    )
 
 
 def email(ids, template, body=None, evidence=None):
-    return _step("send_email", {"order_ids": ids, "template": template, "custom_body": body},
-                 ids if evidence is None else evidence)
+    return _step(
+        "send_email",
+        {"order_ids": ids, "template": template, "custom_body": body},
+        ids if evidence is None else evidence,
+    )
 
 
 def refund(oid, amount, evidence):
-    return _step("refund_order", {"order_id": oid, "amount_cents": amount,
-                                  "reason": "requested_by_customer"}, evidence)
+    return _step(
+        "refund_order",
+        {"order_id": oid, "amount_cents": amount, "reason": "requested_by_customer"},
+        evidence,
+    )
 
 
 def link(amount, order_id=None, customer_id=None):
-    return _step("create_payment_link", {"order_id": order_id, "customer_id": customer_id,
-                                         "amount_cents": amount, "description": "d"},
-                 ["owner_request"])
+    return _step(
+        "create_payment_link",
+        {
+            "order_id": order_id,
+            "customer_id": customer_id,
+            "amount_cents": amount,
+            "description": "d",
+        },
+        ["owner_request"],
+    )
 
 
 def restock(pid, qty):
-    return _step("create_restock_po", {"product_id": pid, "qty_source": "user", "qty": qty},
-                 ["owner_request"])
+    return _step(
+        "create_restock_po",
+        {"product_id": pid, "qty_source": "user", "qty": qty},
+        ["owner_request"],
+    )
 
 
 def PC(request="", seen=None, blocked=()):  # noqa: N802
@@ -111,13 +176,20 @@ def shipped_id(ctx):
 @pytest.fixture
 def six_shipped_ids(ctx):
     start = (ctx.today - timedelta(days=policy.REFUND_WINDOW_DAYS)).isoformat()
-    return _ids(ctx, "status = 'shipped' AND substr(created_at,1,10) >= ? "
-                     "AND total_cents - refunded_cents BETWEEN 1 AND 20000", (start,), 6)
+    return _ids(
+        ctx,
+        "status = 'shipped' AND substr(created_at,1,10) >= ? "
+        "AND total_cents - refunded_cents BETWEEN 1 AND 20000",
+        (start,),
+        6,
+    )
 
 
 def test_read_tools_constant():
-    assert frozenset({"list_orders", "list_inbox", "forecast_demand",
-                      "flag_anomalies"}) == READ_TOOLS and MAX_STEPS == 20
+    assert (
+        frozenset({"list_orders", "list_inbox", "forecast_demand", "flag_anomalies"}) == READ_TOOLS
+        and MAX_STEPS == 20
+    )
 
 
 def test_ship_paid_ok(ctx, yesterday_ids):
@@ -164,38 +236,57 @@ def test_custom_needs_body(ctx, shipped_id):
 
 
 def test_refund_over_refundable(ctx):
-    v = validate_step(refund(DAMAGED_ORDER_ID, 10**7, ["owner_request"]), [], ctx,
-                      PC(request=f"refund {DAMAGED_ORDER_ID}"))
+    v = validate_step(
+        refund(DAMAGED_ORDER_ID, 10**7, ["owner_request"]),
+        [],
+        ctx,
+        PC(request=f"refund {DAMAGED_ORDER_ID}"),
+    )
     assert not v.ok and "exceeds refundable" in v.reason
 
 
 def test_refund_evidence_from_customer_email(ctx):
-    v = validate_step(refund(DAMAGED_ORDER_ID, None, ["E001"]), [], ctx,
-                      PC(seen={"E001", DAMAGED_ORDER_ID}))
+    v = validate_step(
+        refund(DAMAGED_ORDER_ID, None, ["E001"]), [], ctx, PC(seen={"E001", DAMAGED_ORDER_ID})
+    )
     assert v.ok, v.reason
 
 
 def test_refund_owner_request_needs_id_in_text(ctx):
-    v = validate_step(refund(DAMAGED_ORDER_ID, None, ["owner_request"]), [], ctx,
-                      PC(request="refund anything damaged"))
+    v = validate_step(
+        refund(DAMAGED_ORDER_ID, None, ["owner_request"]),
+        [],
+        ctx,
+        PC(request="refund anything damaged"),
+    )
     assert not v.ok and "evidence from the owner or this order's customer" in v.reason
-    assert validate_step(refund(DAMAGED_ORDER_ID, None, ["owner_request"]), [], ctx,
-                         PC(request=f"please refund {DAMAGED_ORDER_ID.lower()}")).ok
+    assert validate_step(
+        refund(DAMAGED_ORDER_ID, None, ["owner_request"]),
+        [],
+        ctx,
+        PC(request=f"please refund {DAMAGED_ORDER_ID.lower()}"),
+    ).ok
 
 
 def test_refund_citing_blocked_email(ctx):
-    v = validate_step(refund(DAMAGED_ORDER_ID, None, [INJECTION_EMAIL_ID]), [], ctx,
-                      PC(seen={INJECTION_EMAIL_ID}, blocked={INJECTION_EMAIL_ID}))
+    v = validate_step(
+        refund(DAMAGED_ORDER_ID, None, [INJECTION_EMAIL_ID]),
+        [],
+        ctx,
+        PC(seen={INJECTION_EMAIL_ID}, blocked={INJECTION_EMAIL_ID}),
+    )
     assert not v.ok and "blocked" in v.reason
 
 
 def test_email_evidence_must_match_order_customer(ctx, yesterday_ids):
     """R50: an email cited as evidence binds the step to that email's customer."""
-    v = validate_step(ship(yesterday_ids[:1], evidence=[WISMO_EMAIL_ID]), [], ctx,
-                      PC(seen={WISMO_EMAIL_ID}))
+    v = validate_step(
+        ship(yesterday_ids[:1], evidence=[WISMO_EMAIL_ID]), [], ctx, PC(seen={WISMO_EMAIL_ID})
+    )
     assert not v.ok and "evidence does not match order" in v.reason
-    v = validate_step(refund(DAMAGED_ORDER_ID, None, [WISMO_EMAIL_ID]), [], ctx,
-                      PC(seen={WISMO_EMAIL_ID}))
+    v = validate_step(
+        refund(DAMAGED_ORDER_ID, None, [WISMO_EMAIL_ID]), [], ctx, PC(seen={WISMO_EMAIL_ID})
+    )
     assert not v.ok and "evidence does not match order" in v.reason
 
 
@@ -210,8 +301,10 @@ def test_unknown_evidence_in_db_mode(ctx):
 
 
 def test_six_refunds_capped(ctx, six_shipped_ids):
-    plan = Plan(request="refund " + " ".join(six_shipped_ids),
-                steps=[refund(o, None, ["owner_request"]) for o in six_shipped_ids])
+    plan = Plan(
+        request="refund " + " ".join(six_shipped_ids),
+        steps=[refund(o, None, ["owner_request"]) for o in six_shipped_ids],
+    )
     v = validate_plan(plan, ctx)
     assert len(v) == 6 and any(not x.ok and "at most 3" in x.reason for x in v)
 
@@ -222,10 +315,13 @@ def test_refund_total_cap(ctx, monkeypatch):
     rows = ctx.db.execute(
         "SELECT id, total_cents - refunded_cents FROM orders WHERE status = 'shipped' "
         "AND substr(created_at,1,10) >= ? ORDER BY 2 DESC LIMIT 2",
-        ((ctx.today - timedelta(days=30)).isoformat(),)).fetchall()
+        ((ctx.today - timedelta(days=30)).isoformat(),),
+    ).fetchall()
     assert sum(r[1] for r in rows) > 50_000
-    plan = Plan(request="refund " + " ".join(r[0] for r in rows),
-                steps=[refund(r[0], None, ["owner_request"]) for r in rows])
+    plan = Plan(
+        request="refund " + " ".join(r[0] for r in rows),
+        steps=[refund(r[0], None, ["owner_request"]) for r in rows],
+    )
     v = validate_plan(plan, ctx)
     assert not any(x.ok for x in v) and "$500.00" in v[0].reason
 
@@ -240,8 +336,10 @@ def test_unknown_tool(ctx):
 
 
 def test_read_tool_as_step(ctx):
-    s = _step("list_orders", {"status": "any", "created_from": None, "created_to": None,
-                              "order_ids": None})
+    s = _step(
+        "list_orders",
+        {"status": "any", "created_from": None, "created_to": None, "order_ids": None},
+    )
     assert validate_step(s, [], ctx, PC()).reason == "read tools are not plan steps"
 
 
@@ -263,8 +361,7 @@ def test_payment_link_range(ctx, shipped_id):
     assert validate_step(link(500, order_id=shipped_id), [], ctx, PC()).ok
     v = validate_step(link(500), [], ctx, PC())
     assert not v.ok and "exactly one" in v.reason
-    assert not validate_step(link(500, order_id=shipped_id, customer_id="C0001"), [], ctx,
-                             PC()).ok
+    assert not validate_step(link(500, order_id=shipped_id, customer_id="C0001"), [], ctx, PC()).ok
 
 
 def test_restock_qty_range(ctx):
@@ -277,28 +374,58 @@ def test_restock_qty_range(ctx):
 
 
 def test_validate_plan_uses_blocked_inputs(ctx):
-    plan = Plan(request="refund damaged", steps=[refund(DAMAGED_ORDER_ID, None, ["E001"])],
-                blocked_inputs=[{"source_id": "email:E001", "allowed": False, "label": "injection",
-                                 "reason": "x", "score": None}])
+    plan = Plan(
+        request="refund damaged",
+        steps=[refund(DAMAGED_ORDER_ID, None, ["E001"])],
+        blocked_inputs=[
+            {
+                "source_id": "email:E001",
+                "allowed": False,
+                "label": "injection",
+                "reason": "x",
+                "score": None,
+            }
+        ],
+    )
     v = validate_plan(plan, ctx)
     assert not v[0].ok and "blocked" in v[0].reason
 
 
+def _screened(ctx, *eids, allowed=1):
+    ctx.db.executemany(
+        "INSERT INTO guard_verdicts (source_id, allowed, label, reason, score,"
+        " screened_at) VALUES (?, ?, 'clean', 'ok', NULL, 'now')",
+        [(f"email:{e}", allowed) for e in eids],
+    )
+
+
 def test_validate_plan_demo_flow_ok(ctx, yesterday_ids):
-    plan = Plan(request="ship yesterday, email tracking, refund damaged",
-                steps=[ship(yesterday_ids), email(yesterday_ids, "tracking"),
-                       refund(DAMAGED_ORDER_ID, None, ["E001"]),
-                       email([DAMAGED_ORDER_ID], "refund_confirmation", evidence=["E001"])])
+    _screened(ctx, "E001")
+    plan = Plan(
+        request="ship yesterday, email tracking, refund damaged",
+        steps=[
+            ship(yesterday_ids),
+            email(yesterday_ids, "tracking"),
+            refund(DAMAGED_ORDER_ID, None, ["E001"]),
+            email([DAMAGED_ORDER_ID], "refund_confirmation", evidence=["E001"]),
+        ],
+    )
     v = validate_plan(plan, ctx)
     assert [x.step_id for x in v] == [s.id for s in plan.steps]
     assert all(x.ok for x in v), v
 
 
 def test_validator_never_writes(ctx, yesterday_ids, six_shipped_ids):
-    plan = Plan(request="r " + " ".join(six_shipped_ids),
-                steps=[ship(yesterday_ids), email(yesterday_ids, "tracking"),
-                       restock("P01", 10), link(500, order_id=six_shipped_ids[0])]
-                + [refund(o, None, ["owner_request"]) for o in six_shipped_ids])
+    plan = Plan(
+        request="r " + " ".join(six_shipped_ids),
+        steps=[
+            ship(yesterday_ids),
+            email(yesterday_ids, "tracking"),
+            restock("P01", 10),
+            link(500, order_id=six_shipped_ids[0]),
+        ]
+        + [refund(o, None, ["owner_request"]) for o in six_shipped_ids],
+    )
     before = ctx.db.total_changes
     validate_plan(plan, ctx)
     assert ctx.db.total_changes == before
@@ -306,24 +433,27 @@ def test_validator_never_writes(ctx, yesterday_ids, six_shipped_ids):
 
 def test_validate_plan_uses_guard_verdicts_email_prefix(ctx):
     """Guard stores 'email:<id>'; evidence cites bare '<id>'. Restock has no order (no R50)."""
-    ctx.db.execute("INSERT INTO guard_verdicts (source_id, allowed, label, reason, score,"
-                   " screened_at) VALUES ('email:E002', 0, 'injection', 'x', NULL, 'now')")
-    step = _step("create_restock_po", {"product_id": "P01", "qty_source": "user", "qty": 5},
-                 ["E002"])
+    ctx.db.execute(
+        "INSERT INTO guard_verdicts (source_id, allowed, label, reason, score,"
+        " screened_at) VALUES ('email:E002', 0, 'injection', 'x', NULL, 'now')"
+    )
+    step = _step(
+        "create_restock_po", {"product_id": "P01", "qty_source": "user", "qty": 5}, ["E002"]
+    )
     v = validate_plan(Plan(request="restock", steps=[step]), ctx)
     assert not v[0].ok and "blocked" in v[0].reason
 
 
 def test_validate_step_blocked_prefixed_id(ctx):
-    v = validate_step(refund(DAMAGED_ORDER_ID, None, ["E001"]), [], ctx,
-                      PC(blocked={"email:E001"}))
+    v = validate_step(refund(DAMAGED_ORDER_ID, None, ["E001"]), [], ctx, PC(blocked={"email:E001"}))
     assert not v.ok and "blocked" in v.reason
 
 
 def test_rejected_prior_step_does_not_satisfy_dependency(ctx, yesterday_ids):
     oid = yesterday_ids[:1]
-    plan = Plan(request="ship and email",
-                steps=[ship(oid, evidence=["X999"]), email(oid, "tracking")])
+    plan = Plan(
+        request="ship and email", steps=[ship(oid, evidence=["X999"]), email(oid, "tracking")]
+    )
     v = validate_plan(plan, ctx)
     assert not v[0].ok
     assert not v[1].ok and "tracking email before" in v[1].reason
@@ -334,9 +464,60 @@ def test_validate_step_crash_is_logged(ctx, monkeypatch, caplog):
 
     def boom(*a):
         raise KeyError("drift")
+
     monkeypatch.setattr(validator, "_reason", boom)
     s = restock("P01", 5)
     with caplog.at_level("ERROR", logger="app.agent.validator"):
         v = validate_step(s, [], ctx, PC())
     assert v.reason == "validation failed"
     assert any(s.id in r.getMessage() and r.exc_info for r in caplog.records)
+
+
+def test_policy_rejected_refund_does_not_satisfy_confirmation(ctx, six_shipped_ids):
+    """#55: plan-level caps run before dependencies, so a capped refund unlocks nothing."""
+    ids = six_shipped_ids[:4]
+    plan = Plan(
+        request="refund " + " ".join(ids),
+        steps=[refund(o, None, ["owner_request"]) for o in ids]
+        + [email(ids[:1], "refund_confirmation")],
+    )
+    v = validate_plan(plan, ctx)
+    assert not any(x.ok for x in v[:4])
+    assert not v[4].ok and "refund confirmation before" in v[4].reason
+
+
+def test_unscreened_email_is_not_evidence(ctx):
+    """#56: an inbox email with no allowed guard verdict fails closed."""
+    plan = Plan(request="refund damaged", steps=[refund(DAMAGED_ORDER_ID, None, ["E001"])])
+    v = validate_plan(plan, ctx)
+    assert not v[0].ok and "blocked" in v[0].reason
+    _screened(ctx, "E001")
+    assert validate_plan(plan, ctx)[0].ok
+
+
+def test_email_binds_to_sender_not_linked_order(ctx):
+    """#66: an email linking someone else's order is not evidence for that order's customer."""
+    owner = ctx.db.execute(
+        "SELECT customer_id FROM orders WHERE id = ?", (DAMAGED_ORDER_ID,)
+    ).fetchone()[0]
+    other = ctx.db.execute(
+        "SELECT email FROM customers WHERE id != ? ORDER BY id LIMIT 1", (owner,)
+    ).fetchone()[0]
+    ctx.db.execute(
+        "INSERT INTO inbox VALUES ('E900', ?, 's', 'b', '2026-10-14T00:00:00Z', ?)",
+        (other, DAMAGED_ORDER_ID),
+    )
+    _screened(ctx, "E900")
+    plan = Plan(request="refund", steps=[refund(DAMAGED_ORDER_ID, None, ["E900"])])
+    v = validate_plan(plan, ctx)
+    assert not v[0].ok and "evidence does not match order" in v[0].reason
+
+
+def test_restock_rejects_email_evidence(ctx):
+    """#77 (R50): a write step with no order or customer owner cannot cite an email."""
+    _screened(ctx, "E001")
+    step = _step(
+        "create_restock_po", {"product_id": "P01", "qty_source": "user", "qty": 5}, ["E001"]
+    )
+    v = validate_plan(Plan(request="restock", steps=[step]), ctx)
+    assert not v[0].ok and "email evidence" in v[0].reason

@@ -1,4 +1,5 @@
 """Strict tool registry (P1-T4). Tools never log, commit or close (R23)."""
+
 from __future__ import annotations
 
 import copy
@@ -19,7 +20,18 @@ from pydantic import BaseModel, ConfigDict
 if TYPE_CHECKING:  # no runtime import from app.agent
     from app.agent.models import DiffItem  # noqa: F401
 
-_NAME = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
+_NAME = re.compile(r"[a-z][a-z0-9_]{0,63}")
+_UNSUPPORTED = (
+    "$ref",
+    "$defs",
+    "definitions",
+    "patternProperties",
+    "prefixItems",
+    "if",
+    "then",
+    "else",
+    "not",
+)
 
 
 @dataclass(frozen=True)
@@ -67,8 +79,16 @@ def _check_strict(s: Any, path: str = "input_schema") -> None:
         return
     if not isinstance(s, dict):
         return
+    for k in _UNSUPPORTED:
+        if k in s:
+            raise ValueError(f"{path}: unsupported keyword {k!r}")
     t = s.get("type")
-    if t == "object" or (isinstance(t, list) and "object" in t):
+    if (
+        t == "object"
+        or (isinstance(t, list) and "object" in t)
+        or "properties" in s
+        or "required" in s
+    ):
         if s.get("additionalProperties") is not False:
             raise ValueError(f"{path}: additionalProperties must be false")
         if set(s.get("required", [])) != set(s.get("properties", {})):
@@ -83,7 +103,7 @@ def _check_strict(s: Any, path: str = "input_schema") -> None:
 def register(spec: ToolSpec, run, preview, undo=None) -> None:
     if spec.name in _TOOLS:
         raise ValueError(f"tool {spec.name!r} already registered")
-    if not _NAME.match(spec.name):
+    if not _NAME.fullmatch(spec.name):
         raise ValueError(f"bad tool name {spec.name!r}")
     try:
         Draft202012Validator.check_schema(spec.input_schema)
@@ -100,7 +120,7 @@ def register(spec: ToolSpec, run, preview, undo=None) -> None:
 
 
 def get_tools() -> list[ToolSpec]:
-    return [t.spec for t in _TOOLS.values()]
+    return [t.spec.model_copy(deep=True) for t in _TOOLS.values()]
 
 
 def get_tool(name: str) -> Registered:
@@ -108,15 +128,24 @@ def get_tool(name: str) -> Registered:
 
 
 def validate_args(name: str, args: dict) -> str | None:
-    err = best_match(Draft202012Validator(
-        get_tool(name).spec.input_schema,
-        format_checker=Draft202012Validator.FORMAT_CHECKER).iter_errors(args))
+    err = best_match(
+        Draft202012Validator(
+            get_tool(name).spec.input_schema, format_checker=Draft202012Validator.FORMAT_CHECKER
+        ).iter_errors(args)
+    )
     return err.message if err else None
 
 
 def claude_tool_defs() -> list[dict]:
-    return [{"name": t.name, "description": t.description,
-             "input_schema": copy.deepcopy(t.input_schema), "strict": True} for t in get_tools()]
+    return [
+        {
+            "name": t.name,
+            "description": t.description,
+            "input_schema": copy.deepcopy(t.input_schema),
+            "strict": True,
+        }
+        for t in get_tools()
+    ]
 
 
 def load_tools() -> None:

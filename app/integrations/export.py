@@ -9,6 +9,15 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 EXPORT_KINDS = ("orders_csv", "refunds_csv", "report_pdf")
+# kind -> (filename stem, extension); render() and export_report.preview share it
+EXPORT_FILES = {
+    "orders_csv": ("orders", "csv"),
+    "refunds_csv": ("refunds", "csv"),
+    "report_pdf": ("report", "pdf"),
+}
+# ponytail: PDF table capped at newest 200 orders (full table ~2.7k rows, ~0.6 s CPU per
+# request, uncached); totals stay full. Paginate or cache if owners need every row in the PDF.
+PDF_MAX_ORDERS = 200
 
 _FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
 
@@ -16,14 +25,32 @@ _ORDERS_SQL = """
 SELECT o.id, c.name, c.email, o.created_at, o.status, o.total_cents, o.refunded_cents,
        o.currency, o.carrier, o.tracking_number, o.shipped_at
 FROM orders o JOIN customers c ON c.id = o.customer_id ORDER BY o.created_at, o.id"""
-_ORDERS_HEADER = ("order_id", "customer", "email", "created_at", "status", "total_cents",
-                  "refunded_cents", "currency", "carrier", "tracking_number", "shipped_at")
+_ORDERS_HEADER = (
+    "order_id",
+    "customer",
+    "email",
+    "created_at",
+    "status",
+    "total_cents",
+    "refunded_cents",
+    "currency",
+    "carrier",
+    "tracking_number",
+    "shipped_at",
+)
 
 _REFUNDS_SQL = """
 SELECT id, order_id, amount_cents, reason, stripe_refund_id, mode, created_at
 FROM refunds ORDER BY created_at, id"""
-_REFUNDS_HEADER = ("refund_id", "order_id", "amount_cents", "reason", "stripe_refund_id",
-                   "mode", "created_at")
+_REFUNDS_HEADER = (
+    "refund_id",
+    "order_id",
+    "amount_cents",
+    "reason",
+    "stripe_refund_id",
+    "mode",
+    "created_at",
+)
 
 
 def _safe_cell(v: object) -> str:
@@ -51,17 +78,22 @@ def _money(cents: int) -> str:
 
 def _table(header: list[str], rows: list[list[str]]) -> Table:
     t = Table([header, *rows], repeatRows=1)
-    t.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8),
-        ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
-        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-    ]))
+    t.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+            ]
+        )
+    )
     return t
 
 
 def _pdf(ctx) -> bytes:
     orders = ctx.db.execute(_ORDERS_SQL).fetchall()
+    shown = sorted(orders, key=lambda r: (r[3], r[0]), reverse=True)[:PDF_MAX_ORDERS]
     refunds = ctx.db.execute(_REFUNDS_SQL).fetchall()
     styles = getSampleStyleSheet()
     total = sum(r[5] for r in orders)
@@ -69,18 +101,30 @@ def _pdf(ctx) -> bytes:
     story = [
         Paragraph("ShopPilot+ store report", styles["Title"]),
         Paragraph(f"Store date: {ctx.today.isoformat()}", styles["Normal"]),
-        Paragraph(f"Orders: {len(orders)} | Sales: {_money(total)} | "
-                  f"Refunds: {len(refunds)} ({_money(refunded)})", styles["Normal"]),
+        Paragraph(
+            f"Orders: {len(orders)} | Sales: {_money(total)} | "
+            f"Refunds: {len(refunds)} ({_money(refunded)})",
+            styles["Normal"],
+        ),
         Spacer(1, 12),
         Paragraph("Orders", styles["Heading2"]),
-        _table(["Order", "Customer", "Status", "Total", "Refunded"],
-               [[_latin1(r[0]), _latin1(r[1]), _latin1(r[4]), _money(r[5]), _money(r[6])]
-                for r in orders]),
+        Paragraph(f"showing newest {len(shown)} of {len(orders)}", styles["Normal"]),
+        _table(
+            ["Order", "Customer", "Status", "Total", "Refunded"],
+            [
+                [_latin1(r[0]), _latin1(r[1]), _latin1(r[4]), _money(r[5]), _money(r[6])]
+                for r in shown
+            ],
+        ),
         Spacer(1, 12),
         Paragraph("Refunds", styles["Heading2"]),
-        _table(["Order", "Stripe refund", "Amount", "Reason", "Mode"],
-               [[_latin1(r[1]), _latin1(r[4]), _money(r[2]), _latin1(r[3]), _latin1(r[5])]
-                for r in refunds]),
+        _table(
+            ["Order", "Stripe refund", "Amount", "Reason", "Mode"],
+            [
+                [_latin1(r[1]), _latin1(r[4]), _money(r[2]), _latin1(r[3]), _latin1(r[5])]
+                for r in refunds
+            ],
+        ),
     ]
     buf = io.BytesIO()
     SimpleDocTemplate(buf, pagesize=letter, title="ShopPilot+ report").build(story)
@@ -91,11 +135,10 @@ def render(kind: str, ctx) -> tuple[bytes, str, str]:
     """Return (body, media_type, filename) for one of EXPORT_KINDS; ValueError otherwise."""
     if kind not in EXPORT_KINDS:
         raise ValueError(f"unknown export kind: {kind!r}")
-    stamp = ctx.today.isoformat()
+    stem, ext = EXPORT_FILES[kind]
+    name = f"{stem}-{ctx.today.isoformat()}.{ext}"
     if kind == "orders_csv":
-        body = _csv(_ORDERS_HEADER, ctx.db.execute(_ORDERS_SQL).fetchall())
-        return body, "text/csv", f"orders-{stamp}.csv"
+        return _csv(_ORDERS_HEADER, ctx.db.execute(_ORDERS_SQL).fetchall()), "text/csv", name
     if kind == "refunds_csv":
-        body = _csv(_REFUNDS_HEADER, ctx.db.execute(_REFUNDS_SQL).fetchall())
-        return body, "text/csv", f"refunds-{stamp}.csv"
-    return _pdf(ctx), "application/pdf", f"report-{stamp}.pdf"
+        return _csv(_REFUNDS_HEADER, ctx.db.execute(_REFUNDS_SQL).fetchall()), "text/csv", name
+    return _pdf(ctx), "application/pdf", name

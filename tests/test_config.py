@@ -42,20 +42,31 @@ def test_session_hash():
     assert len(h) == 16 and h == session_hash("abc") and h != session_hash("abd")
 
 
-@pytest.mark.parametrize("env", [
-    {"STRIPE_SECRET_KEY": "sk_live_Zq9Leak"},
-    {"APP_ENV": "prod", "STRIPE_SECRET_KEY": "rk_test_Zq9Leak"},
-])
+@pytest.mark.parametrize(
+    "env",
+    [
+        {"STRIPE_SECRET_KEY": "sk_live_Zq9Leak"},
+        {"APP_ENV": "prod", "STRIPE_SECRET_KEY": "rk_test_Zq9Leak"},
+    ],
+)
 def test_boot_error_hides_secret(env):
     with pytest.raises(ValueError) as e:
         load_settings(env)
     assert "Zq9Leak" not in str(e.value)
 
 
-@pytest.mark.parametrize("field", [
-    "LLM_DAILY_BUDGET_USD", "LLM_SESSION_BUDGET_USD", "SESSION_TTL_HOURS", "MAX_SESSIONS",
-    "PLAN_TTL_MINUTES", "LLM_MAX_PLANS_PER_SESSION_HOUR", "STRIPE_MAX_WRITES_PER_SESSION",
-])
+@pytest.mark.parametrize(
+    "field",
+    [
+        "LLM_DAILY_BUDGET_USD",
+        "LLM_SESSION_BUDGET_USD",
+        "SESSION_TTL_HOURS",
+        "MAX_SESSIONS",
+        "PLAN_TTL_MINUTES",
+        "LLM_MAX_PLANS_PER_SESSION_HOUR",
+        "STRIPE_MAX_WRITES_PER_SESSION",
+    ],
+)
 @pytest.mark.parametrize("val", ["nan", "inf", "0", "-1"])
 def test_limits_must_be_positive_finite(field, val):
     with pytest.raises(ValueError):

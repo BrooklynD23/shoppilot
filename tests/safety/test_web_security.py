@@ -127,7 +127,7 @@ def _plan_app(status: int) -> TestClient:
     return TestClient(app)
 
 
-@pytest.mark.parametrize("status", [401, 422, 429, 500])
+@pytest.mark.parametrize("status", [401, 404, 422, 429, 503])
 def test_rejected_plans_do_not_burn_budget(c, monkeypatch, status):
     monkeypatch.setattr(web, "PLAN_DAILY_CAP", 1)
     bad = _plan_app(status)
@@ -138,7 +138,14 @@ def test_rejected_plans_do_not_burn_budget(c, monkeypatch, status):
     assert c.post("/api/plan", json={}, headers=H).status_code == 503
 
 
-def test_route_exception_releases_slot(c, monkeypatch):
+def test_post_llm_failure_keeps_slot(monkeypatch):  # #61: a crash after a paid turn counts
+    monkeypatch.setattr(web, "PLAN_DAILY_CAP", 1)
+    assert _plan_app(500).post("/api/plan", json={}, headers=H).status_code == 500
+    assert web._plans[1] == 1
+    assert _plan_app(500).post("/api/plan", json={}, headers=H).status_code == 503
+
+
+def test_route_exception_keeps_slot(c, monkeypatch):
     monkeypatch.setattr(web, "PLAN_DAILY_CAP", 1)
     app = FastAPI()
 
@@ -149,7 +156,7 @@ def test_route_exception_releases_slot(c, monkeypatch):
     web.install(app)
     with pytest.raises(RuntimeError):
         TestClient(app).post("/api/plan", json={}, headers=H)
-    assert web._plans[1] == 0
+    assert web._plans[1] == 1
 
 
 def test_release_after_day_rollover_is_noop(monkeypatch):

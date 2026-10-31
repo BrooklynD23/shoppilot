@@ -1,4 +1,5 @@
 """Demand forecast: stdlib Croston-SBA / SES x day-of-week (spec 03 §2.1, §3.1)."""
+
 from __future__ import annotations
 
 import math
@@ -20,7 +21,7 @@ _COLS = ("id", "sku", "name", "stock", "cost_cents", "lead_time_days")
 
 
 def _sanitise(units: list) -> tuple[list[float], list[str]]:
-    ok = [isinstance(u, (int, float)) and not math.isnan(u) and u >= 0 for u in units]
+    ok = [isinstance(u, (int, float)) and math.isfinite(u) and u >= 0 for u in units]
     bad = ok.count(False)
     clean = [float(u) if good else 0.0 for u, good in zip(units, ok, strict=True)]
     return clean, ([f"dropped {bad} rows with missing or negative qty"] if bad else [])
@@ -42,8 +43,9 @@ def _dow_index(units: list[float], first: date) -> list[float]:
     return [m / overall for m in means]  # mean of the 7 ratios is 1 by construction
 
 
-def _ses(units: list[float], idx: list[float], first: date,
-         alpha: float) -> tuple[float, list[float], float]:
+def _ses(
+    units: list[float], idx: list[float], first: date, alpha: float
+) -> tuple[float, list[float], float]:
     wds = [(first + timedelta(i)).weekday() for i in range(len(units))]
     des = [u / idx[w] if idx[w] > 0 else 0.0 for u, w in zip(units, wds, strict=True)]
     level = sum(des[:7]) / len(des[:7])
@@ -82,20 +84,25 @@ def _croston_sba(units: list[float], days: int) -> tuple[list[float], list[float
     return [rate] * days, resid, {"interval": p, "size": z}
 
 
-def _band(hmean: list[float], hcum: list[float], sigma: float, as_of: date,
-          on_hand: int) -> tuple[dict, dict]:
+def _band(
+    hmean: list[float], hcum: list[float], sigma: float, as_of: date, on_hand: int
+) -> tuple[dict, dict]:
     """Daily demand band and projected stock, horizon long, rounded for the UI."""
     # ponytail: assumes independent daily errors; residual bootstrap if coverage < 0.70
     r2 = lambda xs: [round(x, 2) for x in xs]  # noqa: E731
     spread = [Z80 * sigma * math.sqrt(k) for k in range(1, len(hmean) + 1)]
-    band = {"level": 0.8,
-            "dates": [(as_of + timedelta(h)).isoformat() for h in range(1, len(hmean) + 1)],
-            "mean": r2(hmean),
-            "lo": r2([max(0.0, m - Z80 * sigma) for m in hmean]),
-            "hi": r2([m + Z80 * sigma for m in hmean])}
-    stock = {"mean": r2([on_hand - c for c in hcum]),
-             "lo": r2([on_hand - c - s for c, s in zip(hcum, spread, strict=True)]),
-             "hi": r2([on_hand - c + s for c, s in zip(hcum, spread, strict=True)])}
+    band = {
+        "level": 0.8,
+        "dates": [(as_of + timedelta(h)).isoformat() for h in range(1, len(hmean) + 1)],
+        "mean": r2(hmean),
+        "lo": r2([max(0.0, m - Z80 * sigma) for m in hmean]),
+        "hi": r2([m + Z80 * sigma for m in hmean]),
+    }
+    stock = {
+        "mean": r2([on_hand - c for c in hcum]),
+        "lo": r2([on_hand - c - s for c, s in zip(hcum, spread, strict=True)]),
+        "hi": r2([on_hand - c + s for c, s in zip(hcum, spread, strict=True)]),
+    }
     return band, stock
 
 
@@ -130,8 +137,10 @@ def _explain(method: str, avg: float, info: dict, r: dict, lead: int, n_days: in
     if method == "insufficient_history":
         return f"Only {n_days} days of sales, too little to forecast. Tell me a quantity to order."
     if method == "croston_sba":
-        head = (f"Sells rarely: about 1 sale every {info['interval']:.0f} days, "
-                f"~{info['size']:.1f} units each (≈{avg:.1f}/day).")
+        head = (
+            f"Sells rarely: about 1 sale every {info['interval']:.0f} days, "
+            f"~{info['size']:.1f} units each (≈{avg:.1f}/day)."
+        )
     else:
         head = f"Sells about {avg:.1f}/day{', more on weekends' if info['weekend'] else ''}."
     d, rng, h = r["days_to_stockout"], r["stockout_range"], len(r["band"]["mean"])
@@ -142,12 +151,18 @@ def _explain(method: str, avg: float, info: dict, r: dict, lead: int, n_days: in
     else:
         stock = f"{r['on_hand']} in stock runs out in about {d} days (80% range {rng[0]}–{rng[1]})."
     qty = r["reorder_qty"]
-    tail = (f" Lead time is {lead} days, so order now: {qty} units covers the lead time"
-            f" plus {COVER_DAYS} days." if qty else " No reorder needed now.")
+    tail = (
+        f" Lead time is {lead} days, so order now: {qty} units covers the lead time"
+        f" plus {COVER_DAYS} days."
+        if qty
+        else " No reorder needed now."
+    )
     if d is not None and d < lead:
         gap = lead - d
-        tail += (f" Expect to be out of stock for about {gap} day{'s' * (gap != 1)}"
-                 " before the PO arrives.")
+        tail += (
+            f" Expect to be out of stock for about {gap} day{'s' * (gap != 1)}"
+            " before the PO arrives."
+        )
     return f"{head} {stock}{tail}"
 
 
@@ -163,11 +178,19 @@ def _fit(units: list[float], first: date, days: int) -> tuple[str, list[float], 
     return "ses_dow", *_ses_dow(units, first, days)
 
 
-def forecast_series(units: list[float], first_date: date, on_hand: int, on_order: int,
-                    lead_time_days: int, horizon_days: int = 14) -> dict:
+def forecast_series(
+    units: list[float],
+    first_date: date,
+    on_hand: int,
+    on_order: int,
+    lead_time_days: int,
+    horizon_days: int = 14,
+) -> dict:
     """Pure core. units[i] = units sold on first_date + i; the last entry is yesterday."""
-    if not 1 <= horizon_days <= 60:
-        raise ValueError("horizon_days must be 1-60")
+    if not isinstance(horizon_days, int) or not 1 <= horizon_days <= 60:
+        raise ValueError("horizon_days must be an int 1-60")
+    if not isinstance(lead_time_days, int) or lead_time_days < 0:
+        raise ValueError("lead_time_days must be an int >= 0")
     if on_hand is None or on_hand < 0:
         raise ValueError("bad on_hand")
     units, warnings = _sanitise(units)
@@ -189,10 +212,17 @@ def forecast_series(units: list[float], first_date: date, on_hand: int, on_order
     hist = units[-HISTORY_OUT_DAYS:]
     hist_dates = [(as_of - timedelta(len(hist) - 1 - i)).isoformat() for i in range(len(hist))]
     result = {
-        "method": method, "as_of": as_of.isoformat(), "history_days": n,
-        "on_hand": on_hand, "on_order": on_order, "lead_time_days": lead_time_days,
+        "method": method,
+        "as_of": as_of.isoformat(),
+        "history_days": n,
+        "on_hand": on_hand,
+        "on_order": on_order,
+        "lead_time_days": lead_time_days,
         "avg_daily": round(sum(hmean) / horizon_days, 1),
-        "days_to_stockout": dts, "stockout_range": rng, "band": band, "stock": stock,
+        "days_to_stockout": dts,
+        "stockout_range": rng,
+        "band": band,
+        "stock": stock,
         "history": {"dates": hist_dates, "units": hist},
         "reorder_qty": reorder,
         "warnings": warnings,
@@ -228,7 +258,13 @@ def _load_series(ctx, product_id: str) -> tuple[dict, list[float], date, list[st
     by_day = {date.fromisoformat(d): float(q) for d, q, _ in rows if q > 0}
     bad = sum(b for _, _, b in rows)
     warnings = [f"dropped {bad} rows with missing or negative qty"] if bad else []
-    first = min(by_day) if by_day else ctx.today
+    ever = ctx.db.execute(
+        "SELECT MIN(substr(o.created_at, 1, 10)) FROM order_items i JOIN orders o"
+        " ON o.id = i.order_id WHERE i.product_id = ? AND o.status != 'cancelled'"
+        " AND i.qty > 0 AND substr(o.created_at, 1, 10) < ?",
+        (product_id, ctx.today.isoformat()),
+    ).fetchone()[0]
+    first = max(start, date.fromisoformat(ever)) if ever else ctx.today
     units = [by_day.get(first + timedelta(i), 0.0) for i in range((ctx.today - first).days)]
     return product, units, first, warnings
 
@@ -239,7 +275,9 @@ def forecast_demand(product_id: str, ctx, horizon_days: int = 14) -> dict:
     r = forecast_series(units, first, p["stock"], p["on_order"], p["lead_time_days"], horizon_days)
     qty = r["reorder_qty"]
     return {
-        "product_id": p["id"], "sku": p["sku"], "name": p["name"],
+        "product_id": p["id"],
+        "sku": p["sku"],
+        "name": p["name"],
         **r,
         "unit_cost_cents": p["cost_cents"],
         "reorder_cost_cents": None if qty is None else qty * p["cost_cents"],

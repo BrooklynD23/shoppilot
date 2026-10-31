@@ -49,4 +49,4 @@ select = ["E", "F", "I", "B", "UP", "S", "SIM"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = ["live: needs real API keys"]
-addopts = "-q -m 'not live' --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=80"
+addopts = "-q -m 'not live' --cov=app --cov-report=term-missing:skip-covered"

@@ -159,7 +159,7 @@ Coverage self-check (integrator, 2026-10-30): P1 7 tasks (T1, T1D dropped, T2–
 ## Day-1 checklist (HUMAN; from P7-D0/D1, P5-I9 Step 1, P2/P4 Console notes)
 
 1. **GitHub (D0):** create public repo `shoppilot`, push P1-T1 skeleton. Settings → Code security: secret scanning + push protection on. Rules → ruleset on `main`: require checks `test` and `docker`, block force-push and deletion.
-2. **Anthropic (D0, card):** Console → Billing: buy smallest credit pack; Spend limits: **org $40/mo**. Create workspace `shoppilot-prod` (limit **$20/mo**) and `shoppilot-dev` (limit **$20/mo**); one key in each (Default workspace cannot hold a limit). Store keys in a password manager; dev key in local `.env` only.
+2. **Anthropic (D0, card):** Console → Billing: buy smallest credit pack; Spend limits: **org $50/mo** (R47). Create workspace `shoppilot-prod` (limit **$30/mo**) and `shoppilot-dev` (limit **$20/mo**); one key in each (Default workspace cannot hold a limit). Store keys in a password manager; dev key in local `.env` only.
 3. **Stripe (D0 + P5-I9 Step 1):** create account, stay in a sandbox named `shoppilot`; create a **restricted key `rk_test_…`, not agent-tagged**, write on PaymentIntents, Refunds, Payment Links, Prices, Products. Password manager only.
 4. **Render (D1, OAuth):** sign up with GitHub → New → Blueprint → repo `shoppilot` → paste `ANTHROPIC_API_KEY` (prod key) and `STRIPE_SECRET_KEY` (`rk_test_`) → apply. `curl -fsS https://<service>.onrender.com/healthz` returns the 7-char SHA. Check the 100-minute request limit on Render's docs while there (R16).
 5. **Wire CD (D1):** Render → Settings → Deploy Hook → GitHub Actions secret `RENDER_DEPLOY_HOOK_URL`; Actions variable `APP_URL`.
@@ -178,9 +178,9 @@ Per-turn prices from P2 §9 (Sonnet 5.5 $2/$10, cache read $0.10, write $2.50 pe
 | Anthropic: graders | $2.80 (20 × 6 turns) | $13.80 (40 × 15 turns) | — | Replay chips, $0 |
 | Anthropic: rehearsal + video | $1.50 (50 turns) | $6.90 (150 complex) | — | Fixture mode, $0 |
 | Anthropic: guard (Haiku, cached) | < $0.10 | < $0.10 | — | Heuristic only |
-| **Anthropic subtotal** | **$15** | **$50** | **$80** (org cap $40/mo × 2) | — |
+| **Anthropic subtotal** | **$15** | **$50** | **$100** (org cap $50/mo × 2 = account $100 total, R47) | — |
 | Render | $0 (Free + ping) | $7 (Starter 1 month) | $14 (Starter 2 months) | Render Free; Heroku/Azure student credit |
 | Stripe test mode, GitHub Actions (public), UptimeRobot, OBS/Clipchamp/YouTube, SQLite, outbox | $0 | $0 | $0 | — |
-| **Total** | **$15** | **$57** | **$94** | — |
+| **Total** | **$15** | **$57** | **$114** | — |
 
-Reconciliation: P2's "$25–40" is **per month** during the build and grading month (≈ $21 build + $14 for 100 grader sessions); P7's "$47" is the two-month total at a flat $0.025/turn and its own table lists Anthropic at $40. Using P2's measured-shape prices with P7's volumes gives **$50 Anthropic + $7 Render = $57 expected**. The ceiling is set by Console caps, not the estimate: org $40/mo, prod workspace $20/mo, dev workspace $20/mo. P2-T13 (W4) replaces these numbers with measured ones.
+Reconciliation: P2's "$25–40" is **per month** during the build and grading month (≈ $21 build + $14 for 100 grader sessions); P7's "$47" is the two-month total at a flat $0.025/turn and its own table lists Anthropic at $40. Using P2's measured-shape prices with P7's volumes gives **$50 Anthropic + $7 Render = $57 expected**. The ceiling is set by Console caps, not the estimate: org $50/mo, prod workspace $30/mo, dev workspace $20/mo (R47). P2-T13 (W4) replaces these numbers with measured ones.

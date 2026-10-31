@@ -4,6 +4,7 @@ make_plan never saves; the /api/plan route runs make_plan -> validate_plan -> dr
 save_plan. Nothing here raises for LLM trouble: it becomes Plan(status="error"). The one
 exception (R8): force_replay with no recording raises LLMError("replay_miss") -> route 404.
 """
+
 from __future__ import annotations
 
 import copy
@@ -40,6 +41,7 @@ MAX_REQUEST_CHARS = 2000
 RESULT_MAX_CHARS = 8000
 TRUNC = "…[truncated, narrow the query]"
 TOO_BIG = "Request too big; split it into smaller requests."
+REFUSED = "I can't help with that request."
 _ID = re.compile(r"\b[OEPC]\d+\b")
 _STAGE = {"router": (512, 15.0), "planner": (8000, 60.0), "judge": (1024, 15.0)}
 log = logging.getLogger(__name__)
@@ -65,30 +67,54 @@ def tool_defs() -> list[dict]:
         d["description"] = TOOL_DESCRIPTIONS.get(d["name"], d["description"])
         if d["name"] not in READ_TOOLS:
             s = d["input_schema"]
-            s["properties"] = {**s["properties"], "rationale": {"type": "string"},
-                               "evidence": {"type": "array", "items": {"type": "string"}}}
+            s["properties"] = {
+                **s["properties"],
+                "rationale": {"type": "string"},
+                "evidence": {"type": "array", "items": {"type": "string"}},
+            }
             s["required"] = [*s.get("required", []), "rationale", "evidence"]
         out.append(d)
     return out
 
 
-def _complete(stage: str, *, trace: Trace, force_replay: bool, system: str,
-              messages: list[dict], output_format: dict, tools: list[dict] | None = None,
-              ) -> LLMResponse:
+def _complete(
+    stage: str,
+    *,
+    trace: Trace,
+    force_replay: bool,
+    system: str,
+    messages: list[dict],
+    output_format: dict,
+    tools: list[dict] | None = None,
+) -> LLMResponse:
     s = get_settings()
     model = s.planner_model if stage == "planner" else s.judge_model
     if force_replay:  # R8: client has no per-call mode switch, so read the recording directly
         path = llm.RECORDINGS_DIR / f"{recording_key(trace.request)}.json"
-        return llm._replay(stage, model, trace, path)
+        idx, trace.n = trace.n, trace.n + 1
+        return llm._replay(stage, model, trace, path, idx, None)
     max_tokens, stage_timeout = _STAGE[stage]
     remaining = trace.deadline - time.monotonic()
     if remaining <= 0:  # PLAN_DEADLINE_S bounds the whole plan, not just retry waits
         raise LLMError("busy", TOO_BIG)
     timeout_s = max(1.0, min(stage_timeout, remaining))
     effort = s.planner_effort if stage == "planner" else "low"
-    return llm.complete(stage=stage, model=model, system=system, messages=messages,
-                        trace=trace, max_tokens=max_tokens, effort=effort, tools=tools,
-                        output_format=output_format, timeout_s=timeout_s)
+    return llm.complete(
+        stage=stage,
+        model=model,
+        system=system,
+        messages=messages,
+        trace=trace,
+        max_tokens=max_tokens,
+        effort=effort,
+        tools=tools,
+        output_format=output_format,
+        timeout_s=timeout_s,
+    )
+
+
+def _refusal_text(r: LLMResponse) -> str:
+    return str((r.stop_details or {}).get("explanation") or REFUSED)
 
 
 def _final_json(r: LLMResponse) -> dict:
@@ -101,11 +127,23 @@ def _final_json(r: LLMResponse) -> dict:
 
 
 def route(request: str, trace: Trace, *, force_replay: bool = False) -> dict:
-    msg = [{"role": "user",
-            "content": f"<owner_request>{html.escape(request, quote=False)}</owner_request>"}]
+    msg = [
+        {
+            "role": "user",
+            "content": f"<owner_request>{html.escape(request, quote=False)}</owner_request>",
+        }
+    ]
     try:
-        r = _complete("router", trace=trace, force_replay=force_replay, system=ROUTER_PROMPT,
-                      messages=msg, output_format=ROUTER_FORMAT)
+        r = _complete(
+            "router",
+            trace=trace,
+            force_replay=force_replay,
+            system=ROUTER_PROMPT,
+            messages=msg,
+            output_format=ROUTER_FORMAT,
+        )
+        if r.stop_reason == "refusal":  # spec 02 §6.1: never fall through to the planner
+            return {"reason": "refusal", "route": "reject", "reply": _refusal_text(r)}
         out = _final_json(r)
     except LLMError as e:
         if force_replay and e.kind == "replay_miss":
@@ -118,14 +156,22 @@ def route(request: str, trace: Trace, *, force_replay: bool = False) -> dict:
 
 def judge(plan: Plan, trace: Trace, *, force_replay: bool = False) -> dict:
     steps = [s.model_dump(include={"tool", "args", "rationale", "evidence"}) for s in plan.steps]
-    body = (f"<owner_request>{html.escape(plan.request, quote=False)}</owner_request>\n"
-            f"<plan_message>{html.escape(plan.message, quote=False)}</plan_message>\n"
-            f"<steps>{html.escape(json.dumps(steps, sort_keys=True), quote=False)}</steps>\n"
-            f"<blocked_inputs>{json.dumps(plan.blocked_inputs, sort_keys=True)}"
-            "</blocked_inputs>")
+    body = (
+        f"<owner_request>{html.escape(plan.request, quote=False)}</owner_request>\n"
+        f"<plan_message>{html.escape(plan.message, quote=False)}</plan_message>\n"
+        f"<steps>{html.escape(json.dumps(steps, sort_keys=True), quote=False)}</steps>\n"
+        f"<blocked_inputs>{json.dumps(plan.blocked_inputs, sort_keys=True)}"
+        "</blocked_inputs>"
+    )
     try:
-        r = _complete("judge", trace=trace, force_replay=force_replay, system=JUDGE_PROMPT,
-                      messages=[{"role": "user", "content": body}], output_format=JUDGE_FORMAT)
+        r = _complete(
+            "judge",
+            trace=trace,
+            force_replay=force_replay,
+            system=JUDGE_PROMPT,
+            messages=[{"role": "user", "content": body}],
+            output_format=JUDGE_FORMAT,
+        )
         out = _final_json(r)
         if out.get("verdict") not in ("pass", "warn", "fail"):
             raise ValueError("bad verdict")
@@ -157,8 +203,13 @@ def _run_read(name: str, args: dict, lp: _Loop) -> tuple[str, bool]:
 def _stage(name: str, args: dict, lp: _Loop) -> tuple[str, bool]:
     args = dict(args)
     rationale, evidence = args.pop("rationale", ""), args.pop("evidence", [])
-    step = Step(id=f"s{len(lp.steps) + 1}", tool=name, args=args, rationale=str(rationale),
-                evidence=[str(e) for e in evidence] if isinstance(evidence, list) else [])
+    step = Step(
+        id=f"s{len(lp.steps) + 1}",
+        tool=name,
+        args=args,
+        rationale=str(rationale),
+        evidence=[str(e) for e in evidence] if isinstance(evidence, list) else [],
+    )
     v = validate_step(step, lp.steps, lp.ctx, lp.pc)
     if not v.ok:  # always re-validate: new evidence or newly staged steps can fix it
         key = (name, json.dumps([args, step.evidence], sort_keys=True))
@@ -194,11 +245,17 @@ def _loop(lp: _Loop) -> tuple[str, str]:
     for _ in range(MAX_TURNS):
         if time.monotonic() > lp.trace.deadline:
             break
-        r = _complete("planner", trace=lp.trace, force_replay=lp.force_replay,
-                      system=SYSTEM_PROMPT, messages=messages, output_format=PLAN_FORMAT,
-                      tools=tools)
+        r = _complete(
+            "planner",
+            trace=lp.trace,
+            force_replay=lp.force_replay,
+            system=SYSTEM_PROMPT,
+            messages=messages,
+            output_format=PLAN_FORMAT,
+            tools=tools,
+        )
         if r.stop_reason == "refusal":
-            return "refused", "I can't help with that request."
+            return "refused", _refusal_text(r)
         uses = [b for b in r.content if b.get("type") == "tool_use"]
         if not uses:
             try:
@@ -209,8 +266,11 @@ def _loop(lp: _Loop) -> tuple[str, str]:
             if status not in ("ready", "needs_clarification", "refused"):
                 return "error", "The AI returned an unreadable plan. Try again."
             return status, str(out.get("message", ""))
-        messages = [*messages, {"role": "assistant", "content": r.content},
-                    {"role": "user", "content": [_handle_tool_use(b, lp) for b in uses]}]
+        messages = [
+            *messages,
+            {"role": "assistant", "content": r.content},
+            {"role": "user", "content": [_handle_tool_use(b, lp) for b in uses]},
+        ]
     return "error", TOO_BIG
 
 
@@ -218,9 +278,17 @@ def _usage_summary(trace: Trace) -> dict:
     calls = [c.model_dump() for c in trace.calls]
     read = sum(c.cache_read_tokens for c in trace.calls)
     total = sum(c.input_tokens + c.cache_read_tokens + c.cache_write_tokens for c in trace.calls)
-    return {"calls": calls, "total_cost_usd": round(sum(c.cost_usd for c in trace.calls), 6),
-            "cache_hit_pct": round(100 * read / total, 1) if total else 0.0,
-            "prompt_version": PROMPT_VERSION}
+    sums = {
+        k: sum(getattr(c, k) for c in trace.calls)
+        for k in ("input_tokens", "cache_read_tokens", "cache_write_tokens", "output_tokens", "ms")
+    }
+    return {
+        "calls": calls,
+        **sums,
+        "total_cost_usd": round(sum(c.cost_usd for c in trace.calls), 6),
+        "cache_hit_pct": round(100 * read / total, 1) if total else 0.0,
+        "prompt_version": PROMPT_VERSION,
+    }
 
 
 def _plan(request: str, ctx: Ctx, trace: Trace, force_replay: bool) -> Plan:
@@ -233,44 +301,73 @@ def _plan(request: str, ctx: Ctx, trace: Trace, force_replay: bool) -> Plan:
     except LLMError as e:
         if force_replay and e.kind == "replay_miss":
             raise
-        return Plan(request=request, steps=[], blocked_inputs=lp.blocked, status="error",
-                    message=e.user_message)
+        return Plan(
+            request=request,
+            steps=[],
+            blocked_inputs=lp.blocked,
+            status="error",
+            message=e.user_message,
+        )
     steps = lp.steps if status == "ready" else []  # clarify/refuse/error: nothing approvable
-    plan = Plan(request=request, steps=steps, blocked_inputs=lp.blocked, status=status,
-                message=message)
+    plan = Plan(
+        request=request, steps=steps, blocked_inputs=lp.blocked, status=status, message=message
+    )
     if status == "ready" and steps:
         plan.judge = judge(plan, trace, force_replay=force_replay)
     return plan
 
 
+def _fully_recorded(trace: Trace, plan: Plan) -> bool:
+    """Replay is positional: a stage that fell open unrecorded would misalign every call."""
+    stages = [c["stage"] for c in trace.recorded]
+    return bool(stages) and stages[0] == "router" and (plan.judge is None or stages[-1] == "judge")
+
+
 def make_plan(request: str, ctx: Ctx, *, force_replay: bool = False) -> Plan:
     if not request.strip() or len(request) > MAX_REQUEST_CHARS:
         raise ValueError(f"request must be 1 to {MAX_REQUEST_CHARS} characters")
-    trace = Trace(request=request, session_id=ctx.session_id,
-                  deadline=time.monotonic() + PLAN_DEADLINE_S)
+    trace = Trace(
+        request=request, session_id=ctx.session_id, deadline=time.monotonic() + PLAN_DEADLINE_S
+    )
     plan = _plan(request, ctx, trace, force_replay)
     plan.usage = _usage_summary(trace)
     plan.prompt_version = PROMPT_VERSION
     plan.source = "replay" if any(c.replayed for c in trace.calls) else "live"
-    if get_settings().llm_mode == "record" and trace.recorded and plan.status != "error":
+    if (
+        get_settings().llm_mode == "record"
+        and plan.status != "error"
+        and _fully_recorded(trace, plan)
+    ):
         save_recording(trace)
     return plan
 
 
-def save_plan(ctx: Ctx, plan: Plan, validations: list[Validation],
-              diff: list[DiffItem]) -> str:
+def save_plan(ctx: Ctx, plan: Plan, validations: list[Validation], diff: list[DiffItem]) -> str:
     """Insert plans row (status 'proposed'), set plan.id, log 'plan'. Caller commits (R32)."""
     pid = "plan_" + secrets.token_hex(6)
     plan.id = pid
     ctx.db.execute(
         "INSERT INTO plans (id, request, plan_json, validations_json, diff_json, status,"
         " created_at) VALUES (?,?,?,?,?,'proposed',?)",
-        (pid, plan.request, plan.model_dump_json(),
-         json.dumps([v.model_dump() for v in validations]),
-         json.dumps([d.model_dump() for d in diff]),
-         ctx.now.strftime("%Y-%m-%dT%H:%M:%SZ")))
-    log_action(ctx, "plan", {"summary": f"Plan: {len(plan.steps)} steps ({plan.status})",
-                             "status": plan.status, "steps": len(plan.steps),
-                             "prompt_version": plan.prompt_version, "source": plan.source},
-               plan_id=pid)
+        (
+            pid,
+            plan.request,
+            plan.model_dump_json(),
+            json.dumps([v.model_dump() for v in validations]),
+            json.dumps([d.model_dump() for d in diff]),
+            ctx.now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        ),
+    )
+    log_action(
+        ctx,
+        "plan",
+        {
+            "summary": f"Plan: {len(plan.steps)} steps ({plan.status})",
+            "status": plan.status,
+            "steps": len(plan.steps),
+            "prompt_version": plan.prompt_version,
+            "source": plan.source,
+        },
+        plan_id=pid,
+    )
     return pid

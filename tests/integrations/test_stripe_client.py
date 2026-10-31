@@ -2,7 +2,9 @@ from types import SimpleNamespace
 
 import pytest
 import stripe
+from pydantic import SecretStr
 
+from app.config import Settings
 from app.integrations import stripe_client as sc
 
 
@@ -27,8 +29,40 @@ def test_live_or_junk_key_refuses(key):
         sc.resolve_mode(key, None)
 
 
-def test_mode_defaults_to_mock_without_key():
-    assert sc.mode() == "mock"
+def test_mode_defaults_to_mock_without_key(monkeypatch):
+    monkeypatch.setattr(sc, "get_settings", lambda: Settings())
+    assert sc._boot() == ("mock", None)
+
+
+@pytest.mark.parametrize(
+    "key,override,mode,built",
+    [
+        (None, "auto", "mock", False),
+        ("sk_test_abc", "auto", "test", True),
+        ("rk_test_abc", "auto", "test", True),
+        ("sk_test_abc", "mock", "mock", False),
+    ],
+)
+def test_boot_wiring(monkeypatch, key, override, mode, built):
+    made = []
+    monkeypatch.setattr(sc.stripe, "StripeClient", lambda *a, **k: made.append((a, k)) or "C")
+    monkeypatch.setattr(
+        sc, "get_settings", lambda: Settings(stripe_secret_key=key, stripe_mode=override)
+    )
+    m, client = sc._boot()
+    assert m == mode and (client == "C") is built
+    assert made == ([((key,), {"max_network_retries": 2})] if built else [])
+
+
+def test_boot_live_key_raises(monkeypatch):
+    made = []
+    monkeypatch.setattr(sc.stripe, "StripeClient", lambda *a, **k: made.append(a))
+    # model_construct skips the Settings validator, proving _boot's own guard holds.
+    s = Settings.model_construct(stripe_secret_key=SecretStr("sk_live_x"), stripe_mode="auto")
+    monkeypatch.setattr(sc, "get_settings", lambda: s)
+    with pytest.raises(RuntimeError, match="test key"):
+        sc._boot()
+    assert made == []
 
 
 @pytest.fixture
@@ -139,10 +173,21 @@ def test_payment_link_create_and_deactivate(use_client):
     assert name == "payment_links.update" and args == ("plink_1",) and params == {"active": False}
 
 
-def test_livemode_response_blocked(use_client):
-    use_client(Recorder(SimpleNamespace(livemode=True, id="re_live", status="succeeded", amount=1)))
+# Stripe 16.1.0 Refund has no livemode field, so _call's guard never fires on refund();
+# that path relies on the boot key guard and the PaymentIntent livemode check.
+@pytest.mark.parametrize(
+    "call",
+    [
+        lambda: sc.ensure_payment_intent("s", "o", 1),
+        lambda: sc.create_payment_link("n", 100, {}, "k"),
+        lambda: sc.deactivate_payment_link("plink_1"),
+    ],
+    ids=["payment_intent", "create_link", "deactivate_link"],
+)
+def test_livemode_response_blocked(use_client, call):
+    use_client(Recorder(SimpleNamespace(livemode=True, id="x_live", url="https://x")))
     with pytest.raises(sc.StripeFailure) as e:
-        sc.refund("pi_1", 1, "duplicate", "k")
+        call()
     assert e.value.code == "live_mode_blocked"
 
 

@@ -19,6 +19,9 @@ UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 CSP_EXTRA = "object-src 'none'; base-uri 'none'; form-action 'self'"
 PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=()"
 HSTS = "max-age=31536000"
+# Pre-LLM rejections give the slot back; 500s and raised errors keep it (a paid turn may have
+# run, #61). 404 = replay_miss, 503 = budget/busy.
+RELEASE_STATUSES = frozenset({401, 404, 422, 429, 503})
 
 # ponytail: in-process counter, resets on restart (R48); Console spend limit is the hard backstop.
 _plans: tuple[str, int] = ("", 0)
@@ -54,7 +57,7 @@ def _take_plan_slot() -> str | None:
 
 
 def _release_plan_slot(day: str) -> None:
-    """Give back a slot the route did not turn into a plan (401/422/429/5xx)."""
+    """Give back a slot the route rejected before any LLM call (RELEASE_STATUSES)."""
     global _plans
     with _plans_lock:
         if _plans[0] == day and _plans[1] > 0:
@@ -137,13 +140,8 @@ async def _guard(request: Request, call_next):
                 _seconds_to_utc_midnight(),
             )
     if response is None:
-        try:
-            response = await call_next(request)
-        except Exception:
-            if slot_day is not None:
-                _release_plan_slot(slot_day)
-            raise
-        if slot_day is not None and response.status_code != 200:
+        response = await call_next(request)
+        if slot_day is not None and response.status_code in RELEASE_STATUSES:
             _release_plan_slot(slot_day)
     _add_headers(request, response)
     return response

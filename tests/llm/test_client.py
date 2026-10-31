@@ -13,18 +13,34 @@ from app.llm.client import LLMError, Trace, complete, complete_json, recording_k
 SONNET = "claude-sonnet-5-5"
 HAIKU = "claude-haiku-5-5"
 M = [{"role": "user", "content": "hi"}]
-TOOL = {"name": "list_orders", "description": "d", "input_schema": {"type": "object"},
-        "strict": True}
-FMT = {"type": "object", "properties": {"a": {"type": "string"}}, "required": ["a"],
-       "additionalProperties": False}
-USAGE = {"input_tokens": 1000, "cache_creation_input_tokens": 5000,
-         "cache_read_input_tokens": 0, "output_tokens": 2000}
+TOOL = {
+    "name": "list_orders",
+    "description": "d",
+    "input_schema": {"type": "object"},
+    "strict": True,
+}
+FMT = {
+    "type": "object",
+    "properties": {"a": {"type": "string"}},
+    "required": ["a"],
+    "additionalProperties": False,
+}
+USAGE = {
+    "input_tokens": 1000,
+    "cache_creation_input_tokens": 5000,
+    "cache_read_input_tokens": 0,
+    "output_tokens": 2000,
+}
 _REQ = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
 
 
 def resp(text="ok", stop="end_turn", usage=None):
-    return {"content": [{"type": "text", "text": text}], "stop_reason": stop,
-            "model": SONNET, "usage": usage or USAGE}
+    return {
+        "content": [{"type": "text", "text": text}],
+        "stop_reason": stop,
+        "model": SONNET,
+        "usage": usage or USAGE,
+    }
 
 
 def status_err(cls, code, *, headers=None, body=None, msg="err"):
@@ -37,8 +53,15 @@ def T(request="ship it", deadline_s=90.0):
 
 
 def call(trace=None, **kw):
-    args = dict(stage="planner", model=SONNET, system="S", messages=M, trace=trace or T(),
-                max_tokens=8000, effort="medium")
+    args = dict(
+        stage="planner",
+        model=SONNET,
+        system="S",
+        messages=M,
+        trace=trace or T(),
+        max_tokens=8000,
+        effort="medium",
+    )
     return complete(**{**args, **kw})
 
 
@@ -84,6 +107,7 @@ def send(monkeypatch):
         s = Script(*results)
         monkeypatch.setattr(client, "_send", s)
         return s
+
     return install
 
 
@@ -96,8 +120,12 @@ def tmp_recordings(tmp_path, monkeypatch):
 
 
 def write_recording(d, request, calls, name=None):
-    data = {"request": request, "prompt_version": "x", "recorded_at": "2026-10-30",
-            "calls": [{"stage": "planner", "model": SONNET, "response": c} for c in calls]}
+    data = {
+        "request": request,
+        "prompt_version": "x",
+        "recorded_at": "2026-10-30",
+        "calls": [{"stage": "planner", "model": SONNET, "response": c} for c in calls],
+    }
     (d / (name or f"{recording_key(request)}.json")).write_text(json.dumps(data))
 
 
@@ -118,8 +146,10 @@ def test_request_shape(send):
     assert k["system"][0]["cache_control"] == {"type": "ephemeral"}
     assert k["cache_control"] == {"type": "ephemeral"}
     assert k["tool_choice"] == {"type": "auto"} and k["tools"] == [TOOL]
-    assert k["output_config"] == {"effort": "medium",
-                                  "format": {"type": "json_schema", "schema": FMT}}
+    assert k["output_config"] == {
+        "effort": "medium",
+        "format": {"type": "json_schema", "schema": FMT},
+    }
     assert k["fallbacks"] == "default" and k["betas"]
     assert not {"temperature", "top_p", "top_k", "thinking"} & k.keys()
 
@@ -138,8 +168,13 @@ def test_retry_after_honoured(send, sleeps):
 
 
 def test_spend_limit_429_not_retried(send, sleeps):
-    body = {"error": {"type": "rate_limit_error", "message": "x",
-                      "details": {"error_code": "enforced_spend_limit_reached"}}}
+    body = {
+        "error": {
+            "type": "rate_limit_error",
+            "message": "x",
+            "details": {"error_code": "enforced_spend_limit_reached"},
+        }
+    }
     send(status_err(anthropic.RateLimitError, 429, body=body))
     with pytest.raises(LLMError) as e:
         call()
@@ -148,8 +183,13 @@ def test_spend_limit_429_not_retried(send, sleeps):
 
 def test_user_cap_400_not_retried(send):
     msg = "You have reached your specified API usage limits. You will regain access on ..."
-    s = send(status_err(anthropic.BadRequestError, 400,
-                        body={"error": {"type": "invalid_request_error", "message": msg}}))
+    s = send(
+        status_err(
+            anthropic.BadRequestError,
+            400,
+            body={"error": {"type": "invalid_request_error", "message": msg}},
+        )
+    )
     with pytest.raises(LLMError) as e:
         call()
     assert e.value.kind == "budget" and len(s.sent) == 1
@@ -192,8 +232,13 @@ def test_auth_error_maps_not_configured(send):
 
 
 def test_bad_request_not_retried(send):
-    s = send(status_err(anthropic.BadRequestError, 400,
-                        body={"error": {"type": "invalid_request_error", "message": "bad"}}))
+    s = send(
+        status_err(
+            anthropic.BadRequestError,
+            400,
+            body={"error": {"type": "invalid_request_error", "message": "bad"}},
+        )
+    )
     with pytest.raises(LLMError) as e:
         call()
     assert e.value.kind == "bad_request" and len(s.sent) == 1
@@ -223,6 +268,7 @@ def test_budget_exceeded_before_send(send, monkeypatch):
 def test_busy_maps_to_busy(send, monkeypatch):
     def full(*_a, **_k):
         raise budget.Busy("full")
+
     monkeypatch.setattr(client, "llm_slot", full)
     send(resp())
     with pytest.raises(LLMError) as e:
@@ -292,9 +338,17 @@ def test_recording_key_normalizes():
 
 # ---- complete_json (R25) ----
 
+
 def cj(**kw):
-    args = dict(model=HAIKU, system="S", user="U", schema=FMT, max_tokens=256,
-                timeout_s=15.0, replay_key="abc123")
+    args = dict(
+        model=HAIKU,
+        system="S",
+        user="U",
+        schema=FMT,
+        max_tokens=256,
+        timeout_s=15.0,
+        replay_key="abc123",
+    )
     return complete_json(**{**args, **kw})
 
 
@@ -311,7 +365,20 @@ def test_complete_json_replay_by_key(tmp_recordings, monkeypatch, send):
     set_env(monkeypatch, llm_mode="replay")
     send()
     write_recording(tmp_recordings, "x", [resp('{"a": "z"}')], name="guard_abc123.json")
+    p = tmp_recordings / "guard_abc123.json"
+    p.write_text(
+        json.dumps({**json.loads(p.read_text()), "guard_version": client.guard_version("S", FMT)})
+    )
     assert cj() == {"a": "z"}
+
+
+def test_complete_json_unversioned_recording_fails_closed(tmp_recordings, monkeypatch, send):
+    set_env(monkeypatch, llm_mode="replay")
+    send()
+    write_recording(tmp_recordings, "x", [resp('{"a": "z"}')], name="guard_abc123.json")
+    with pytest.raises(LLMError) as e:
+        cj()
+    assert e.value.kind == "replay_miss"
 
 
 def test_complete_json_record_writes_guard_file(tmp_recordings, monkeypatch, send):
@@ -322,11 +389,14 @@ def test_complete_json_record_writes_guard_file(tmp_recordings, monkeypatch, sen
     assert data["calls"][0]["stage"] == "guard"
 
 
-@pytest.mark.parametrize("result", [
-    resp("not json"),
-    resp('{"a": 1}', stop="refusal"),
-    status_err(anthropic.AuthenticationError, 401),
-])
+@pytest.mark.parametrize(
+    "result",
+    [
+        resp("not json"),
+        resp('{"a": 1}', stop="refusal"),
+        status_err(anthropic.AuthenticationError, 401),
+    ],
+)
 def test_complete_json_any_error_raises(send, result):
     send(result)
     with pytest.raises(LLMError):
@@ -337,4 +407,67 @@ def test_complete_json_replay_miss_raises(tmp_recordings, monkeypatch):
     set_env(monkeypatch, llm_mode="replay")
     with pytest.raises(LLMError) as e:
         cj(replay_key="nope")
+    assert e.value.kind == "replay_miss"
+
+
+# ---- backlog #33 #34 #35 ----
+
+
+def test_replay_index_not_shifted_by_max_tokens_retry(tmp_recordings, monkeypatch, send):
+    write_recording(tmp_recordings, "ship it", [resp("rec0"), resp("rec1")])
+    send(resp(stop="max_tokens"), resp("live0"))
+    t = T()
+    assert call(trace=t).content[0]["text"] == "live0"
+    set_env(monkeypatch, llm_mode="live", llm_session_budget_usd=0.01)
+    r = call(trace=t)
+    assert r.usage.replayed and r.content[0]["text"] == "rec1"
+
+
+def test_complete_json_spend_db_error_is_llm_error(send, monkeypatch):
+    import sqlite3
+
+    def locked(*_a, **_k):
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(client, "record_spend", locked)
+    send(resp('{"a": "b"}'))
+    with pytest.raises(LLMError):
+        cj()
+
+
+def test_complete_json_budget_db_error_is_busy(send, monkeypatch):
+    import sqlite3
+
+    def locked(*_a, **_k):
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(client, "ensure_budget", locked)
+    send(resp('{"a": "b"}'))
+    with pytest.raises(LLMError) as e:
+        cj()
+    assert e.value.kind == "busy"
+
+
+def test_complete_json_recording_write_error_is_llm_error(tmp_recordings, monkeypatch, send):
+    set_env(monkeypatch, llm_mode="record")
+
+    def boom(*_a, **_k):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(client, "_write_recording", boom)
+    send(resp('{"a": "b"}'))
+    with pytest.raises(LLMError):
+        cj()
+
+
+def test_guard_recording_stamped_and_stale_one_fails_closed(tmp_recordings, monkeypatch, send):
+    set_env(monkeypatch, llm_mode="record")
+    send(resp('{"a": "r"}'))
+    cj(replay_key="k9")
+    data = json.loads((tmp_recordings / "guard_k9.json").read_text())
+    assert data["guard_version"] == client.guard_version("S", FMT)
+    set_env(monkeypatch, llm_mode="replay")
+    assert cj(replay_key="k9") == {"a": "r"}
+    with pytest.raises(LLMError) as e:
+        cj(replay_key="k9", system="new guard prompt")
     assert e.value.kind == "replay_miss"

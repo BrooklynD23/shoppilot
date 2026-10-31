@@ -1,4 +1,5 @@
 """Agent plan models (P2-T1, contract R2). Data only, no logic."""
+
 from __future__ import annotations
 
 from typing import Literal

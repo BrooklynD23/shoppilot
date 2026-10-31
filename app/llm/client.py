@@ -4,6 +4,7 @@ import hashlib
 import json
 import logging
 import random
+import sqlite3
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -42,13 +43,22 @@ _MSG = {
     "replay_miss": "No recording for this request. Run: python -m tests.eval.record",
 }
 
-Kind = Literal["busy", "rate_limited", "overloaded", "unreachable", "budget",
-               "not_configured", "bad_request", "replay_miss"]
+Kind = Literal[
+    "busy",
+    "rate_limited",
+    "overloaded",
+    "unreachable",
+    "budget",
+    "not_configured",
+    "bad_request",
+    "replay_miss",
+]
 
 
 class LLMError(Exception):
-    def __init__(self, kind: Kind, user_message: str | None = None,
-                 retry_after: float | None = None):
+    def __init__(
+        self, kind: Kind, user_message: str | None = None, retry_after: float | None = None
+    ):
         self.kind = kind
         self.user_message = user_message or _MSG.get(kind, "The AI request failed.")
         self.retry_after = retry_after
@@ -83,6 +93,7 @@ class Trace:
     deadline: float  # time.monotonic() seconds
     calls: list[CallUsage] = field(default_factory=list)
     recorded: list[dict] = field(default_factory=list)
+    n: int = 0  # logical complete() calls; replay index (calls[] also holds max_tokens retries)
 
 
 # Test seam: when set, called with the kwargs dict instead of the SDK.
@@ -94,7 +105,12 @@ def recording_key(request: str) -> str:
     return hashlib.sha256(" ".join(request.lower().split()).encode()).hexdigest()[:16]
 
 
+def guard_version(system: str, schema: dict) -> str:
+    return hashlib.sha256((system + json.dumps(schema, sort_keys=True)).encode()).hexdigest()[:8]
+
+
 # ---------- SDK ----------
+
 
 def _sdk() -> anthropic.Anthropic:
     global _client
@@ -102,8 +118,11 @@ def _sdk() -> anthropic.Anthropic:
         key = get_settings().anthropic_api_key
         if key is None:
             raise LLMError("not_configured")
-        _client = anthropic.Anthropic(api_key=key.get_secret_value(), max_retries=0,
-                                      timeout=anthropic.Timeout(60.0, connect=5.0))
+        _client = anthropic.Anthropic(
+            api_key=key.get_secret_value(),
+            max_retries=0,
+            timeout=anthropic.Timeout(60.0, connect=5.0),
+        )
     return _client
 
 
@@ -122,16 +141,31 @@ def _to_dict(r: Any) -> dict:
 
 # ---------- request + classification ----------
 
-def _build(stage: str, model: str, system: str, messages: list[dict], max_tokens: int,
-           effort: str, tools: list[dict] | None, output_format: dict | None,
-           timeout_s: float) -> dict:
+
+def _build(
+    stage: str,
+    model: str,
+    system: str,
+    messages: list[dict],
+    max_tokens: int,
+    effort: str,
+    tools: list[dict] | None,
+    output_format: dict | None,
+    timeout_s: float,
+) -> dict:
     sys_block: dict = {"type": "text", "text": system}
     out_cfg: dict = {"effort": effort}
     if output_format:
         out_cfg["format"] = {"type": "json_schema", "schema": output_format}
-    kw: dict = dict(model=model, max_tokens=max_tokens, system=[sys_block], messages=messages,
-                    cache_control={"type": "ephemeral"}, output_config=out_cfg,
-                    timeout=timeout_s)
+    kw: dict = dict(
+        model=model,
+        max_tokens=max_tokens,
+        system=[sys_block],
+        messages=messages,
+        cache_control={"type": "ephemeral"},
+        output_config=out_cfg,
+        timeout=timeout_s,
+    )
     if stage == "planner":
         sys_block["cache_control"] = {"type": "ephemeral"}
         kw.update(betas=PLANNER_BETAS, fallbacks="default")
@@ -179,7 +213,11 @@ def _classify(exc: Exception) -> tuple[Kind, int, float | None]:
 def _usage(stage: str, model: str, raw: dict, ms: int, retries: int, replayed: bool) -> CallUsage:
     u = raw.get("usage") or {}
     return CallUsage(
-        stage=stage, model=model, ms=ms, retries=retries, replayed=replayed,
+        stage=stage,
+        model=model,
+        ms=ms,
+        retries=retries,
+        replayed=replayed,
         input_tokens=u.get("input_tokens") or 0,
         cache_read_tokens=u.get("cache_read_input_tokens") or 0,
         cache_write_tokens=u.get("cache_creation_input_tokens") or 0,
@@ -189,12 +227,17 @@ def _usage(stage: str, model: str, raw: dict, ms: int, retries: int, replayed: b
 
 
 def _response(raw: dict, usage: CallUsage) -> LLMResponse:
-    return LLMResponse(content=raw.get("content") or [], stop_reason=raw.get("stop_reason") or "",
-                       model=raw.get("model") or usage.model, usage=usage,
-                       stop_details=raw.get("stop_details"))
+    return LLMResponse(
+        content=raw.get("content") or [],
+        stop_reason=raw.get("stop_reason") or "",
+        model=raw.get("model") or usage.model,
+        usage=usage,
+        stop_details=raw.get("stop_details"),
+    )
 
 
 # ---------- live call with retries ----------
+
 
 def _attempt(kw: dict, trace: Trace) -> dict:
     est_in = len(json.dumps([kw["system"], kw["messages"], kw.get("tools")])) // 3
@@ -207,6 +250,9 @@ def _attempt(kw: dict, trace: Trace) -> dict:
     except BudgetExceeded as e:
         log.warning("llm budget reached scope=%s", e.scope)
         raise LLMError("budget") from None
+    except sqlite3.Error:
+        log.exception("llm spend ledger unavailable")
+        raise LLMError("busy") from None
 
 
 def _wait_or_raise(exc: Exception, attempt: int, trace: Trace) -> None:
@@ -216,8 +262,11 @@ def _wait_or_raise(exc: Exception, attempt: int, trace: Trace) -> None:
     else:
         msg = None
     wait = retry_after if retry_after is not None else 2**attempt + random.uniform(0, 0.5)  # noqa: S311
-    if (attempt + 1 >= max_attempts or wait > MAX_RETRY_WAIT_S
-            or time.monotonic() + wait > trace.deadline):
+    if (
+        attempt + 1 >= max_attempts
+        or wait > MAX_RETRY_WAIT_S
+        or time.monotonic() + wait > trace.deadline
+    ):
         raise LLMError(kind, msg, retry_after) from None
     time.sleep(wait)
 
@@ -241,18 +290,29 @@ def _live(stage: str, kw: dict, trace: Trace) -> LLMResponse:
             continue
         if get_settings().llm_mode == "record":
             trace.recorded.append({"stage": stage, "model": kw["model"], "response": raw})
-        log.info("llm stage=%s model=%s ms=%s retries=%s session=%s", stage, kw["model"],
-                 usage.ms, attempt, session_hash(trace.session_id))
+        log.info(
+            "llm stage=%s model=%s ms=%s retries=%s session=%s",
+            stage,
+            kw["model"],
+            usage.ms,
+            attempt,
+            session_hash(trace.session_id),
+        )
         return _response(raw, usage)
 
 
 # ---------- replay ----------
 
-def _replay(stage: str, model: str, trace: Trace, path: Path) -> LLMResponse:
+
+def _replay(
+    stage: str, model: str, trace: Trace, path: Path, idx: int, version: str | None
+) -> LLMResponse:
     try:
-        calls = json.loads(path.read_text(encoding="utf-8"))["calls"]
-        rec = calls[len(trace.calls)]
-    except (OSError, ValueError, KeyError, IndexError):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if version is not None and data.get("guard_version") != version:
+            raise KeyError("guard_version")  # stale guard prompt/schema: fail closed
+        rec = data["calls"][idx]
+    except (OSError, ValueError, KeyError, IndexError, TypeError):
         raise LLMError("replay_miss") from None
     raw = rec["response"]
     usage = _usage(stage, rec.get("model") or model, raw, 0, 0, True)
@@ -260,35 +320,52 @@ def _replay(stage: str, model: str, trace: Trace, path: Path) -> LLMResponse:
     return _response(raw, usage)
 
 
-def _call(stage: str, kw: dict, trace: Trace, rec_path: Path) -> LLMResponse:
+def _call(
+    stage: str, kw: dict, trace: Trace, rec_path: Path, version: str | None = None
+) -> LLMResponse:
+    idx, trace.n = trace.n, trace.n + 1
     if get_settings().llm_mode == "replay":
-        return _replay(stage, kw["model"], trace, rec_path)
+        return _replay(stage, kw["model"], trace, rec_path, idx, version)
     try:
         return _live(stage, kw, trace)
     except LLMError as e:
         if e.kind not in ("budget", "not_configured"):
             raise
         try:
-            return _replay(stage, kw["model"], trace, rec_path)
+            return _replay(stage, kw["model"], trace, rec_path, idx, version)
         except LLMError:
             raise e from None
 
 
-def complete(*, stage: Literal["router", "planner", "judge"], model: str, system: str,
-             messages: list[dict], trace: Trace, max_tokens: int, effort: str,
-             tools: list[dict] | None = None, output_format: dict | None = None,
-             timeout_s: float = 60.0) -> LLMResponse:
-    kw = _build(stage, model, system, messages, max_tokens, effort, tools, output_format,
-                timeout_s)
+def complete(
+    *,
+    stage: Literal["router", "planner", "judge"],
+    model: str,
+    system: str,
+    messages: list[dict],
+    trace: Trace,
+    max_tokens: int,
+    effort: str,
+    tools: list[dict] | None = None,
+    output_format: dict | None = None,
+    timeout_s: float = 60.0,
+) -> LLMResponse:
+    kw = _build(stage, model, system, messages, max_tokens, effort, tools, output_format, timeout_s)
     return _call(stage, kw, trace, RECORDINGS_DIR / f"{recording_key(trace.request)}.json")
 
 
-def _write_recording(path: Path, request: str, calls: list[dict]) -> Path:
-    from app.llm.prompts import PROMPT_VERSION  # lazy: prompts are optional for the guard
+def _write_recording(path: Path, request: str, calls: list[dict], **stamp: str) -> Path:
+    if not stamp:
+        from app.llm.prompts import PROMPT_VERSION  # lazy: prompts are optional for the guard
 
+        stamp = {"prompt_version": PROMPT_VERSION}
     path.parent.mkdir(parents=True, exist_ok=True)
-    data = {"request": request, "prompt_version": PROMPT_VERSION,
-            "recorded_at": datetime.now(UTC).isoformat(timespec="seconds"), "calls": calls}
+    data = {
+        "request": request,
+        **stamp,
+        "recorded_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "calls": calls,
+    }
     path.write_text(json.dumps(data, indent=1, sort_keys=True), encoding="utf-8")
     return path
 
@@ -298,14 +375,38 @@ def save_recording(trace: Trace) -> Path:
     return _write_recording(path, trace.request, trace.recorded)
 
 
-def complete_json(*, model: str, system: str, user: str, schema: dict, max_tokens: int,
-                  timeout_s: float, replay_key: str) -> dict:
+def complete_json(
+    *,
+    model: str,
+    system: str,
+    user: str,
+    schema: dict,
+    max_tokens: int,
+    timeout_s: float,
+    replay_key: str,
+) -> dict:
     """Guard stage (R25): one structured call, parsed JSON. Any failure -> LLMError."""
     trace = Trace(request=replay_key, session_id="guard", deadline=time.monotonic() + timeout_s)
-    kw = _build("guard", model, system, [{"role": "user", "content": user}], max_tokens,
-                "low", None, schema, timeout_s)
+    kw = _build(
+        "guard",
+        model,
+        system,
+        [{"role": "user", "content": user}],
+        max_tokens,
+        "low",
+        None,
+        schema,
+        timeout_s,
+    )
     path = RECORDINGS_DIR / f"guard_{replay_key}.json"
-    r = _call("guard", kw, trace, path)
+    version = guard_version(system, schema)
+    try:
+        r = _call("guard", kw, trace, path, version)
+    except LLMError:
+        raise
+    except Exception:
+        log.exception("guard call failed")
+        raise LLMError("bad_request") from None
     if r.stop_reason != "end_turn":
         raise LLMError("bad_request", f"Guard call ended with {r.stop_reason}.")
     try:
@@ -316,5 +417,9 @@ def complete_json(*, model: str, system: str, user: str, schema: dict, max_token
     if not isinstance(out, dict):
         raise LLMError("bad_request", "Guard returned invalid JSON.")
     if trace.recorded:
-        _write_recording(path, f"guard:{replay_key}", trace.recorded)
+        try:
+            _write_recording(path, f"guard:{replay_key}", trace.recorded, guard_version=version)
+        except Exception:
+            log.exception("guard recording write failed")
+            raise LLMError("bad_request") from None
     return out

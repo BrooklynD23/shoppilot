@@ -34,11 +34,16 @@ def test_too_few_orders_ok_true(seeded):
     assert r.data["items"] == [] and r.data["total_flagged"] == 0
 
 
-@pytest.mark.parametrize("args", [
-    {"since_days": 0, "limit": 10}, {"since_days": 91, "limit": 10},
-    {"since_days": 7, "limit": 0}, {"since_days": 7, "limit": 51},
-    {"since_days": True, "limit": 10},
-])
+@pytest.mark.parametrize(
+    "args",
+    [
+        {"since_days": 0, "limit": 10},
+        {"since_days": 91, "limit": 10},
+        {"since_days": 7, "limit": 0},
+        {"since_days": 7, "limit": 51},
+        {"since_days": True, "limit": 10},
+    ],
+)
 def test_bounds(args, ctx):
     r = fa.run(args, ctx)
     assert r.ok is False and r.error == "invalid"

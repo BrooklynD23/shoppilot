@@ -188,3 +188,25 @@ def test_since_days_bounds(ctx):
     for bad in (0, 91):
         with pytest.raises(ValueError):
             flag_anomalies(ctx, since_days=bad)
+
+
+def test_null_catalog_price_skipped_and_logged(caplog):
+    o = order("gone", "c9", recent(), [(1, 2400, 2400)])
+    o["lines"][0]["price_cents"] = None  # deleted product: LEFT JOIN gives NULL
+    o["lines"].append({"qty": 1, "unit_price_cents": 98, "price_cents": None})
+    with caplog.at_level("WARNING", logger="app.ml.anomaly"):
+        items = score_orders(base_orders() + [o], SINCE)
+    assert "gone" not in ids(items)
+    assert "price signal skipped" in caplog.text
+
+
+def test_velocity_window_edges_inclusive():
+    t = recent(200)
+    trio = [
+        order(f"e{i}", "cedge", t + timedelta(minutes=60 * i), [(1, 2400, 2400)]) for i in range(3)
+    ]
+    items = {it["order_id"]: it for it in score_orders(base_orders() + trio, SINCE)}
+    assert "e1" in items
+    assert items["e1"]["signals"]["velocity"] == 3.5
+    assert "1 of 3 orders" in items["e1"]["reason"]
+    assert "e0" not in items and "e2" not in items  # each sees only 2 within an hour

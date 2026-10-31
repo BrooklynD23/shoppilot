@@ -152,10 +152,18 @@ class Script:
 
     @staticmethod
     def text(obj, model="claude-haiku-5-5"):
-        usage = {"input_tokens": 1, "cache_creation_input_tokens": 0,
-                 "cache_read_input_tokens": 0, "output_tokens": 1}
-        return {"content": [{"type": "text", "text": json.dumps(obj)}],
-                "stop_reason": "end_turn", "model": model, "usage": usage}
+        usage = {
+            "input_tokens": 1,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 1,
+        }
+        return {
+            "content": [{"type": "text", "text": json.dumps(obj)}],
+            "stop_reason": "end_turn",
+            "model": model,
+            "usage": usage,
+        }
 
 
 @pytest.fixture

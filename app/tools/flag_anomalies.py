@@ -1,4 +1,5 @@
 """flag_anomalies tool (P3-ML-5). Read-only wrapper over app.ml.anomaly; never does math itself."""
+
 from __future__ import annotations
 
 from app.agent.models import DiffItem
@@ -14,9 +15,13 @@ SPEC = ToolSpec(
         "placed in the last since_days days (1-90; 7 = this week), top `limit` (1-50) by score. "
         "Read-only. Quote each `reason` verbatim; never compute scores yourself."
     ),
-    destructive=False, moves_money=False, undoable=False,
+    destructive=False,
+    moves_money=False,
+    undoable=False,
     input_schema={
-        "type": "object", "additionalProperties": False, "required": ["since_days", "limit"],
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["since_days", "limit"],
         "properties": {"since_days": {"type": "integer"}, "limit": {"type": "integer"}},
     },
 )
@@ -33,8 +38,9 @@ def _window(days: int) -> str:
 def run(args: dict, ctx: Ctx) -> ToolResult:
     days, limit = args.get("since_days"), args.get("limit")
     if not _int_in(days, 1, anomaly.MAX_SINCE_DAYS) or not _int_in(limit, 1, MAX_LIMIT):
-        return ToolResult(ok=False, summary="since_days must be 1-90 and limit 1-50",
-                          error="invalid")
+        return ToolResult(
+            ok=False, summary="since_days must be 1-90 and limit 1-50", error="invalid"
+        )
     empty = {"items": [], "total_flagged": 0, "threshold": anomaly.THRESHOLD}
     try:
         items = anomaly.flag_anomalies(ctx, since_days=days)
@@ -45,15 +51,21 @@ def run(args: dict, ctx: Ctx) -> ToolResult:
     if not items:
         return ToolResult(ok=True, summary=f"No suspicious orders {_window(days)}.", data=empty)
     top = items[0]
-    summary = (f"{len(items)} suspicious orders {_window(days)}; "
-               f"top: {top['order_id']} — {top['reason']}")
-    return ToolResult(ok=True, summary=summary, data={
-        **empty, "items": items[:limit], "total_flagged": len(items)})
+    summary = (
+        f"{len(items)} suspicious orders {_window(days)}; top: {top['order_id']} — {top['reason']}"
+    )
+    return ToolResult(
+        ok=True,
+        summary=summary,
+        data={**empty, "items": items[:limit], "total_flagged": len(items)},
+    )
 
 
 def preview(args: dict, ctx: Ctx) -> DiffItem:
-    summary = (f"Scan orders from the last {args.get('since_days')} days for anomalies "
-               f"(show top {args.get('limit')}).")
+    summary = (
+        f"Scan orders from the last {args.get('since_days')} days for anomalies "
+        f"(show top {args.get('limit')})."
+    )
     return DiffItem(step_id="", before={}, after={"read_only": True, "summary": summary})
 
 

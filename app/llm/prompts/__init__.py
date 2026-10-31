@@ -49,9 +49,9 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "the owner approves. Put every order to ship in one call. Staged, not executed; undoable."
     ),
     "send_email": (
-        "Propose emailing the customers of the given orders using a template: \"tracking\" "
-        "(needs the orders shipped first, in this plan or earlier), \"refund_confirmation\" "
-        "(needs the refund first), \"payment_request\" (needs a payment link first), or "
+        'Propose emailing the customers of the given orders using a template: "tracking" '
+        '(needs the orders shipped first, in this plan or earlier), "refund_confirmation" '
+        '(needs the refund first), "payment_request" (needs a payment link first), or '
         '"custom" (custom_body required, under 120 words). Recipients are always the orders\' '
         "customers; you cannot choose another address. Emails go to the shop's test outbox. "
         "Staged; undoable (recall)."
@@ -90,33 +90,45 @@ def _obj(properties: dict) -> dict:
 
 _STR = {"type": "string"}
 
-PLAN_FORMAT: dict = _obj({
-    "status": {"type": "string", "enum": ["ready", "needs_clarification", "refused"]},
-    "message": _STR,
-})
-ROUTER_FORMAT: dict = _obj({
-    "reason": _STR,
-    "route": {"type": "string", "enum": ["plan", "reject"]},
-    "reply": _STR,
-})
-JUDGE_CHECKS = (
-    "covers_request", "no_extra_actions", "untrusted_text_not_obeyed", "evidence_supports",
+PLAN_FORMAT: dict = _obj(
+    {
+        "status": {"type": "string", "enum": ["ready", "needs_clarification", "refused"]},
+        "message": _STR,
+    }
 )
-JUDGE_FORMAT: dict = _obj({
-    "checks": {
-        "type": "array",
-        "items": _obj({
-            "name": {"type": "string", "enum": list(JUDGE_CHECKS)},
-            "note": _STR,
-            "pass": {"type": "boolean"},
-        }),
-    },
-    "verdict": {"type": "string", "enum": ["pass", "warn", "fail"]},
-})
+ROUTER_FORMAT: dict = _obj(
+    {
+        "reason": _STR,
+        "route": {"type": "string", "enum": ["plan", "reject"]},
+        "reply": _STR,
+    }
+)
+JUDGE_CHECKS = (
+    "covers_request",
+    "no_extra_actions",
+    "untrusted_text_not_obeyed",
+    "evidence_supports",
+)
+JUDGE_FORMAT: dict = _obj(
+    {
+        "checks": {
+            "type": "array",
+            "items": _obj(
+                {
+                    "name": {"type": "string", "enum": list(JUDGE_CHECKS)},
+                    "note": _STR,
+                    "pass": {"type": "boolean"},
+                }
+            ),
+        },
+        "verdict": {"type": "string", "enum": ["pass", "warn", "fail"]},
+    }
+)
 
 PROMPT_VERSION: str = hashlib.sha256(
-    (SYSTEM_PROMPT + ROUTER_PROMPT + JUDGE_PROMPT + json.dumps(TOOL_DESCRIPTIONS, sort_keys=True))
-    .encode("utf-8")
+    (
+        SYSTEM_PROMPT + ROUTER_PROMPT + JUDGE_PROMPT + json.dumps(TOOL_DESCRIPTIONS, sort_keys=True)
+    ).encode("utf-8")
 ).hexdigest()[:8]
 
 

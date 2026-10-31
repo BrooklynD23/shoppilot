@@ -1,4 +1,5 @@
 """Per-session SQLite store: schema, paths, connections, sweep."""
+
 import hashlib
 import os
 import re
@@ -14,7 +15,7 @@ from app.config import Settings, get_settings
 from app.config import session_hash as session_hash  # noqa: F401  (re-export, R21)
 
 STORE_STEM_RE = re.compile(r"[0-9a-f]{32}")
-SESSION_ID_RE = re.compile(r"[A-Za-z0-9_-]{43}")
+SESSION_ID_RE = re.compile(r"\A[A-Za-z0-9_-]{43}\Z")
 
 
 class InvalidSession(ValueError):
@@ -151,7 +152,7 @@ def get_db(session_id: str) -> Iterator[sqlite3.Connection]:
     path = store_path(session_id, get_settings())
     try:  # mode=rw: never create a file (no exists()/connect race)
         conn = sqlite3.connect(
-            f"{path.as_uri()}?mode=rw", uri=True, check_same_thread=False, timeout=5
+            f"{path.resolve().as_uri()}?mode=rw", uri=True, check_same_thread=False, timeout=5
         )
     except sqlite3.OperationalError as e:
         if not path.exists():  # only a missing store means "reseed"; locks/IO errors propagate
@@ -190,6 +191,9 @@ def create_store(session_id: str, anchor: date) -> None:
     s = get_settings()
     path = store_path(session_id, s)
     s.data_dir.mkdir(mode=0o700, parents=True, exist_ok=True)  # spec 01 §9
+    if s.data_dir.stat().st_uid != os.getuid():  # pre-existing /tmp dir owned by someone else
+        raise PermissionError(f"data dir {s.data_dir} not owned by this user")
+    os.chmod(s.data_dir, 0o700)  # mkdir mode applies only on creation
     tmp = path.with_name(f"{path.name}.{secrets.token_hex(4)}.tmp")  # unique per call
     conn = sqlite3.connect(tmp)
     try:
@@ -202,6 +206,7 @@ def create_store(session_id: str, anchor: date) -> None:
         tmp.unlink(missing_ok=True)
         raise
     conn.close()
+    _journal(path).unlink(missing_ok=True)  # stale hot journal would roll into the new DB
     os.replace(tmp, path)
 
 
@@ -224,4 +229,9 @@ def sweep_sessions(now: float | None = None) -> int:
         doomed += live[:excess]
     for p in doomed:
         p.unlink(missing_ok=True)
+        _journal(p).unlink(missing_ok=True)
     return len(doomed)
+
+
+def _journal(path: Path) -> Path:
+    return path.with_name(path.name + "-journal")

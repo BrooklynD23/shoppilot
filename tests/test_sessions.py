@@ -1,9 +1,13 @@
+import time
+from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import ANY
 
 import pytest
+from fastapi.testclient import TestClient
 
 from app.config import get_settings
 from app.db import get_db, store_path
+from tests.conftest import HEADERS
 
 
 def test_session_cookie_flags(client):
@@ -106,3 +110,92 @@ def test_plan_limit_is_per_session(two_session_clients):
         assert a.post("/api/plan", json={"request": "ship"}).status_code != 429
     assert a.post("/api/plan", json={"request": "ship"}).status_code == 429
     assert b.post("/api/plan", json={"request": "ship"}).status_code != 429
+
+
+def test_xff_multiple_header_lines_use_rightmost(client):
+    # #46: two separate X-Forwarded-For lines; the proxy's (last) one is the key
+    hdrs = [("x-forwarded-for", "6.6.6.6"), ("x-forwarded-for", "9.9.9.9")]
+    for i in range(10):
+        client.cookies.clear()
+        h = [("x-forwarded-for", f"6.6.6.{i}"), ("x-forwarded-for", "9.9.9.9")]
+        client.post("/api/session", json={}, headers=h)
+    client.cookies.clear()
+    assert client.post("/api/session", json={}, headers=hdrs).status_code == 429
+
+
+def test_post_session_reports_store_reset(session_client):
+    # #48: valid cookie, file gone -> UI must learn the store was reset
+    store_path(session_client.cookies["sp_session"], get_settings()).unlink()
+    j = session_client.post("/api/session", json={}).json()
+    assert j["created"] is True and j["store_reset"] is True
+    j = session_client.post("/api/session", json={}).json()
+    assert j["created"] is False and j["store_reset"] is False
+
+
+def test_new_visitor_store_reset_false(client):
+    assert client.post("/api/session", json={}).json()["store_reset"] is False
+
+
+def _slow_create(monkeypatch):
+    import app.main as main
+
+    calls = []
+    real = main.create_store
+
+    def slow(sid, anchor):
+        calls.append(sid)
+        time.sleep(0.05)  # widen the race window
+        real(sid, anchor)
+
+    monkeypatch.setattr(main, "create_store", slow)
+    return calls
+
+
+def _parallel(fn, n=6):
+    with ThreadPoolExecutor(n) as pool:
+        return [f.result() for f in [pool.submit(fn) for _ in range(n)]]
+
+
+def test_concurrent_create_respects_cap(client, monkeypatch, tmp_data_dir):
+    # #47: sweep+create is serialized, so the store count never passes MAX_SESSIONS
+    monkeypatch.setenv("MAX_SESSIONS", "2")
+    get_settings.cache_clear()
+    _slow_create(monkeypatch)
+
+    def visit():
+        with TestClient(client.app, headers=HEADERS) as c:
+            return c.post("/api/session", json={}).status_code
+
+    assert _parallel(visit) == [200] * 6
+    assert len(list(tmp_data_dir.glob("*.db"))) <= 2
+
+
+def test_concurrent_same_cookie_reseeds_once(session_client, monkeypatch):
+    # #78/#49: parallel GETs after a restart reseed once, cost one session hit, one store_reset
+    import app.main as main
+
+    sid = session_client.cookies["sp_session"]
+    store_path(sid, get_settings()).unlink()
+    main._reset_rate_limits()
+    calls = _slow_create(monkeypatch)
+
+    def get():
+        with TestClient(session_client.app, headers=HEADERS, cookies={"sp_session": sid}) as c:
+            r = c.get("/api/store")
+            return r.status_code, r.json().get("store_reset")
+
+    out = _parallel(get)
+    assert all(code == 200 for code, _ in out)
+    assert calls == [sid] and [reset for _, reset in out].count(True) == 1
+    assert len(main._hits.get(("session", "testclient"), [])) == 1
+
+
+def test_reseed_hits_session_limit(session_client):
+    # the reseed still counts against the session bucket (disk flood guard)
+    import app.main as main
+
+    sid = session_client.cookies["sp_session"]
+    for _ in range(9):  # session_client's POST already used 1 of 10
+        main._hit(("session", "testclient"), main.SESSION_LIMIT)
+    store_path(sid, get_settings()).unlink()
+    assert session_client.get("/api/store").status_code == 429

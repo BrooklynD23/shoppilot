@@ -82,3 +82,12 @@ def test_preview_read_only(ctx):
     d = fd.preview(ALL7, ctx)
     assert d.step_id == "" and d.before == {}
     assert d.after["read_only"] is True and "7 days" in d.after["summary"]
+
+
+def test_all_llm_text_compact(ctx):
+    r = fd.run({"product_id": None, "horizon_days": 60, "only_at_risk": False}, ctx)
+    t = r.data["llm_text"]
+    n = ctx.db.execute("SELECT COUNT(*) FROM products WHERE active = 1").fetchone()[0]
+    assert len(t) < 8000 and t.startswith(r.summary)
+    assert all(it["product_id"] in t for it in r.data["items"]) and len(r.data["items"]) == n
+    assert "band" in r.data["items"][0]  # UI keeps full dicts

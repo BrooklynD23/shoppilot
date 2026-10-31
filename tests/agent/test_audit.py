@@ -43,8 +43,14 @@ def bump_tool():
         return ToolResult(ok=True, summary=f"undid {token}")
 
     def spec(name, undoable):
-        return ToolSpec(name=name, description="d", input_schema=SCHEMA,
-                        destructive=False, moves_money=False, undoable=undoable)
+        return ToolSpec(
+            name=name,
+            description="d",
+            input_schema=SCHEMA,
+            destructive=False,
+            moves_money=False,
+            undoable=undoable,
+        )
 
     register(spec("bump", True), lambda a, c: None, lambda a, c: None, undo)
     register(spec("export_report", False), lambda a, c: None, lambda a, c: None)
@@ -80,8 +86,18 @@ def test_token_not_exposed(actx):
     log_action(actx, "execute", {}, tool="bump", undo_token="secret-t")
     row = list_actions(actx)[0]
     assert "undo_token" not in row and "secret-t" not in str(row)
-    assert set(row) == {"id", "ts", "kind", "plan_id", "step_id", "tool", "summary",
-                        "can_undo", "undone", "undone_at"}
+    assert set(row) == {
+        "id",
+        "ts",
+        "kind",
+        "plan_id",
+        "step_id",
+        "tool",
+        "summary",
+        "can_undo",
+        "undone",
+        "undone_at",
+    }
     assert row["can_undo"] is True and row["undone"] is False
 
 
@@ -139,8 +155,10 @@ def test_audit_chain_detects_edit(actx):
     with pytest.raises(sqlite3.DatabaseError):
         actx.db.execute("UPDATE audit_log SET payload_json='{}'")
     actx.db.execute("DROP TRIGGER audit_no_update")
-    actx.db.execute("UPDATE audit_log SET payload_json='{\"request\":\"x\"}' "
-                    "WHERE rowid=(SELECT min(rowid) FROM audit_log)")
+    actx.db.execute(
+        'UPDATE audit_log SET payload_json=\'{"request":"x"}\' '
+        "WHERE rowid=(SELECT min(rowid) FROM audit_log)"
+    )
     assert not verify_chain(actx)
 
 
@@ -189,17 +207,20 @@ def _request(path, fixed_now, anchor, fn, out, key):
 
 def test_double_click_undo_two_connections(file_db, fixed_now, anchor):
     c = _open(file_db)
-    aid = log_action(Ctx("x" * 43, c, fixed_now, anchor), "execute", {}, tool="bump",
-                     undo_token="t1")
+    aid = log_action(
+        Ctx("x" * 43, c, fixed_now, anchor), "execute", {}, tool="bump", undo_token="t1"
+    )
     c.commit()
     c.close()
     entered = threading.Event()
     undo_hook["fn"] = lambda: (entered.set(), time.sleep(0.3))
     out = {}
-    t1 = threading.Thread(target=_request, args=(
-        file_db, fixed_now, anchor, lambda x: undo_action(x, aid), out, 1))
-    t2 = threading.Thread(target=_request, args=(
-        file_db, fixed_now, anchor, lambda x: undo_action(x, aid), out, 2))
+    t1 = threading.Thread(
+        target=_request, args=(file_db, fixed_now, anchor, lambda x: undo_action(x, aid), out, 1)
+    )
+    t2 = threading.Thread(
+        target=_request, args=(file_db, fixed_now, anchor, lambda x: undo_action(x, aid), out, 2)
+    )
     t1.start()
     assert entered.wait(5)
     t2.start()

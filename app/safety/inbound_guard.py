@@ -1,4 +1,5 @@
 """Inbound text guard (P4-T1, spec 04 §4): regex heuristic, then Haiku classifier, fail closed."""
+
 from __future__ import annotations
 
 import base64
@@ -13,7 +14,7 @@ import unicodedata
 from pydantic import BaseModel
 
 from app.agent.audit import log_action
-from app.llm.client import complete_json
+from app.llm.client import LLMError, complete_json
 from app.tools.registry import get_tools
 
 log = logging.getLogger(__name__)
@@ -25,6 +26,7 @@ GUARD_MODEL = "claude-haiku-5-5"
 CACHE_MAX = 2048
 REASON_MAX = 200
 GUARD_ERROR_REASON = "Guard unavailable — held for manual review."
+HEURISTIC_ONLY_REASON = "Recorded mode: no saved guard answer, rule check passed."
 
 GUARD_SYSTEM_PROMPT = (
     "You screen inbound text for a small online shop's AI operations agent. The user turn holds "
@@ -61,34 +63,60 @@ class GuardVerdict(BaseModel):
 
 
 _RULE_TABLE = [
-    ("override", 1.0,
-     r"\b(ignore|disregard|forget|override|bypass)\b.{0,40}?\b(rules?|instructions?|prompts?"
-     r"|polic(?:y|ies)|guardrails?|limits?|caps?)\b",
-     "tries to override the agent's rules"),
-    ("skip_confirm", 1.0,
-     r"\b(without|do not ask for|don't ask for|skip)\b.{0,10}?\b(confirmation|approval)s?\b",
-     "tries to skip human confirmation"),
-    ("role_markup", 1.0,
-     r"(^|\s)(system|assistant|developer)\s*:|<\s*/?\s*(system|untrusted[\w-]*|instructions?)\b"
-     r"|\[/?inst\]|###\s*(system|instruction)",
-     "fakes system or prompt markup"),
-    ("prompt_leak", 1.0,
-     r"\b(system prompt|hidden (polic(?:y|ies)|prompt|instructions|refund policy)"
-     r"|your instructions)\b",
-     "asks for hidden prompts"),
-    ("bulk_action", 1.0,
-     r"\b(refund|cancel|delete|void|approve|ship|mark)\w*\b.{0,40}?\b(every|all|each)\s+"
-     r"(?:(?:the|of|your|pending|open)\s+)*(orders?|customers?|payments?|purchases?|refunds?)\b",
-     "asks for a bulk refund or bulk change"),
-    ("jailbreak", 1.0, r"\b(you are now|developer mode|jailbreak|dan mode)\b",
-     "jailbreak phrasing"),
+    (
+        "override",
+        1.0,
+        r"\b(ignore|disregard|forget|override|bypass)\b.{0,40}?\b(rules?|instructions?|prompts?"
+        r"|polic(?:y|ies)|guardrails?|limits?|caps?)\b",
+        "tries to override the agent's rules",
+    ),
+    (
+        "skip_confirm",
+        1.0,
+        r"\b(without|do not ask for|don't ask for|skip)\b.{0,10}?\b(confirmation|approval)s?\b",
+        "tries to skip human confirmation",
+    ),
+    (
+        "role_markup",
+        1.0,
+        r"(^|\s)(system|assistant|developer)\s*:|<\s*/?\s*(system|untrusted[\w-]*|instructions?)\b"
+        r"|\[/?inst\]|###\s*(system|instruction)",
+        "fakes system or prompt markup",
+    ),
+    (
+        "prompt_leak",
+        1.0,
+        r"\b(system prompt|hidden (polic(?:y|ies)|prompt|instructions|refund policy)"
+        r"|your instructions)\b",
+        "asks for hidden prompts",
+    ),
+    (
+        "bulk_action",
+        1.0,
+        r"\b(refund|cancel|delete|void|approve|ship|mark)\w*\b.{0,40}?\b(every|all|each)\s+"
+        r"(?:(?:the|of|your|pending|open)\s+)*(orders?|customers?|payments?|purchases?|refunds?)\b",
+        "asks for a bulk refund or bulk change",
+    ),
+    (
+        "jailbreak",
+        1.0,
+        r"\b(you are now|developer mode|jailbreak|dan mode)\b",
+        "jailbreak phrasing",
+    ),
     ("tool_name", 0.5, None, "names an internal tool"),  # regex built from get_tools() at call time
-    ("addresses_ai", 0.5, r"\b(ai|assistant|agent|bot|llm|claude|chatgpt)\s*[,:]",
-     "addresses the AI directly"),
-    ("exfil", 0.5,
-     r"\b(all|every|full list of|list of)\b.{0,20}?\bcustomers?\b.{0,40}?"
-     r"\b(emails?|addresses|phones?|cards?)\b",
-     "asks for customer data"),
+    (
+        "addresses_ai",
+        0.5,
+        r"\b(ai|assistant|agent|bot|llm|claude|chatgpt)\s*[,:]",
+        "addresses the AI directly",
+    ),
+    (
+        "exfil",
+        0.5,
+        r"\b(all|every|full list of|list of)\b.{0,20}?\bcustomers?\b.{0,40}?"
+        r"\b(emails?|addresses|phones?|cards?)\b",
+        "asks for customer data",
+    ),
 ]
 # ponytail: regex list is a naive keyword screen; it exists for determinism, Haiku is the
 # generalising layer.
@@ -138,32 +166,65 @@ def heuristic_score(text: str) -> tuple[float, list[str]]:
 def _classify(text: str, source_id: str) -> GuardVerdict:
     nonce = secrets.token_hex(8)
     out = complete_json(
-        model=GUARD_MODEL, system=GUARD_SYSTEM_PROMPT,
-        user=f"<untrusted-{nonce}>\n{text}\n</untrusted-{nonce}>", schema=SCHEMA,
-        max_tokens=200, timeout_s=8.0,
-        replay_key=hashlib.sha256(text.encode()).hexdigest()[:16])
+        model=GUARD_MODEL,
+        system=GUARD_SYSTEM_PROMPT,
+        user=f"<untrusted-{nonce}>\n{text}\n</untrusted-{nonce}>",
+        schema=SCHEMA,
+        max_tokens=200,
+        timeout_s=8.0,
+        replay_key=hashlib.sha256(text.encode()).hexdigest()[:16],
+    )
     label, conf, reason = out["label"], out["confidence"], out["reason"]
-    if label not in ("clean", "injection") or isinstance(conf, bool) \
-            or not isinstance(conf, int | float) or not isinstance(reason, str):
+    if (
+        label not in ("clean", "injection")
+        or isinstance(conf, bool)
+        or not isinstance(conf, int | float)
+        or not isinstance(reason, str)
+    ):
         raise ValueError("guard output off schema")
     conf = min(1.0, max(0.0, float(conf)))
     blocked = label == "injection" and conf >= LLM_BLOCK_CONFIDENCE
-    return GuardVerdict(source_id=source_id, allowed=not blocked,
-                        label="injection" if blocked else "clean",
-                        reason=reason[:REASON_MAX], score=conf)
+    return GuardVerdict(
+        source_id=source_id,
+        allowed=not blocked,
+        label="injection" if blocked else "clean",
+        reason=reason[:REASON_MAX],
+        score=conf,
+    )
 
 
 def _verdict(text: str, source_id: str) -> GuardVerdict | None:
     """None means guard_error (not cached)."""
     if len(text) > MAX_TEXT_CHARS:
-        return GuardVerdict(source_id=source_id, allowed=False, label="oversize",
-                            reason=f"Blocked: longer than {MAX_TEXT_CHARS} characters.")
+        return GuardVerdict(
+            source_id=source_id,
+            allowed=False,
+            label="oversize",
+            reason=f"Blocked: longer than {MAX_TEXT_CHARS} characters.",
+        )
     score, rules = heuristic_score(text)
     if score >= BLOCK_SCORE:
-        return GuardVerdict(source_id=source_id, allowed=False, label="injection", score=1.0,
-                            reason="Blocked: " + "; ".join(_PHRASES[r] for r in rules))
+        return GuardVerdict(
+            source_id=source_id,
+            allowed=False,
+            label="injection",
+            score=1.0,
+            reason="Blocked: " + "; ".join(_PHRASES[r] for r in rules),
+        )
     try:
         return _classify(text, source_id)
+    except LLMError as e:
+        if e.kind != "replay_miss":
+            log.warning("guard LLM call failed: %s", e.kind)
+            return None
+        # Replay only: regex already passed it; not stored, so re-screened once recorded.
+        return GuardVerdict(
+            source_id=source_id,
+            allowed=True,
+            label="heuristic_only",
+            reason=HEURISTIC_ONLY_REASON,
+            score=score,
+        )
     except Exception as e:  # fail closed: timeout, 429, spend cap, schema error
         log.warning("guard LLM call failed: %s", type(e).__name__)
         return None
@@ -175,8 +236,9 @@ def screen(text: str, source_id: str) -> GuardVerdict:
     if v is None:
         v = _verdict(text, source_id)
         if v is None:
-            return GuardVerdict(source_id=source_id, allowed=False, label="guard_error",
-                                reason=GUARD_ERROR_REASON)
+            return GuardVerdict(
+                source_id=source_id, allowed=False, label="guard_error", reason=GUARD_ERROR_REASON
+            )
         _cache[key] = v
         if len(_cache) > CACHE_MAX:
             del _cache[next(iter(_cache))]
@@ -185,27 +247,59 @@ def screen(text: str, source_id: str) -> GuardVerdict:
 
 def screen_inbox(ctx) -> list[dict]:
     """R24: one screening path for GET /api/inbox and list_inbox; cached in guard_verdicts."""
-    rows = ctx.db.execute("SELECT id, from_addr, subject, body, received_at, order_id"
-                          " FROM inbox ORDER BY id").fetchall()
-    stored = {r[0]: GuardVerdict(source_id=r[0], allowed=bool(r[1]), label=r[2], reason=r[3],
-                                 score=r[4])
-              for r in ctx.db.execute(
-                  "SELECT source_id, allowed, label, reason, score FROM guard_verdicts")}
-    out = []
-    for eid, frm, subject, body, received_at, order_id in rows:
+    rows = ctx.db.execute(
+        "SELECT id, from_addr, subject, body, received_at, order_id FROM inbox ORDER BY id"
+    ).fetchall()
+    stored = {
+        r[0]: GuardVerdict(source_id=r[0], allowed=bool(r[1]), label=r[2], reason=r[3], score=r[4])
+        for r in ctx.db.execute(
+            "SELECT source_id, allowed, label, reason, score FROM guard_verdicts"
+        )
+    }
+    # Pass 1: screen with no DB writes, so no write txn spans the LLM calls (#54).
+    verdicts = {r[0]: stored.get(f"email:{r[0]}") or screen(r[3], f"email:{r[0]}") for r in rows}
+    # Pass 2: INSERT OR IGNORE; a concurrent first load may have stored a verdict already (#53).
+    for eid, v in verdicts.items():
         sid = f"email:{eid}"
-        v = stored.get(sid)
-        if v is None:
-            v = screen(body, sid)
-            if v.label != "guard_error":
-                ctx.db.execute(
-                    "INSERT INTO guard_verdicts (source_id, allowed, label, reason, score,"
-                    " screened_at) VALUES (?,?,?,?,?,?)",
-                    (sid, int(v.allowed), v.label, v.reason, v.score,
-                     ctx.now.strftime("%Y-%m-%dT%H:%M:%SZ")))
-                if not v.allowed:
-                    log_action(ctx, "guard_block", {"source_id": sid, "label": v.label,
-                                                    "reason": v.reason, "score": v.score})
-        out.append({"id": eid, "from": frm, "subject": subject, "body": body,
-                    "received_at": received_at, "order_id": order_id, "verdict": v.model_dump()})
+        if sid in stored or v.label in ("guard_error", "heuristic_only"):
+            continue
+        cur = ctx.db.execute(
+            "INSERT OR IGNORE INTO guard_verdicts (source_id, allowed, label, reason, score,"
+            " screened_at) VALUES (?,?,?,?,?,?)",
+            (
+                sid,
+                int(v.allowed),
+                v.label,
+                v.reason,
+                v.score,
+                ctx.now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            ),
+        )
+        if cur.rowcount == 1:
+            if not v.allowed:
+                log_action(
+                    ctx,
+                    "guard_block",
+                    {"source_id": sid, "label": v.label, "reason": v.reason, "score": v.score},
+                )
+        else:
+            r = ctx.db.execute(
+                "SELECT allowed, label, reason, score FROM guard_verdicts WHERE source_id = ?",
+                (sid,),
+            ).fetchone()
+            verdicts[eid] = GuardVerdict(
+                source_id=sid, allowed=bool(r[0]), label=r[1], reason=r[2], score=r[3]
+            )
+    out = [
+        {
+            "id": eid,
+            "from": frm,
+            "subject": subject,
+            "body": body,
+            "received_at": received_at,
+            "order_id": order_id,
+            "verdict": verdicts[eid].model_dump(),
+        }
+        for eid, frm, subject, body, received_at, order_id in rows
+    ]
     return out

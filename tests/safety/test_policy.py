@@ -1,4 +1,5 @@
 """P4-T2: hard policy rules (spec 04 §5, R18/R19/R37/R46)."""
+
 from datetime import timedelta
 
 import pytest
@@ -16,24 +17,58 @@ _NI = {"anyOf": [{"type": "integer"}, {"type": "null"}]}
 
 
 def _obj(props):
-    return {"type": "object", "additionalProperties": False,
-            "required": list(props), "properties": props}
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "required": list(props),
+        "properties": props,
+    }
 
 
 # Schemas per contract §3, used only when the owning task has not landed yet.
 _STUBS = {
-    "refund_order": (True, True, False, _obj({
-        "order_id": {"type": "string"}, "amount_cents": _NI,
-        "reason": {"type": "string",
-                   "enum": ["duplicate", "fraudulent", "requested_by_customer"]}})),
-    "create_restock_po": (True, False, True, _obj({
-        "product_id": {"type": "string"},
-        "qty_source": {"type": "string", "enum": ["forecast", "user"]}, "qty": _NI})),
-    "list_orders": (False, False, False, _obj({
-        "status": {"type": "string", "enum": ["any", "paid", "shipped", "refunded"]},
-        "created_from": _NS, "created_to": _NS,
-        "order_ids": {"anyOf": [{"type": "array", "items": {"type": "string"}},
-                                {"type": "null"}]}})),
+    "refund_order": (
+        True,
+        True,
+        False,
+        _obj(
+            {
+                "order_id": {"type": "string"},
+                "amount_cents": _NI,
+                "reason": {
+                    "type": "string",
+                    "enum": ["duplicate", "fraudulent", "requested_by_customer"],
+                },
+            }
+        ),
+    ),
+    "create_restock_po": (
+        True,
+        False,
+        True,
+        _obj(
+            {
+                "product_id": {"type": "string"},
+                "qty_source": {"type": "string", "enum": ["forecast", "user"]},
+                "qty": _NI,
+            }
+        ),
+    ),
+    "list_orders": (
+        False,
+        False,
+        False,
+        _obj(
+            {
+                "status": {"type": "string", "enum": ["any", "paid", "shipped", "refunded"]},
+                "created_from": _NS,
+                "created_to": _NS,
+                "order_ids": {
+                    "anyOf": [{"type": "array", "items": {"type": "string"}}, {"type": "null"}]
+                },
+            }
+        ),
+    ),
 }
 
 
@@ -42,20 +77,35 @@ def tools(monkeypatch):
     registry.load_tools()
     for name, (destr, money, undo, schema) in _STUBS.items():
         if name not in registry._TOOLS:
-            spec = ToolSpec(name=name, description="stub", input_schema=schema,
-                            destructive=destr, moves_money=money, undoable=undo)
-            monkeypatch.setitem(registry._TOOLS, name, Registered(
-                spec, lambda *a: None, lambda *a: None, (lambda *a: None) if undo else None))
+            spec = ToolSpec(
+                name=name,
+                description="stub",
+                input_schema=schema,
+                destructive=destr,
+                moves_money=money,
+                undoable=undo,
+            )
+            monkeypatch.setitem(
+                registry._TOOLS,
+                name,
+                Registered(
+                    spec, lambda *a: None, lambda *a: None, (lambda *a: None) if undo else None
+                ),
+            )
 
 
 def plan(*steps):
-    return Plan(request="t", steps=[Step(id=f"s{i}", tool=t, args=a, rationale="")
-                                    for i, (t, a) in enumerate(steps)])
+    return Plan(
+        request="t",
+        steps=[Step(id=f"s{i}", tool=t, args=a, rationale="") for i, (t, a) in enumerate(steps)],
+    )
 
 
 def refund(oid, amount=None):
-    return ("refund_order", {"order_id": oid, "amount_cents": amount,
-                             "reason": "requested_by_customer"})
+    return (
+        "refund_order",
+        {"order_id": oid, "amount_cents": amount, "reason": "requested_by_customer"},
+    )
 
 
 def _window_start(ctx):
@@ -66,7 +116,9 @@ def paid_or_shipped_orders(ctx, n, max_sum=None):
     rows = ctx.db.execute(
         "SELECT id, total_cents - refunded_cents FROM orders WHERE status IN ('paid','shipped')"
         " AND substr(created_at,1,10) >= ? AND total_cents - refunded_cents BETWEEN 1 AND 20000"
-        " ORDER BY total_cents - refunded_cents", (_window_start(ctx),)).fetchall()
+        " ORDER BY total_cents - refunded_cents",
+        (_window_start(ctx),),
+    ).fetchall()
     ids = [r[0] for r in rows[:n]]
     assert len(ids) == n
     if max_sum is not None:
@@ -118,15 +170,21 @@ def test_amount_over_remaining_rejected(ctx):
 
 
 def test_per_order_cap(ctx):
-    oid = one(ctx, "status IN ('paid','shipped') AND total_cents > 20000"
-                   " AND substr(created_at,1,10) >= ?", (_window_start(ctx),))
+    oid = one(
+        ctx,
+        "status IN ('paid','shipped') AND total_cents > 20000 AND substr(created_at,1,10) >= ?",
+        (_window_start(ctx),),
+    )
     v = check_plan(plan(refund(oid)), ctx)[0]
     assert not v.ok and "over $200" in v.reason
 
 
 def test_refund_window(ctx):
-    oid = one(ctx, "status = 'shipped' AND substr(created_at,1,10) = ?",
-              ((ctx.today - timedelta(days=31)).isoformat(),))
+    oid = one(
+        ctx,
+        "status = 'shipped' AND substr(created_at,1,10) = ?",
+        ((ctx.today - timedelta(days=31)).isoformat(),),
+    )
     v = check_plan(plan(refund(oid)), ctx)[0]
     assert not v.ok and "30 days" in v.reason
 
@@ -142,32 +200,71 @@ def test_duplicate_refund_in_plan(ctx):
     assert v[0].ok and not v[1].ok
 
 
+def add_refunds(ctx, amounts, when=None):
+    """Real refunds rows, as refund_order._record writes them (#43)."""
+    oid = paid_or_shipped_orders(ctx, 1)[0]
+    ts = (when or ctx.now).isoformat()
+    for i, amt in enumerate(amounts):
+        ctx.db.execute(
+            "INSERT INTO refunds (id, order_id, amount_cents, reason, stripe_refund_id, mode,"
+            " created_at) VALUES (?,?,?,?,?,?,?)",
+            (f"rf_t{i}", oid, amt, "requested_by_customer", f"re_t{i}_{ts}", "mock", ts),
+        )
+
+
 def test_session_hour_refund_rate(ctx):
-    for _ in range(5):
-        log_action(ctx, "execute", {"amount_cents": 100}, tool="refund_order")
+    add_refunds(ctx, [100] * 5)
     oid = paid_or_shipped_orders(ctx, 1)[0]
     v = check_plan(plan(refund(oid)), ctx)[0]
     assert not v.ok and "per hour" in v.reason
 
 
 def test_session_hour_old_rows_ignored(ctx):
-    old = ctx.__class__(ctx.session_id, ctx.db, ctx.now - timedelta(hours=2), ctx.today)
-    for _ in range(5):
-        log_action(old, "execute", {"amount_cents": 100}, tool="refund_order")
+    add_refunds(ctx, [100] * 5, when=ctx.now - timedelta(hours=2))
+    assert check_plan(plan(refund(paid_or_shipped_orders(ctx, 1)[0])), ctx)[0].ok
+
+
+def test_session_hour_seed_refunds_ignored(ctx):
+    n = ctx.db.execute(
+        "SELECT COUNT(*) FROM refunds WHERE stripe_refund_id LIKE 're_seed_%'"
+    ).fetchone()[0]
+    assert n > 0
+    ctx.db.execute("UPDATE refunds SET created_at = ?", (ctx.now.isoformat(),))
     assert check_plan(plan(refund(paid_or_shipped_orders(ctx, 1)[0])), ctx)[0].ok
 
 
 def test_session_hour_refund_cents(ctx):
     oid = DAMAGED_ORDER_ID
     left = policy.REFUND_CENTS_PER_SESSION_HOUR - refundable_cents(ctx, oid)
-    log_action(ctx, "execute", {"amount_cents": left + 1}, tool="refund_order")
+    add_refunds(ctx, [left + 1])
     v = check_plan(plan(refund(oid)), ctx)[0]
     assert not v.ok and "$1,000.00 per hour" in v.reason
 
 
+def test_session_hour_ignores_audit_payload_shape(ctx):
+    """The executor logs {summary, args}; refunds rows are the source of truth."""
+    for _ in range(5):
+        log_action(
+            ctx, "execute", {"summary": "s", "args": {"amount_cents": None}}, tool="refund_order"
+        )
+    assert check_plan(plan(refund(paid_or_shipped_orders(ctx, 1)[0])), ctx)[0].ok
+
+
 def test_email_to_stranger_rejected(ctx):
-    v = check_plan(plan(("send_email", {"order_ids": ["O0001"], "template": "custom",
-                                        "custom_body": "b", "to": "attacker@evil.example"})), ctx)
+    v = check_plan(
+        plan(
+            (
+                "send_email",
+                {
+                    "order_ids": ["O0001"],
+                    "template": "custom",
+                    "custom_body": "b",
+                    "to": "attacker@evil.example",
+                },
+            )
+        ),
+        ctx,
+    )
     assert not v[0].ok
 
 
@@ -191,8 +288,9 @@ def test_email_unknown_order(ctx):
 def test_mark_shipped_needs_paid(ctx):
     shipped = one(ctx, "status = 'shipped'")
     paid = one(ctx, "status = 'paid'")
-    assert not check_plan(plan(("mark_shipped", {"order_ids": [shipped], "carrier": "usps"})),
-                          ctx)[0].ok
+    assert not check_plan(plan(("mark_shipped", {"order_ids": [shipped], "carrier": "usps"})), ctx)[
+        0
+    ].ok
     assert check_plan(plan(("mark_shipped", {"order_ids": [paid], "carrier": "usps"})), ctx)[0].ok
 
 
@@ -200,6 +298,7 @@ def test_restock_qty_bounds(ctx):
     def r(q):
         a = {"product_id": "P01", "qty_source": "user", "qty": q}
         return check_plan(plan(("create_restock_po", a)), ctx)[0].ok
+
     assert not r(0) and not r(501) and r(50) and r(500)
     f = {"product_id": "P01", "qty_source": "forecast", "qty": None}
     assert check_plan(plan(("create_restock_po", f)), ctx)[0].ok
@@ -210,7 +309,17 @@ def test_payment_link_bounds(ctx):
     def r(c):
         a = {"order_id": None, "customer_id": "C0001", "amount_cents": c, "description": "d"}
         return check_plan(plan(("create_payment_link", a)), ctx)[0].ok
+
     assert not r(49) and not r(100_001) and r(50) and r(100_000)
+    base = {"amount_cents": 500, "description": "d"}
+    for ids in (
+        {"order_id": None, "customer_id": None},
+        {"order_id": "O0001", "customer_id": "C0001"},
+    ):
+        v = check_plan(plan(("create_payment_link", {**base, **ids})), ctx)[0]
+        assert not v.ok and "exactly one of order_id or customer_id" in v.reason
+    one_id = {**base, "order_id": "O0001", "customer_id": None}
+    assert check_plan(plan(("create_payment_link", one_id)), ctx)[0].ok
 
 
 def test_too_many_steps(ctx):
@@ -254,8 +363,10 @@ def test_constants():
 
 def test_needs_confirmation():
     def s(d, m):
-        return ToolSpec(name="x", description="", input_schema={}, destructive=d,
-                        moves_money=m, undoable=False)
+        return ToolSpec(
+            name="x", description="", input_schema={}, destructive=d, moves_money=m, undoable=False
+        )
+
     assert needs_confirmation(s(True, False)) and needs_confirmation(s(True, True))
     assert needs_confirmation(s(False, True))
     assert not needs_confirmation(s(False, False))

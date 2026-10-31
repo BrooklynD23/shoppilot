@@ -3,6 +3,7 @@
 Single source of every cap (R18). Called at validate time and again at execute time.
 Never raises on bad args: every problem becomes a Validation reason.
 """
+
 from __future__ import annotations
 
 import json
@@ -29,8 +30,12 @@ RESTOCK_QTY_MIN = 1
 RESTOCK_QTY_MAX = 500
 
 REFUNDABLE_STATUSES = ("paid", "shipped")
-_ID_TABLES = {"order_id": ("orders", "order"), "order_ids": ("orders", "order"),
-              "customer_id": ("customers", "customer"), "product_id": ("products", "product")}
+_ID_TABLES = {
+    "order_id": ("orders", "order"),
+    "order_ids": ("orders", "order"),
+    "customer_id": ("customers", "customer"),
+    "product_id": ("products", "product"),
+}
 
 
 def _usd(cents: int) -> str:
@@ -42,8 +47,9 @@ def needs_confirmation(spec: ToolSpec) -> bool:
 
 
 def refundable_cents(ctx: Ctx, order_id: str) -> int:
-    row = ctx.db.execute("SELECT total_cents - refunded_cents FROM orders WHERE id = ?",
-                         (order_id,)).fetchone()
+    row = ctx.db.execute(
+        "SELECT total_cents - refunded_cents FROM orders WHERE id = ?", (order_id,)
+    ).fetchone()
     return int(row[0]) if row else 0
 
 
@@ -56,8 +62,13 @@ def _missing_ids(args: dict, ctx: Ctx) -> str | None:
         val = args.get(key)
         ids = val if isinstance(val, list) else [] if val is None else [val]
         for i in ids:
-            if not isinstance(i, str) or not ctx.db.execute(
-                    f"SELECT 1 FROM {table} WHERE id = ?", (i,)).fetchone():  # noqa: S608
+            if (
+                not isinstance(i, str)
+                or not ctx.db.execute(
+                    f"SELECT 1 FROM {table} WHERE id = ?",  # noqa: S608  table from _ID_TABLES
+                    (i,),
+                ).fetchone()
+            ):
                 return f"{label} {i} not found in this store"
     return None
 
@@ -70,7 +81,8 @@ def _refund_amount(step: Step, ctx: Ctx) -> int:
 def _check_refund(step: Step, ctx: Ctx) -> str | None:
     oid = step.args["order_id"]
     status, created = ctx.db.execute(
-        "SELECT status, created_at FROM orders WHERE id = ?", (oid,)).fetchone()
+        "SELECT status, created_at FROM orders WHERE id = ?", (oid,)
+    ).fetchone()
     if status not in REFUNDABLE_STATUSES:
         return f"order {oid} is {status}, not refundable"
     if str(created)[:10] < (ctx.today - timedelta(days=REFUND_WINDOW_DAYS)).isoformat():
@@ -115,14 +127,19 @@ def _check_restock(step: Step, ctx: Ctx) -> str | None:
 def _check_payment_link(step: Step, ctx: Ctx) -> str | None:
     amt = step.args.get("amount_cents")
     if not _is_int(amt) or not PAYMENT_LINK_MIN_CENTS <= amt <= PAYMENT_LINK_MAX_CENTS:
-        return (f"payment link must be {_usd(PAYMENT_LINK_MIN_CENTS)} to "
-                f"{_usd(PAYMENT_LINK_MAX_CENTS)}")
+        return (
+            f"payment link must be {_usd(PAYMENT_LINK_MIN_CENTS)} to {_usd(PAYMENT_LINK_MAX_CENTS)}"
+        )
+    if (step.args.get("order_id") is None) == (step.args.get("customer_id") is None):
+        return "give exactly one of order_id or customer_id"
     return None
 
 
 _CHECKERS: dict[str, Callable[[Step, Ctx], str | None]] = {
-    "refund_order": _check_refund, "send_email": _check_email,
-    "mark_shipped": _check_mark_shipped, "create_restock_po": _check_restock,
+    "refund_order": _check_refund,
+    "send_email": _check_email,
+    "mark_shipped": _check_mark_shipped,
+    "create_restock_po": _check_restock,
     "create_payment_link": _check_payment_link,
 }
 
@@ -146,8 +163,8 @@ def _recent_executes(ctx: Ctx) -> list[tuple[str | None, dict]]:
     since = (ctx.now - timedelta(seconds=3600)).strftime("%Y-%m-%dT%H:%M:%SZ")
     out = []
     for tool, body in ctx.db.execute(
-            "SELECT tool, payload_json FROM audit_log WHERE kind = 'execute' AND ts >= ?",
-            (since,)).fetchall():
+        "SELECT tool, payload_json FROM audit_log WHERE kind = 'execute' AND ts >= ?", (since,)
+    ).fetchall():
         try:
             payload = json.loads(body)
         except (TypeError, ValueError):
@@ -158,25 +175,38 @@ def _recent_executes(ctx: Ctx) -> list[tuple[str | None, dict]]:
     return out
 
 
+def _recent_refunds(ctx: Ctx) -> tuple[int, int]:
+    """(cents, count) from the refunds table, the source of truth (#43/#67); seed rows excluded."""
+    since = (ctx.now - timedelta(seconds=3600)).isoformat()  # refund_order writes isoformat()
+    cents, n = ctx.db.execute(
+        "SELECT COALESCE(SUM(amount_cents), 0), COUNT(*) FROM refunds"
+        " WHERE created_at >= ? AND stripe_refund_id NOT LIKE 're_seed_%'",
+        (since,),
+    ).fetchone()
+    return int(cents), int(n)
+
+
 def _session_hour(plan: Plan, ctx: Ctx, reasons: list[str | None]) -> None:
     recent = _recent_executes(ctx)
     destructive = {s.name for s in get_tools() if s.destructive}
     n_destr = sum(1 for t, _ in recent if t in destructive)
-    refunds = [p for t, p in recent if t == "refund_order"]
-    n_ref = len(refunds)
-    cents = sum(p["amount_cents"] for p in refunds if _is_int(p.get("amount_cents")))
+    cents, n_ref = _recent_refunds(ctx)
     for i, s in enumerate(plan.steps):
         if reasons[i] is None and s.tool == "refund_order":
             amt = _refund_amount(s, ctx)
             if n_ref + 1 > REFUNDS_PER_SESSION_HOUR or cents + amt > REFUND_CENTS_PER_SESSION_HOUR:
-                reasons[i] = (f"session limit: at most {REFUNDS_PER_SESSION_HOUR} refunds and "
-                              f"{_usd(REFUND_CENTS_PER_SESSION_HOUR)} per hour")
+                reasons[i] = (
+                    f"session limit: at most {REFUNDS_PER_SESSION_HOUR} refunds and "
+                    f"{_usd(REFUND_CENTS_PER_SESSION_HOUR)} per hour"
+                )
                 continue
             n_ref, cents = n_ref + 1, cents + amt
         if reasons[i] is None and s.tool in destructive:
             if n_destr + 1 > DESTRUCTIVE_STEPS_PER_SESSION_HOUR:
-                reasons[i] = (f"session limit: at most {DESTRUCTIVE_STEPS_PER_SESSION_HOUR} "
-                              "destructive steps per hour")
+                reasons[i] = (
+                    f"session limit: at most {DESTRUCTIVE_STEPS_PER_SESSION_HOUR} "
+                    "destructive steps per hour"
+                )
             else:
                 n_destr += 1
 
@@ -200,14 +230,23 @@ def _plan_caps(plan: Plan, ctx: Ctx, reasons: list[str | None]) -> None:
     if len(plan.steps) > MAX_STEPS_PER_PLAN:
         _override(plan, reasons, None, f"plan has more than {MAX_STEPS_PER_PLAN} steps")
     elif len(refund_idx) > MAX_REFUNDS_PER_PLAN:
-        _override(plan, reasons, "refund_order",
-                  f"bulk refund blocked; refund at most {MAX_REFUNDS_PER_PLAN} orders per plan")
+        _override(
+            plan,
+            reasons,
+            "refund_order",
+            f"bulk refund blocked; refund at most {MAX_REFUNDS_PER_PLAN} orders per plan",
+        )
     elif total > REFUND_CAP_PER_PLAN_CENTS:
-        _override(plan, reasons, "refund_order",
-                  f"refunds total over {_usd(REFUND_CAP_PER_PLAN_CENTS)} in one plan: blocked")
+        _override(
+            plan,
+            reasons,
+            "refund_order",
+            f"refunds total over {_usd(REFUND_CAP_PER_PLAN_CENTS)} in one plan: blocked",
+        )
     if sum(1 for s in plan.steps if s.tool == "send_email") > MAX_EMAILS_PER_PLAN:
-        _override(plan, reasons, "send_email",
-                  f"at most {MAX_EMAILS_PER_PLAN} email steps per plan")
+        _override(
+            plan, reasons, "send_email", f"at most {MAX_EMAILS_PER_PLAN} email steps per plan"
+        )
 
 
 def check_plan(plan: Plan, ctx: Ctx) -> list[Validation]:
@@ -218,5 +257,7 @@ def check_plan(plan: Plan, ctx: Ctx) -> list[Validation]:
         _session_hour(plan, ctx, reasons)
     except Exception:  # noqa: BLE001 - fail closed
         reasons = ["policy check failed"] * len(plan.steps)
-    return [Validation(step_id=s.id, ok=r is None, reason=r)
-            for s, r in zip(plan.steps, reasons, strict=True)]
+    return [
+        Validation(step_id=s.id, ok=r is None, reason=r)
+        for s, r in zip(plan.steps, reasons, strict=True)
+    ]

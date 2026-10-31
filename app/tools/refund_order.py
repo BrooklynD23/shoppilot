@@ -2,6 +2,7 @@
 
 No commit, no log_action (R23). Stripe metadata/keys use session_hash, never the raw id (R20/R21).
 """
+
 from __future__ import annotations
 
 import secrets
@@ -20,17 +21,24 @@ IRREVERSIBLE_REASON = "card refunds cannot be reversed via API"
 
 SPEC = ToolSpec(
     name="refund_order",
-    description=("Refund one order through Stripe test mode. amount_cents null means the full "
-                 "refundable amount. Irreversible."),
-    destructive=True, moves_money=True, undoable=False,
+    description=(
+        "Refund one order through Stripe test mode. amount_cents null means the full "
+        "refundable amount. Irreversible."
+    ),
+    destructive=True,
+    moves_money=True,
+    undoable=False,
     input_schema={
-        "type": "object", "additionalProperties": False,
+        "type": "object",
+        "additionalProperties": False,
         "required": ["order_id", "amount_cents", "reason"],
         "properties": {
             "order_id": {"type": "string"},
             "amount_cents": {"anyOf": [{"type": "integer"}, {"type": "null"}]},
-            "reason": {"type": "string",
-                       "enum": ["duplicate", "fraudulent", "requested_by_customer"]},
+            "reason": {
+                "type": "string",
+                "enum": ["duplicate", "fraudulent", "requested_by_customer"],
+            },
         },
     },
 )
@@ -43,7 +51,9 @@ def _fail(error: str, summary: str) -> ToolResult:
 def _load(ctx: Ctx, oid: str) -> dict | None:
     row = ctx.db.execute(
         "SELECT status, total_cents, refunded_cents, created_at, stripe_payment_intent_id"
-        " FROM orders WHERE id=?", (oid,)).fetchone()
+        " FROM orders WHERE id=?",
+        (oid,),
+    ).fetchone()
     keys = ("status", "total", "refunded", "created_at", "pi")
     return dict(zip(keys, tuple(row), strict=True)) if row else None
 
@@ -59,22 +69,29 @@ def _checks(args: dict, o: dict | None, ctx: Ctx) -> tuple[int, ToolResult | Non
     if o["status"] not in REFUNDABLE_STATUSES:
         return 0, _fail("not_refundable", f"Order {oid} is {o['status']}, not refundable.")
     if str(o["created_at"])[:10] < (ctx.today - timedelta(days=REFUND_WINDOW_DAYS)).isoformat():
-        return 0, _fail("outside_window",
-                        f"Order {oid} is older than {REFUND_WINDOW_DAYS} days: refund manually.")
+        return 0, _fail(
+            "outside_window",
+            f"Order {oid} is older than {REFUND_WINDOW_DAYS} days: refund manually.",
+        )
     amount = remaining if args["amount_cents"] is None else args["amount_cents"]
     if amount <= 0:
         return 0, _fail("bad_amount", "Refund amount must be positive.")
     if amount > remaining:
-        return 0, _fail("amount_exceeds_refundable",
-                        "Refund larger than what is left on the charge.")
+        return 0, _fail(
+            "amount_exceeds_refundable", "Refund larger than what is left on the charge."
+        )
     if amount > REFUND_CAP_PER_ORDER_CENTS:
-        return 0, _fail("over_cap", f"Refunds over ${REFUND_CAP_PER_ORDER_CENTS // 100} "
-                                    "per order are blocked: refund manually in Stripe.")
+        return 0, _fail(
+            "over_cap",
+            f"Refunds over ${REFUND_CAP_PER_ORDER_CENTS // 100} "
+            "per order are blocked: refund manually in Stripe.",
+        )
     cap = get_settings().stripe_max_writes_per_session
     if _writes_used(ctx) + 1 + (o["pi"] is None) > cap:
-        return 0, _fail("stripe_cap_reached",
-                        f"Demo limit: {cap} Stripe actions per session. "
-                        "Reset the store to continue.")
+        return 0, _fail(
+            "stripe_cap_reached",
+            f"Demo limit: {cap} Stripe actions per session. Reset the store to continue.",
+        )
     return amount, None
 
 
@@ -84,14 +101,23 @@ def _record(ctx: Ctx, oid: str, o: dict, amount: int, reason: str, re: dict, mod
         ctx.db.execute(
             "INSERT INTO refunds (id, order_id, amount_cents, reason, stripe_refund_id, mode,"
             " created_at) VALUES (?,?,?,?,?,?,?)",
-            ("rf_" + secrets.token_hex(6), oid, amount, reason, re["id"], mode,
-             ctx.now.isoformat()))
+            (
+                "rf_" + secrets.token_hex(6),
+                oid,
+                amount,
+                reason,
+                re["id"],
+                mode,
+                ctx.now.isoformat(),
+            ),
+        )
     except sqlite3.IntegrityError:
         return False  # statement-level atomic: nothing written
     new_refunded = o["refunded"] + amount
     status = "refunded" if new_refunded >= o["total"] else o["status"]
-    ctx.db.execute("UPDATE orders SET refunded_cents=?, status=? WHERE id=?",
-                   (new_refunded, status, oid))
+    ctx.db.execute(
+        "UPDATE orders SET refunded_cents=?, status=? WHERE id=?", (new_refunded, status, oid)
+    )
     return True
 
 
@@ -107,7 +133,13 @@ def run(args: dict, ctx: Ctx) -> ToolResult:
         pi = o["pi"] or stripe_client.ensure_payment_intent(sh, oid, o["total"])
         re = stripe_client.refund(pi, amount, reason, f"refund:{sh}:{oid}:{n_prior}:{amount}")
     except stripe_client.StripeFailure as e:
+        # ponytail: a PI created before refund() fails is a real Stripe write that _writes_used()
+        # never counts (PI id is not saved on failure, R23), so repeated failures across orders
+        # can exceed STRIPE_MAX_WRITES_PER_SESSION. Upgrade: a session-level attempted-write
+        # counter kept outside the step transaction.
         return _fail(e.code, e.user_message)
+    if re["status"] in ("failed", "canceled"):
+        return _fail("stripe_error", f"Stripe refund {re['id']} {re['status']}: nothing refunded.")
     if o["pi"] is None:
         ctx.db.execute("UPDATE orders SET stripe_payment_intent_id=? WHERE id=?", (pi, oid))
     mode = stripe_client.mode()
@@ -116,10 +148,17 @@ def run(args: dict, ctx: Ctx) -> ToolResult:
     return ToolResult(
         ok=True,
         summary=f"{label} ${amount / 100:.2f} on order {oid} (Stripe {mode.upper()} {re['id']})"
-                + ("" if fresh else " - already recorded"),
-        data={"stripe_refund_id": re["id"], "payment_intent_id": pi, "amount_cents": amount,
-              "mode": mode, "undoable": False, "irreversible_reason": IRREVERSIBLE_REASON,
-              "duplicate": not fresh})
+        + ("" if fresh else " - already recorded"),
+        data={
+            "stripe_refund_id": re["id"],
+            "payment_intent_id": pi,
+            "amount_cents": amount,
+            "mode": mode,
+            "undoable": False,
+            "irreversible_reason": IRREVERSIBLE_REASON,
+            "duplicate": not fresh,
+        },
+    )
 
 
 def preview(args: dict, ctx: Ctx) -> DiffItem:
@@ -129,12 +168,19 @@ def preview(args: dict, ctx: Ctx) -> DiffItem:
     after_refunded = o["refunded"] + amount
     return DiffItem(
         step_id="",
-        before={"order_id": args["order_id"], "refunded_cents": o["refunded"],
-                "status": o["status"]},
-        after={"refunded_cents": after_refunded,
-               "status": "refunded" if o["total"] and after_refunded >= o["total"] else o["status"],
-               "irreversible": True, "stripe_mode": stripe_client.mode()},
-        amount_cents=amount)
+        before={
+            "order_id": args["order_id"],
+            "refunded_cents": o["refunded"],
+            "status": o["status"],
+        },
+        after={
+            "refunded_cents": after_refunded,
+            "status": "refunded" if o["total"] and after_refunded >= o["total"] else o["status"],
+            "irreversible": True,
+            "stripe_mode": stripe_client.mode(),
+        },
+        amount_cents=amount,
+    )
 
 
 register(SPEC, run, preview, None)

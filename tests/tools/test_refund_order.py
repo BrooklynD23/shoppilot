@@ -12,7 +12,7 @@ class FakeStripe:
     """Records calls; refund id is a function of the idempotency key, like Stripe replay."""
 
     def __init__(self):
-        self.calls, self.fail = [], None
+        self.calls, self.fail, self.status = [], None, "succeeded"
 
     def ensure_pi(self, session_hash, order_id, amount_cents):
         self.calls.append(("pi", session_hash, order_id, amount_cents))
@@ -22,8 +22,11 @@ class FakeStripe:
         self.calls.append(("refund", pi, amount_cents, reason, idempotency_key))
         if self.fail:
             raise sc.StripeFailure(self.fail, "Can't reach Stripe right now.")
-        return {"id": "re_test_" + str(abs(hash(idempotency_key)) % 10**8),
-                "status": "succeeded", "amount": amount_cents}
+        return {
+            "id": "re_test_" + str(abs(hash(idempotency_key)) % 10**8),
+            "status": self.status,
+            "amount": amount_cents,
+        }
 
 
 @pytest.fixture
@@ -40,7 +43,8 @@ def make_ctx(conn):
     conn.execute("INSERT INTO customers VALUES ('C0001','Ann','ann@example.com','US','2026-01-01')")
     conn.execute(
         "INSERT INTO orders (id, customer_id, created_at, status, total_cents, ship_country)"
-        " VALUES ('O0001', 'C0001', '2026-10-11T10:00:00', 'shipped', 4200, 'US')")
+        " VALUES ('O0001', 'C0001', '2026-10-11T10:00:00', 'shipped', 4200, 'US')"
+    )
     return Ctx("sid-test", conn, datetime(2026, 10, 15, 9, 0, tzinfo=UTC), date(2026, 10, 15))
 
 
@@ -54,14 +58,20 @@ def args(**kw):
 
 
 def order(ctx):
-    return tuple(ctx.db.execute(
-        "SELECT status, refunded_cents, stripe_payment_intent_id FROM orders WHERE id='O0001'"
-    ).fetchone())
+    return tuple(
+        ctx.db.execute(
+            "SELECT status, refunded_cents, stripe_payment_intent_id FROM orders WHERE id='O0001'"
+        ).fetchone()
+    )
 
 
 def refunds(ctx):
-    return [tuple(r) for r in ctx.db.execute(
-        "SELECT order_id, amount_cents, reason, stripe_refund_id, mode FROM refunds")]
+    return [
+        tuple(r)
+        for r in ctx.db.execute(
+            "SELECT order_id, amount_cents, reason, stripe_refund_id, mode FROM refunds"
+        )
+    ]
 
 
 def test_full_refund(ctx, fake):
@@ -81,8 +91,9 @@ def test_partial_refund_keeps_status(ctx, fake):
     assert r.ok and order(ctx)[:2] == ("shipped", 1000)
 
 
-@pytest.mark.parametrize("amount,code", [(4201, "amount_exceeds_refundable"),
-                                         (0, "bad_amount"), (-5, "bad_amount")])
+@pytest.mark.parametrize(
+    "amount,code", [(4201, "amount_exceeds_refundable"), (0, "bad_amount"), (-5, "bad_amount")]
+)
 def test_bad_amount_no_calls(ctx, fake, amount, code):
     r = ro.run(args(amount_cents=amount), ctx)
     assert not r.ok and r.error == code
@@ -93,6 +104,7 @@ def test_same_state_same_key_and_duplicate_row(mem_conn, fake):
     ctx1 = make_ctx(mem_conn)
     other = sqlite3.connect(":memory:")
     from app.db import init_schema
+
     init_schema(other)
     ctx2 = make_ctx(other)
     r1, r2 = ro.run(args(), ctx1), ro.run(args(), ctx2)
@@ -104,12 +116,16 @@ def test_same_state_same_key_and_duplicate_row(mem_conn, fake):
 
 
 def test_duplicate_refund_row_is_done(ctx, fake, monkeypatch):
-    monkeypatch.setattr(sc, "refund", lambda *a, **k: {"id": "re_dup", "status": "succeeded",
-                                                      "amount": 1000})
-    ctx.db.execute("INSERT INTO orders (id, customer_id, created_at, status, total_cents,"
-                   " ship_country) VALUES ('O0002','C0001','2026-10-11T10:00:00','paid',900,'US')")
+    monkeypatch.setattr(
+        sc, "refund", lambda *a, **k: {"id": "re_dup", "status": "succeeded", "amount": 1000}
+    )
     ctx.db.execute(
-        "INSERT INTO refunds VALUES ('RF1','O0002',900,'x','re_dup','test','2026-10-15')")
+        "INSERT INTO orders (id, customer_id, created_at, status, total_cents,"
+        " ship_country) VALUES ('O0002','C0001','2026-10-11T10:00:00','paid',900,'US')"
+    )
+    ctx.db.execute(
+        "INSERT INTO refunds VALUES ('RF1','O0002',900,'x','re_dup','test','2026-10-15')"
+    )
     r = ro.run(args(amount_cents=1000), ctx)
     assert r.ok and r.data["duplicate"] is True
     assert order(ctx)[:2] == ("shipped", 0)  # nothing new written
@@ -133,9 +149,24 @@ def test_stripe_failure_leaves_db_unchanged(ctx, fake):
     assert refunds(ctx) == [] and order(ctx) == ("shipped", 0, None)
 
 
+@pytest.mark.parametrize("status", ["failed", "canceled"])
+def test_failed_refund_status_not_recorded(ctx, fake, status):
+    fake.status = status
+    r = ro.run(args(), ctx)
+    assert not r.ok and r.error == "stripe_error"
+    assert refunds(ctx) == [] and order(ctx)[:2] == ("shipped", 0)
+
+
+@pytest.mark.parametrize("status", ["pending", "succeeded"])
+def test_pending_or_succeeded_refund_recorded(ctx, fake, status):
+    fake.status = status
+    assert ro.run(args(), ctx).ok and len(refunds(ctx)) == 1
+
+
 def test_session_write_cap(ctx, fake, monkeypatch):
     monkeypatch.setenv("STRIPE_MAX_WRITES_PER_SESSION", "20")
     from app.config import get_settings
+
     get_settings.cache_clear()
     ctx.db.execute("UPDATE orders SET total_cents=100000 WHERE id='O0001'")
     # PI create counts as 1 write; 19 refunds fill the cap of 20.
@@ -146,12 +177,14 @@ def test_session_write_cap(ctx, fake, monkeypatch):
     assert sum(1 for c in fake.calls if c[0] == "refund") == 19
 
 
-@pytest.mark.parametrize("status,code", [("refunded", "already_refunded"),
-                                         ("cancelled", "not_refundable")])
+@pytest.mark.parametrize(
+    "status,code", [("refunded", "already_refunded"), ("cancelled", "not_refundable")]
+)
 def test_status_checks(ctx, fake, status, code):
     refunded = 4200 if status == "refunded" else 0
-    ctx.db.execute("UPDATE orders SET status=?, refunded_cents=? WHERE id='O0001'",
-                   (status, refunded))
+    ctx.db.execute(
+        "UPDATE orders SET status=?, refunded_cents=? WHERE id='O0001'", (status, refunded)
+    )
     r = ro.run(args(), ctx)
     assert not r.ok and r.error == code and fake.calls == []
 

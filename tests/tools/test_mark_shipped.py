@@ -12,17 +12,24 @@ from app.tools.registry import Ctx
 def ctx(mem_conn):
     mem_conn.row_factory = sqlite3.Row  # mirror get_db
     mem_conn.execute(
-        "INSERT INTO customers VALUES ('C0001','Ann','ann@example.com','US','2026-01-01')")
+        "INSERT INTO customers VALUES ('C0001','Ann','ann@example.com','US','2026-01-01')"
+    )
     for oid, status in [("O0001", "paid"), ("O0002", "paid"), ("O0003", "shipped")]:
         mem_conn.execute(
             "INSERT INTO orders (id, customer_id, created_at, status, total_cents, ship_country)"
-            " VALUES (?, 'C0001', '2026-10-14T10:00:00', ?, 1000, 'US')", (oid, status))
+            " VALUES (?, 'C0001', '2026-10-14T10:00:00', ?, 1000, 'US')",
+            (oid, status),
+        )
     return Ctx("sid-test", mem_conn, datetime(2026, 10, 15, 9, 0, tzinfo=UTC), date(2026, 10, 15))
 
 
 def rows(ctx):
-    return [tuple(r) for r in ctx.db.execute(
-        "SELECT id, status, carrier, tracking_number, shipped_at FROM orders ORDER BY id")]
+    return [
+        tuple(r)
+        for r in ctx.db.execute(
+            "SELECT id, status, carrier, tracking_number, shipped_at FROM orders ORDER BY id"
+        )
+    ]
 
 
 def test_paid_order_becomes_shipped(ctx):
@@ -32,8 +39,10 @@ def test_paid_order_becomes_shipped(ctx):
     assert (status, carrier) == ("shipped", "ups")
     assert tracking.startswith("UPS") and len(tracking) == 15
     assert shipped_at
-    assert ms.run({"order_ids": ["O0002"], "carrier": "ups"}, ctx).data["orders"][0][
-        "tracking_number"] != tracking
+    assert (
+        ms.run({"order_ids": ["O0002"], "carrier": "ups"}, ctx).data["orders"][0]["tracking_number"]
+        != tracking
+    )
 
 
 def test_tracking_is_deterministic(ctx):
@@ -92,4 +101,8 @@ def test_preview_no_writes(ctx):
 def test_spec_flags():
     s = ms.SPEC
     assert (s.name, s.destructive, s.moves_money, s.undoable) == (
-        "mark_shipped", False, False, True)
+        "mark_shipped",
+        False,
+        False,
+        True,
+    )

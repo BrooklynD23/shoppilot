@@ -4,6 +4,7 @@ import logging
 import math
 import os
 import secrets
+import sqlite3
 import threading
 import time
 from collections import deque
@@ -107,7 +108,7 @@ def _hit(key: tuple, limit: int, window_s: float = 60.0) -> None:
 
 def client_ip(request: Request) -> str:
     """R45: rightmost X-Forwarded-For entry (appended by Render's edge), else the peer."""
-    xff = request.headers.get("x-forwarded-for", "")
+    xff = ",".join(request.headers.getlist("x-forwarded-for"))  # every header line, not the 1st
     last = xff.rsplit(",", 1)[-1].strip()
     return last or (request.client.host if request.client else "unknown")
 
@@ -120,6 +121,11 @@ def rate_limit(bucket: str, per_minute: int):
 
 
 # ---------- sessions ----------
+# ponytail: one global lock serializes store create/reseed (fine at --workers 1);
+# per-sid locks if create throughput ever matters
+_store_lock = threading.Lock()
+
+
 def _valid_sid(request: Request) -> str | None:
     sid = request.cookies.get(COOKIE, "")
     return sid if SESSION_ID_RE.fullmatch(sid) else None
@@ -129,14 +135,16 @@ def current_session(request: Request) -> str:
     sid = _valid_sid(request)
     if sid is None:  # regex first: a bad cookie never touches disk
         raise ApiError(401, "no_session", "No session. POST /api/session first.")
-    if store_exists(sid):
+    request.state.store_reset = False
+    if not store_exists(sid):
+        with _store_lock:  # re-check: parallel requests after a restart reseed once
+            if not store_exists(sid):  # restart wiped disk: reseed; one session-bucket hit
+                _hit(("session", client_ip(request)), SESSION_LIMIT)
+                sweep_sessions()
+                create_store(sid, datetime.now(UTC).date())
+                request.state.store_reset = True
+    if not request.state.store_reset:
         touch_store(sid)
-        request.state.store_reset = False
-    else:  # restart wiped disk: reseed; counts against the session bucket (disk flood)
-        _hit(("session", client_ip(request)), SESSION_LIMIT)
-        sweep_sessions()
-        create_store(sid, datetime.now(UTC).date())
-        request.state.store_reset = True
     return sid
 
 
@@ -212,6 +220,13 @@ async def _undo_error(_r: Request, e: UndoError):
     return _envelope(UNDO_STATUS.get(e.code, 409), e.code, e.message)
 
 
+@app.exception_handler(sqlite3.OperationalError)
+async def _db_error(_r: Request, e: sqlite3.OperationalError):
+    if "locked" not in str(e):
+        raise e  # guard middleware logs it and returns the 500 envelope
+    return _envelope(503, "busy", "Store is busy. Try again shortly.", 2)  # R1: retry replays
+
+
 @app.get("/healthz")
 def healthz() -> dict:
     return {"ok": True, "version": os.environ.get("RENDER_GIT_COMMIT", "dev")[:7]}
@@ -225,12 +240,14 @@ class SessionRequest(BaseModel):
 def post_session(request: Request, response: Response, body: SessionRequest | None = None):
     s = get_settings()
     sid = _valid_sid(request)
-    created = sid is None or body is not None and body.reset or not store_exists(sid)
-    if created:
-        sid = sid or secrets.token_urlsafe(32)
-        sweep_sessions()
-        create_store(sid, datetime.now(UTC).date())
-    else:
+    with _store_lock:  # sweep + create serialized so MAX_SESSIONS holds
+        store_reset = sid is not None and not store_exists(sid)  # R48: valid cookie, file gone
+        created = sid is None or body is not None and body.reset or store_reset
+        if created:
+            sid = sid or secrets.token_urlsafe(32)
+            sweep_sessions()
+            create_store(sid, datetime.now(UTC).date())
+    if not created:
         touch_store(sid)
     with _open_ctx(sid) as ctx:
         if created:
@@ -245,7 +262,7 @@ def post_session(request: Request, response: Response, body: SessionRequest | No
         secure=s.app_env == "prod",
         path="/",
     )
-    return {"created": created, "anchor": anchor, **_modes()}
+    return {"created": created, "store_reset": store_reset, "anchor": anchor, **_modes()}
 
 
 _ORDER_COLS = (
@@ -381,6 +398,11 @@ def get_export(kind: str, ctx: SessionCtx):
         media_type=media_type,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@api.api_route("/{_rest:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+def api_not_found(_rest: str):
+    raise ApiError(404, "not_found", "Unknown API route.")  # never fall through to static HTML
 
 
 web.install(app)  # R10: added after guard, so it runs outermost

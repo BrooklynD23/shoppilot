@@ -82,6 +82,10 @@ def spend_today(session_id: str | None = None) -> float:
         return float(conn.execute(sql, args).fetchone()[0])
 
 
+# ponytail: check-then-act. Up to MAX_CONCURRENT slot holders can each pass the check
+# before any records spend, so a cap can overshoot by ~4 x worst_case (~$0.40), per spec 02
+# §6.2; Console caps (R47) are the hard backstop. Upgrade: reserve worst_case atomically
+# inside BEGIN IMMEDIATE, then settle to the real cost after the call.
 def ensure_budget(session_id: str, worst_case: float) -> None:
     s = get_settings()
     if spend_today(session_id) + worst_case > s.llm_session_budget_usd:

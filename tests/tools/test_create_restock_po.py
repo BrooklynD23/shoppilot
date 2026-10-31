@@ -24,7 +24,11 @@ def _status(ctx, po_id) -> str:
 def test_spec_flags_and_schema():
     s = po.SPEC
     assert (s.name, s.destructive, s.moves_money, s.undoable) == (
-        "create_restock_po", True, False, True)
+        "create_restock_po",
+        True,
+        False,
+        True,
+    )
     assert set(s.input_schema["required"]) == {"product_id", "qty_source", "qty"}
     _check_strict(s.input_schema)
 
@@ -34,8 +38,10 @@ def test_forecast_qty_matches_forecast(ctx):
     r = po.run(FC, ctx)
     assert r.ok, r.error
     assert r.data["qty"] == want > 0
-    row = ctx.db.execute("SELECT product_id, qty, status, unit_cost_cents FROM purchase_orders"
-                         " WHERE id=?", (r.data["po_id"],)).fetchone()
+    row = ctx.db.execute(
+        "SELECT product_id, qty, status, unit_cost_cents FROM purchase_orders WHERE id=?",
+        (r.data["po_id"],),
+    ).fetchone()
     assert row[:3] == (HERO_PRODUCT_ID, want, "open") and row[3] > 0
     assert json.loads(r.undo_token) == {"po_id": r.data["po_id"], "status": "open"}
 
@@ -68,8 +74,9 @@ def test_preview_shape(ctx):
     assert d.before["on_hand"] == f["on_hand"] and "days_to_stockout" in d.before
     qty, cost = d.after["qty"], d.after["unit_cost_cents"]
     assert qty == f["reorder_qty"] and d.amount_cents == qty * cost
-    lead = ctx.db.execute("SELECT lead_time_days FROM products WHERE id=?",
-                          (HERO_PRODUCT_ID,)).fetchone()[0]
+    lead = ctx.db.execute(
+        "SELECT lead_time_days FROM products WHERE id=?", (HERO_PRODUCT_ID,)
+    ).fetchone()[0]
     assert d.after["arrives_on"] == (ctx.today + timedelta(days=lead)).isoformat()
     assert d.after["po"] == "new" and d.after["status"] == "open" and d.step_id == ""
 
@@ -135,6 +142,19 @@ def test_tool_does_not_log_or_commit(ctx, monkeypatch):
 
 def test_expected_at_is_lead_time(ctx):
     r = po.run(FC, ctx)
-    exp = ctx.db.execute("SELECT expected_at FROM purchase_orders WHERE id=?",
-                         (r.data["po_id"],)).fetchone()[0]
+    exp = ctx.db.execute(
+        "SELECT expected_at FROM purchase_orders WHERE id=?", (r.data["po_id"],)
+    ).fetchone()[0]
     assert date.fromisoformat(exp[:10]) > ctx.today
+
+
+def test_forecast_over_cap_rejected_not_clamped(ctx, monkeypatch):
+    real = po.forecast.forecast_demand
+
+    def big(pid, c, *a, **k):
+        return {**real(pid, c, *a, **k), "reorder_qty": 600}
+
+    monkeypatch.setattr(po.forecast, "forecast_demand", big)
+    r = po.run(FC, ctx)
+    assert r.ok is False and "600" in r.error and "quantity" in r.error and _count(ctx) == 0
+    assert "600" in po.preview(FC, ctx).after["error"]

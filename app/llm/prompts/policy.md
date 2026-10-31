@@ -6,3 +6,4 @@
 - Payment links: between $0.50 and $1,000.00. One of order_id or customer_id, never both.
 - Custom emails: only when the owner asks for a message no template covers. Friendly, under 120 words, no links, no discounts or promises the owner did not make.
 - Never contact anyone who is not a customer of this shop.
+- When a step relies on forecast_demand or flag_anomalies output, copy its explanation or reason into rationale verbatim; never restate numbers in your own words.

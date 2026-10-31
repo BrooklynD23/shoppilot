@@ -2,6 +2,7 @@
 
 SELECT-only reads through ctx.db, never the LLM. Caps live in app.safety.policy (R18).
 """
+
 from __future__ import annotations
 
 import logging
@@ -36,24 +37,26 @@ def _blocked(ev: str, pc: PlanContext) -> bool:
 
 def _order(ctx: Ctx, oid: str) -> tuple | None:
     return ctx.db.execute(
-        "SELECT status, customer_id, refunded_cents, total_cents FROM orders WHERE id = ?",
-        (oid,)).fetchone()
+        "SELECT status, customer_id, refunded_cents, total_cents FROM orders WHERE id = ?", (oid,)
+    ).fetchone()
 
 
 def _email_customer(ctx: Ctx, pc: PlanContext, eid: str) -> str | None:
     if eid in pc.email_customers:
         return pc.email_customers[eid]
-    row = ctx.db.execute(
-        "SELECT COALESCE(o.customer_id, c.id) FROM inbox i "
-        "LEFT JOIN orders o ON o.id = i.order_id "
+    row = ctx.db.execute(  # the sender's customer only, never the linked order's (#66)
+        "SELECT c.id FROM inbox i "
         "LEFT JOIN customers c ON lower(c.email) = lower(i.from_addr) WHERE i.id = ?",
-        (eid,)).fetchone()
+        (eid,),
+    ).fetchone()
     return row[0] if row else None
 
 
 def _exists_in_db(ctx: Ctx, ident: str) -> bool:
-    return any(ctx.db.execute(f"SELECT 1 FROM {t} WHERE id = ?", (ident,)).fetchone()  # noqa: S608
-               for t in ("orders", "inbox", "products", "customers"))
+    return any(
+        ctx.db.execute(f"SELECT 1 FROM {t} WHERE id = ?", (ident,)).fetchone()  # noqa: S608
+        for t in ("orders", "inbox", "products", "customers")
+    )
 
 
 def _step_order_ids(step: Step) -> list[str]:
@@ -76,7 +79,9 @@ def _check_evidence(step: Step, ctx: Ctx, pc: PlanContext) -> str | None:
             owners = {r[1] for o in _step_order_ids(step) if (r := _order(ctx, o))}
             if step.args.get("customer_id"):
                 owners.add(step.args["customer_id"])
-            if owners and owners != {cust}:
+            if not owners:  # R50 covers every write tool (#77)
+                return "email evidence needs an order or customer; cite owner_request"
+            if owners != {cust}:
                 return "evidence does not match order"
     return None
 
@@ -100,17 +105,26 @@ def _check_mark_shipped(step: Step, prior: list[Step], ctx: Ctx, pc: PlanContext
     return None
 
 
-def _email_order_ok(template: str, oid: str, row: tuple, prior: list[Step],
-                    ctx: Ctx) -> str | None:
-    if template == "tracking" and row[0] != "shipped" \
-            and not _prior_has(prior, "mark_shipped", oid):
+def _email_order_ok(template: str, oid: str, row: tuple, prior: list[Step], ctx: Ctx) -> str | None:
+    if (
+        template == "tracking"
+        and row[0] != "shipped"
+        and not _prior_has(prior, "mark_shipped", oid)
+    ):
         return f"tracking email before {oid} is shipped"
-    if template == "refund_confirmation" and row[2] <= 0 \
-            and not _prior_has(prior, "refund_order", oid):
+    if (
+        template == "refund_confirmation"
+        and row[2] <= 0
+        and not _prior_has(prior, "refund_order", oid)
+    ):
         return f"refund confirmation before {oid} is refunded"
-    if template == "payment_request" and not _prior_has(prior, "create_payment_link", oid) \
-            and not ctx.db.execute("SELECT 1 FROM payment_links WHERE order_id = ? AND active = 1",
-                                   (oid,)).fetchone():
+    if (
+        template == "payment_request"
+        and not _prior_has(prior, "create_payment_link", oid)
+        and not ctx.db.execute(
+            "SELECT 1 FROM payment_links WHERE order_id = ? AND active = 1", (oid,)
+        ).fetchone()
+    ):
         return f"payment request before a payment link exists for {oid}"
     return None
 
@@ -137,8 +151,7 @@ def _refund_evidence_ok(step: Step, cust: str, ctx: Ctx, pc: PlanContext) -> boo
     for ev in step.evidence:
         if ev == OWNER and re.search(rf"\b{re.escape(oid)}\b", pc.request, re.IGNORECASE):
             return True
-        if _EMAIL_ID.match(ev) and not _blocked(ev, pc) \
-                and _email_customer(ctx, pc, ev) == cust:
+        if _EMAIL_ID.match(ev) and not _blocked(ev, pc) and _email_customer(ctx, pc, ev) == cust:
             return True
     return False
 
@@ -172,8 +185,10 @@ def _check_restock(step: Step, prior: list[Step], ctx: Ctx, pc: PlanContext) -> 
 
 
 _CHECKS: dict[str, Callable[[Step, list[Step], Ctx, PlanContext], str | None]] = {
-    "mark_shipped": _check_mark_shipped, "send_email": _check_send_email,
-    "refund_order": _check_refund_order, "create_payment_link": _check_payment_link,
+    "mark_shipped": _check_mark_shipped,
+    "send_email": _check_send_email,
+    "refund_order": _check_refund_order,
+    "create_payment_link": _check_payment_link,
     "create_restock_po": _check_restock,
 }
 
@@ -215,10 +230,14 @@ def validate_step(step: Step, prior: list[Step], ctx: Ctx, pc: PlanContext) -> V
 
 def _plan_context(plan: Plan, ctx: Ctx) -> PlanContext:
     blocked = {str(b.get("source_id")) for b in plan.blocked_inputs if not b.get("allowed")}
-    blocked |= {r[0] for r in ctx.db.execute(
-        "SELECT source_id FROM guard_verdicts WHERE allowed = 0").fetchall()}
+    allowed = {
+        r[0]
+        for r in ctx.db.execute("SELECT source_id FROM guard_verdicts WHERE allowed = 1").fetchall()
+    }
     pc = PlanContext(request=plan.request, seen_ids=None, blocked_ids=blocked)
     for (eid,) in ctx.db.execute("SELECT id FROM inbox").fetchall():
+        if f"email:{eid}" not in allowed:  # unscreened or blocked: fail closed (#56)
+            blocked.add(f"email:{eid}")
         cust = _email_customer(ctx, pc, eid)
         if cust:
             pc.email_customers[eid] = cust
@@ -228,14 +247,14 @@ def _plan_context(plan: Plan, ctx: Ctx) -> PlanContext:
 def validate_plan(plan: Plan, ctx: Ctx) -> list[Validation]:
     """One Validation per step, plan order; plan-level policy caps fill the remaining slots."""
     pc = _plan_context(plan, ctx)
+    caps = policy.check_plan(plan, ctx)  # first, so a capped step unlocks nothing (#55)
     out: list[Validation] = []
     accepted: list[Step] = []  # rejected steps never run, so they satisfy no dependency
-    for s in plan.steps:
+    for s, pv in zip(plan.steps, caps, strict=True):
         v = validate_step(s, accepted, ctx, pc)
+        if v.ok and not pv.ok:
+            v = pv
         out.append(v)
         if v.ok:
             accepted.append(s)
-    for i, pv in enumerate(policy.check_plan(plan, ctx)):
-        if out[i].ok and not pv.ok:
-            out[i] = pv
     return out

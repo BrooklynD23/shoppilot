@@ -1,4 +1,5 @@
 import socket
+import sqlite3
 
 import pytest
 
@@ -109,3 +110,27 @@ def test_500_hides_details(session_client, monkeypatch):
     assert r.status_code == 500
     assert r.json()["error"]["code"] == "internal"
     assert "secret-traceback-text" not in r.text and "Traceback" not in r.text
+
+
+def _raise_store(monkeypatch, exc):
+    import app.main as main
+
+    def boom(*_a, **_k):
+        raise exc
+
+    monkeypatch.setattr(main, "store_snapshot", boom)
+
+
+def test_db_locked_is_503_busy(session_client, monkeypatch):
+    # #69: a writer holding BEGIN IMMEDIATE during a slow Stripe call -> retryable, not 500
+    _raise_store(monkeypatch, sqlite3.OperationalError("database is locked"))
+    r = session_client.get("/api/store")
+    assert r.status_code == 503
+    assert r.json()["error"]["code"] == "busy" and r.json()["error"]["retry_after_s"] == 2
+
+
+def test_other_operational_error_is_500(session_client, monkeypatch):
+    _raise_store(monkeypatch, sqlite3.OperationalError("no such table: secret_tbl"))
+    r = session_client.get("/api/store")
+    assert r.status_code == 500 and r.json()["error"]["code"] == "internal"
+    assert "secret_tbl" not in r.text
