@@ -61,7 +61,7 @@ for (const [name, url] of jobs) {
   await loaded; await sleep(1500);
   const r = await send('Runtime.evaluate', { expression: probe, returnByValue: true }, sessionId);
   const v = JSON.parse(r.result.result.value);
-  console.log(`${name}: copy=${v.copy} (budget 220) total_incl_ui_pricing_faq=${v.total} h1=${v.h1} (<=8) sub=${v.sub ?? 'no [data-hero-sub]'} (<=16) ${v.copy <= 220 ? 'OK' : 'OVER'}`);
+  console.log(`${name}: copy=${v.copy} (budget 180) total_incl_ui_pricing_faq=${v.total} h1=${v.h1} (<=8) sub=${v.sub ?? 'no [data-hero-sub]'} (<=16) ${v.copy <= 180 ? 'OK' : 'OVER'}`);
   await send('Target.closeTarget', { targetId });
 }
 ws.close(); chrome.kill();

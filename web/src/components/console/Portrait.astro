@@ -1,0 +1,91 @@
+---
+// Static 2D portrait of one teammate: the fallback when WebGL is missing or motion is reduced,
+// and the placeholder until the 3D stage loads. Same silhouettes as src/scripts/console/stage3d.ts.
+// Fills come from CSS (page-console.css .pt-*), so every colour is a token.
+import type { AgentId } from '../../scripts/console/agents';
+interface Props { id: AgentId }
+const { id } = Astro.props;
+---
+<svg class="portrait" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+  {id === 'guard' && <>
+    <ellipse class="pt-floor" cx="32" cy="58" rx="21" ry="3" />
+    <rect class="pt-mat" x="10" y="50" width="44" height="7.5" rx="3.5" />
+    <rect class="pt-shade" x="10" y="54" width="44" height="3.5" rx="1.75" />
+    <path class="pt-mat" d="M13 50.5C13 37.5 21.5 29 32 29s19 8.5 19 21.5z" />
+    <path class="pt-shade" d="M40.2 31.3c6.2 3.1 10.8 10 10.8 19.2h-7.6c0-8.6-1-14.8-3.2-19.2z" />
+    <path class="pt-hi" d="M19.3 42.4c1.2-4.6 4.3-8.2 8.4-9.9.9-.4 1.6.7.9 1.3-3.4 2.6-5.6 5.5-7.2 9.2-.5 1.1-2.4.7-2.1-.6z" />
+    <rect class="pt-mat" x="30.6" y="22" width="2.8" height="8" rx="1.4" />
+    <circle class="pt-mat" cx="32" cy="20.5" r="3.8" />
+    <circle class="pt-hi" cx="30.8" cy="19.4" r="1.1" />
+    <circle class="pt-eye" cx="27.6" cy="42" r="1.9" /><circle class="pt-eye" cx="36.4" cy="42" r="1.9" />
+    <circle class="pt-cl" cx="28.2" cy="41.3" r=".6" /><circle class="pt-cl" cx="37" cy="41.3" r=".6" />
+  </>}
+  {id === 'router' && <>
+    <ellipse class="pt-floor" cx="32" cy="58" rx="18" ry="3" />
+    <rect class="pt-ink-mat" x="31" y="18" width="2" height="16" rx="1" />
+    <path class="pt-ink-mat" d="M21.5 11.5h16.2l5.3 5-5.3 5H21.5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2z" />
+    <ellipse class="pt-mat" cx="32" cy="45.5" rx="17.5" ry="12.5" />
+    <path class="pt-shade" d="M40.75 34.67A17.5 12.5 0 0 1 35.04 57.81Q52 46 40.75 34.67z" />
+    <path class="pt-hi" d="M20.6 41.6c1.6-3 4.6-5.2 8.3-6 1-.2 1.4 1.1.5 1.5-3 1.3-5.2 3.1-6.6 5.4-.6 1-2.7.2-2.2-.9z" />
+    <circle class="pt-eye" cx="27.6" cy="46" r="1.9" /><circle class="pt-eye" cx="36.4" cy="46" r="1.9" />
+    <circle class="pt-cl" cx="28.2" cy="45.3" r=".6" /><circle class="pt-cl" cx="37" cy="45.3" r=".6" />
+  </>}
+  {id === 'planner' && <>
+    <ellipse class="pt-floor" cx="32" cy="58" rx="17" ry="3" />
+    <g transform="rotate(24 45 20)">
+      <rect class="pt-pencil" x="43.2" y="4" width="3.6" height="18" rx="1" />
+      <path class="pt-ink-mat" d="M43.2 4.2 45 0l1.8 4.2z" />
+    </g>
+    <rect class="pt-mat" x="17" y="14" width="30" height="44" rx="7" />
+    <path class="pt-shade" d="M41 14a6 6 0 0 1 6 6v32a6 6 0 0 1-6 6z" />
+    <rect class="pt-ink-mat" x="38" y="14" width="2.6" height="44" />
+    <rect class="pt-hi" x="20.5" y="17.5" width="9" height="1.6" rx=".8" />
+    <circle class="pt-eye" cx="25.2" cy="30" r="1.9" /><circle class="pt-eye" cx="33" cy="30" r="1.9" />
+    <circle class="pt-cl" cx="25.8" cy="29.3" r=".6" /><circle class="pt-cl" cx="33.6" cy="29.3" r=".6" />
+  </>}
+  {id === 'forecaster' && <>
+    <ellipse class="pt-floor" cx="32" cy="58" rx="15" ry="3" />
+    <rect class="pt-ink-mat" x="21" y="50.5" width="22" height="7" rx="3" />
+    <path class="pt-ink-mat" d="M28 45.5h8l1.6 5.5H26.4z" />
+    <circle class="pt-mat" cx="32" cy="30.5" r="16" />
+    <path class="pt-shade" d="M41.4 17.6A16 16 0 0 1 32 46.5a16 16 0 0 1-9.4-3A16 16 0 0 0 41.4 17.6z" />
+    <ellipse class="pt-ring" cx="32" cy="36.5" rx="21" ry="5" transform="rotate(-14 32 36.5)" />
+    <ellipse class="pt-glint" cx="25.5" cy="22" rx="4.6" ry="2.4" transform="rotate(-38 25.5 22)" />
+    <circle class="pt-eye" cx="27.8" cy="28" r="1.9" /><circle class="pt-eye" cx="36.2" cy="28" r="1.9" />
+    <circle class="pt-cl" cx="28.4" cy="27.3" r=".6" /><circle class="pt-cl" cx="36.8" cy="27.3" r=".6" />
+  </>}
+  {id === 'validator' && <>
+    <ellipse class="pt-floor" cx="32" cy="58" rx="19" ry="3" />
+    <rect class="pt-mat" x="16" y="53.5" width="32" height="4.5" rx="1.5" />
+    <rect class="pt-shade" x="16" y="53.5" width="32" height="4.5" rx="1.5" />
+    <rect class="pt-mat" x="14" y="45" width="36" height="10" rx="3" />
+    <rect class="pt-shade" x="14" y="50.5" width="36" height="4.5" rx="2.25" />
+    <path class="pt-mat" d="M27.6 35.5h8.8l1.6 10H26z" />
+    <circle class="pt-mat" cx="32" cy="25.5" r="12" />
+    <path class="pt-shade" d="M38.6 15.5a12 12 0 0 1-12.9 20.4A12 12 0 0 0 38.6 15.5z" />
+    <circle class="pt-hi" cx="27" cy="20" r="2.4" />
+    <circle class="pt-eye pt-eye--light" cx="28.3" cy="26.5" r="1.9" /><circle class="pt-eye pt-eye--light" cx="35.7" cy="26.5" r="1.9" />
+  </>}
+  {id === 'judge' && <>
+    <ellipse class="pt-floor" cx="32" cy="58" rx="16" ry="3" />
+    <path class="pt-mat" d="M32 7c9.6 0 16.5 17.5 16.5 31.5C48.5 50 41 58 32 58s-16.5-8-16.5-19.5C15.5 24.5 22.4 7 32 7z" />
+    <path class="pt-shade" d="M38 9.8c6 5 10.5 17.3 10.5 28.7C48.5 50 41 58 32 58c-2 0-3.9-.4-5.6-1.1 10.2-.8 16.6-9 16.6-20.4 0-10.8-2.2-20.6-5-26.7z" />
+    <path class="pt-hi" d="M22.4 25c1-5.4 3.4-10.3 6.6-12.9.8-.6 1.8.3 1.3 1.1-2.4 3.6-4 7.6-5 12.2-.3 1.3-3.1 1-2.9-.4z" />
+    <circle class="pt-eye" cx="27.2" cy="33" r="1.8" /><circle class="pt-eye" cx="36.8" cy="33" r="1.8" />
+    <circle class="pt-cl" cx="27.8" cy="32.3" r=".55" /><circle class="pt-cl" cx="37.4" cy="32.3" r=".55" />
+    <circle class="pt-specs" cx="27.2" cy="33" r="4.4" /><circle class="pt-specs" cx="36.8" cy="33" r="4.4" />
+    <path class="pt-specs" d="M31.6 32.6q.4-.7.8 0" />
+  </>}
+  {id === 'executor' && <>
+    <ellipse class="pt-floor" cx="32" cy="58" rx="23" ry="3" />
+    <rect class="pt-paper" x="38.5" y="10" width="9" height="16" rx="1" />
+    <path class="pt-receipt" d="M40.5 14h5M40.5 17h5M40.5 20h3" />
+    <rect class="pt-mat" x="9" y="25" width="46" height="33" rx="7" />
+    <path class="pt-shade" d="M9 50h46v1a7 7 0 0 1-7 7H16a7 7 0 0 1-7-7z" />
+    <rect class="pt-shade" x="15" y="40.5" width="34" height="11" rx="3" />
+    <circle class="pt-tin" cx="32" cy="46" r="1.8" />
+    <rect class="pt-ink-mat" x="36.5" y="23.8" width="13" height="2.6" rx="1.3" />
+    <rect class="pt-hi" x="13" y="28.5" width="10" height="1.6" rx=".8" />
+    <circle class="pt-eye pt-eye--light" cx="27.6" cy="34.5" r="1.9" /><circle class="pt-eye pt-eye--light" cx="36.4" cy="34.5" r="1.9" />
+  </>}
+</svg>

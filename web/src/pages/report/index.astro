@@ -91,7 +91,7 @@ const injectionIds = evalCases.filter((c) => c.injection).map((c) => c.id).join(
 
       <section class="rp-sec" id="eval" aria-labelledby="h-eval">
         <h2 id="h-eval">Agent eval</h2>
-        <p>{evalSet.total} requests, each with an expected plan. The bar to pass is {evalSet.gate} of {evalSet.total}, and the four injection cases ({injectionIds}) must all pass. The case list is written; the runner, <code>tests/eval/cases.json</code> and the recorded model responses are not, so no case has a result yet.</p>
+        <p>{evalSet.total} requests, each with an expected plan. The bar to pass is {evalSet.gate} of {evalSet.total}, and the four injection cases ({injectionIds}) must all pass. The runner and <code>tests/eval/cases.json</code> are written; the recorded model responses are not, so every case skips and none has a result yet.</p>
         <figure class="rp-fig">
           <Bars id="evalbar" title="Agent eval pass rate" desc={`Pass rate not measured yet (pending W3). The pass gate is ${evalSet.gate} of ${evalSet.total} cases.`}
             rows={[{ label: `Cases passed, of ${evalSet.total}`, value: evalSet.passed, display: evalSet.passed === null ? 'pending W3' : `${evalSet.passed} of ${evalSet.total}` }]}
@@ -139,7 +139,7 @@ const injectionIds = evalCases.filter((c) => c.injection).map((c) => c.id).join(
 
       <section class="rp-sec" id="ml" aria-labelledby="h-ml">
         <h2 id="h-ml">Forecast and anomaly backtest</h2>
-        <p>Stdlib only: simple exponential smoothing with a weekday index, Croston-SBA for slow sellers, and a robust z-score for odd orders. These are <Tag kind="prototype" /> numbers from the spec. There is no evaluate script in <code>app/ml/</code> yet, so nothing has run on the real seed.</p>
+        <p>Stdlib only: simple exponential smoothing with a weekday index, Croston-SBA for slow sellers, and a robust z-score for odd orders. These are <Tag kind="prototype" /> numbers from the spec. <code>app/ml/evaluate.py</code> exists now; its run on the real seed is not in this report yet.</p>
         <figure class="rp-fig">
           <Bars id="maebar" title="Daily forecast error by method (lower is better)" desc="Mean absolute error in units per day: model 1.55, seasonal-naive 1.77, 28-day mean 1.56. Prototype, synthetic data."
             rows={mlMae.map((m, i) => ({ label: m.label, value: m.value, display: m.value.toFixed(2), strong: i === 0 }))} max={2} />
@@ -179,10 +179,10 @@ const injectionIds = evalCases.filter((c) => c.injection).map((c) => c.id).join(
         <dl class="rp-dl">
           <div><dt>Passed</dt><dd class="num">{tests.passed}</dd></div>
           <div><dt>Failed</dt><dd class="num">{tests.failed}</dd></div>
-          <div><dt>Not run</dt><dd class="num">{tests.deselected} live tests (need real API keys)</dd></div>
+          <div><dt>Not run</dt><dd class="num">{tests.deselected} live tests (need real API keys), {tests.skipped} eval tests skipped (no recordings yet)</dd></div>
           <div><dt>Run</dt><dd>{tests.date}, {tests.time}</dd></div>
         </dl>
-        <p>The {tests.failed} failures came from a run while backend files were still being edited. The suite gets one more run before submission.</p>
+        <p>{tests.note}</p>
         <p class="rp-source">Source: <code>{tests.command}</code> from the repo root, {tests.date} {tests.time}.</p>
       </section>
 

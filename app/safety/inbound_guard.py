@@ -217,7 +217,8 @@ def _verdict(text: str, source_id: str) -> GuardVerdict | None:
         if e.kind != "replay_miss":
             log.warning("guard LLM call failed: %s", e.kind)
             return None
-        # Replay only: regex already passed it; not stored, so re-screened once recorded.
+        # Replay only: regex already passed it. Stored like any verdict so the validator agrees
+        # with the inbox; new stores are screened fresh once recordings exist.
         return GuardVerdict(
             source_id=source_id,
             allowed=True,
@@ -261,7 +262,7 @@ def screen_inbox(ctx) -> list[dict]:
     # Pass 2: INSERT OR IGNORE; a concurrent first load may have stored a verdict already (#53).
     for eid, v in verdicts.items():
         sid = f"email:{eid}"
-        if sid in stored or v.label in ("guard_error", "heuristic_only"):
+        if sid in stored or v.label == "guard_error":
             continue
         cur = ctx.db.execute(
             "INSERT OR IGNORE INTO guard_verdicts (source_id, allowed, label, reason, score,"

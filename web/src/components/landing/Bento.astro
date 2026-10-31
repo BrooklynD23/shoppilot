@@ -1,87 +1,38 @@
 ---
-// 6 bento tiles, each a real UI fragment with its short title. Approve + Audit are the large tiles.
-// The approve checkbox works with zero JS: :has(input:checked) swaps the money-out figure.
-import { plan, inbox, money } from '../../data/demo';
-import { anomalies } from '../../data/v2';
-import { bento } from '../../data/v3';
-import Icon from './Icon.astro';
-import Receipt from './Receipt.astro';
+// Product tiles: a title, a hairline, one real fragment. One surface per tile (no card in a card).
+// Only what no other section shows: the Forecaster's two outputs, the stock forecast and the odd-order flags.
+// The plan, its checks and the receipts live in the hero, the team and the morning run.
+// Every result carries its source and its caveat, at body size. Amber only where money moves.
+import { flags } from '../../data/run';
+import { product } from '../../data/landing';
 import ForecastChart from './ForecastChart.astro';
 
-const t = Object.fromEntries(bento.tiles.map((x) => [x.key, x.title]));
-const refund = plan.steps.find((s) => s.movesMoney)!;
-const order = refund.title.replace(/^Refund /, '');
-const diffs = plan.steps.filter((s) => ['mark_shipped', 'send_email', 'create_restock_po'].includes(s.tool));
-const blocked = inbox[0];
+const t = product.tiles;
+const { forecastStat: fs, flagStat: gs } = product;
 ---
 <ul class="bento">
-  <li class="tile tile--approve">
-    <h3>{t.approve}</h3>
-    <div class="inset bt-approve" data-ui>
-      <div class="bt-step">
-        <span class="step-n num" aria-hidden="true">{refund.n}</span>
-        <p class="step-title">{refund.title}</p>
-        <p class="step-money num">{money(refund.amountCents ?? 0)}</p>
-      </div>
-      <label class="check bt-check">
-        <input type="checkbox" />
-        <span>Approve refund of {money(refund.amountCents ?? 0)} on {order}. Card refunds cannot be undone.</span>
-      </label>
-      <div class="bt-out">
-        <span class="out-label">Money out if you run</span>
-        <span class="out-value num"><span class="bt-off">{money(0)}</span><span class="bt-on">{money(refund.amountCents ?? 0)}</span></span>
-        <span class="pill pill--blocked">Irreversible</span>
-      </div>
-    </div>
-  </li>
-
-  <li class="tile tile--guard">
-    <h3>{t.guard}</h3>
-    <div class="inset bt-guard" data-ui>
-      <div class="mail-head">
-        <span class="stamp">BLOCKED</span>
-        <code class="id">{blocked.label}</code>
-        <span class="bt-score num">{blocked.score}</span>
-      </div>
-      <p class="mail-subj">{blocked.subject}</p>
-    </div>
-  </li>
-
-  <li class="tile tile--diff">
-    <h3>{t.diff}</h3>
-    <ol class="inset bt-diff" data-ui>
-      {diffs.map((s) => (
-        <li>
-          <code class="tool">{s.tool}</code>
-          <span class="diff"><span class="diff-before">{s.before}</span><Icon name="arrow" class="diff-arrow" /><span>{s.after}</span></span>
-        </li>
-      ))}
-    </ol>
-  </li>
-
-  <li class="tile tile--forecast">
+  <li class="tile">
     <h3>{t.forecast}</h3>
-    <div class="inset" data-ui>
+    <div class="tile-ui" data-ui>
       <ForecastChart id="bt-fc" />
+      <p class="stat">{fs.text}</p>
+      <span class="tag">{fs.source}</span>
     </div>
   </li>
 
-  <li class="tile tile--anomaly">
-    <h3>{t.anomaly}</h3>
-    <ol class="inset bt-anoms" data-ui>
-      {anomalies.map((a) => (
-        <li>
-          <p class="bt-anom-head"><code class="id">#{a.order}</code><span class="pill pill--approval">Flagged <span class="num">{a.score}</span></span></p>
-          <p class="bt-anom-why">{a.reason}</p>
-        </li>
-      ))}
-    </ol>
-  </li>
-
-  <li class="tile tile--audit">
-    <h3>{t.audit}</h3>
-    <div class="inset" data-ui>
-      <Receipt />
+  <li class="tile">
+    <h3>{t.flags}</h3>
+    <div class="tile-ui" data-ui>
+      <ol class="flag-list">
+        {flags.map((a) => (
+          <li>
+            <p class="flag-head"><code class="id">{a.order}</code><span class="pill pill--flag">Score <span class="num">{a.score}</span></span></p>
+            <p class="flag-why">{a.reason}</p>
+          </li>
+        ))}
+      </ol>
+      <p class="stat">{gs.text}</p>
+      <span class="tag">{gs.source}</span>
     </div>
   </li>
 </ul>

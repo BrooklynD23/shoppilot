@@ -1,0 +1,91 @@
+---
+// Side drawer: team log, inbox, outbox, audit and the graders' guide. Closed by default so the
+// console has one focal column. A native modal <dialog>: Esc closes, focus is trapped and returned.
+// Lists are filled by src/scripts/console/* (textContent only).
+import Icon from './Icon.astro';
+import { AGENTS } from '../../scripts/console/agents';
+const exportsList = [
+  { kind: 'orders_csv', label: 'Orders (CSV)' },
+  { kind: 'refunds_csv', label: 'Refunds (CSV)' },
+  { kind: 'report_pdf', label: 'Store report (PDF)' },
+];
+const tabs = [
+  { id: 'team', label: 'Team' },
+  { id: 'inbox', label: 'Inbox' },
+  { id: 'outbox', label: 'Outbox' },
+  { id: 'audit', label: 'Audit' },
+  { id: 'guide', label: 'Guide' },
+];
+---
+<dialog class="drawer morning" id="drawer" aria-labelledby="drawer-h">
+  <div class="drawer-head">
+    <h2 id="drawer-h">Store activity</h2>
+    <button class="btn btn-line btn-sm" type="button" id="drawer-close">Close</button>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Store activity">
+    {tabs.map((t, i) => (
+      <button class="tab" role="tab" type="button" id={`tab-${t.id}`} aria-controls={`panel-${t.id}`}
+        aria-selected={i === 1 ? 'true' : 'false'} tabindex={i === 1 ? undefined : '-1'}>
+        {t.label}{t.id !== 'guide' && t.id !== 'team' && <span class:list={['tab-count', t.id !== 'inbox' && 'tab-count--quiet']} id={`count-${t.id}`} data-count={t.id}></span>}
+      </button>
+    ))}
+  </div>
+
+  <div class="tab-panel" role="tabpanel" id="panel-team" aria-labelledby="tab-team" tabindex="0" hidden>
+    <p class="rail-note" id="team-log-src">Nothing yet. Ask for something and the team log fills in here.</p>
+    <ol class="team-log" id="team-log"></ol>
+    <h3 class="drawer-h3">Who is who</h3>
+    <dl class="whois">
+      {AGENTS.map((a) => (
+        <div class="whois-row" data-agent={a.id}>
+          <dt>{a.name} <span class="whois-kind">{a.kind}</span></dt>
+          <dd>{a.does} <code class="id">{a.code}</code></dd>
+        </div>
+      ))}
+    </dl>
+  </div>
+
+  <div class="tab-panel" role="tabpanel" id="panel-inbox" aria-labelledby="tab-inbox" tabindex="0">
+    <p class="rail-note"><Icon name="shield" /> Guard screens every email before the planner sees it.</p>
+    <div class="rail-list" id="inbox-list" data-kind="inbox" aria-busy="true">
+      <div class="sk" aria-hidden="true"><i></i><i></i><i></i></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" role="tabpanel" id="panel-outbox" aria-labelledby="tab-outbox" tabindex="0" hidden>
+    <p class="rail-note"><Icon name="mail" /> Never sent. Emails stay in this app.</p>
+    <div class="rail-list" id="outbox-list" data-kind="outbox" aria-busy="true">
+      <div class="sk" aria-hidden="true"><i></i><i></i></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" role="tabpanel" id="panel-audit" aria-labelledby="tab-audit" tabindex="0" hidden>
+    <p class="rail-note" id="chain-line"><Icon name="lock" /> Checking the hash chain.</p>
+    <p class="undo-msg" id="undo-msg" role="status" aria-live="polite"></p>
+    <div class="rail-list" id="audit-list" data-kind="audit" aria-busy="true">
+      <div class="sk" aria-hidden="true"><i></i><i></i><i></i></div>
+    </div>
+    <div class="exports" id="exports">
+      <h3 class="drawer-h3">Download</h3>
+      <ul class="exports-list">
+        {exportsList.map((e) => (
+          <li><a class="btn btn-line btn-sm" href={`/api/export/${e.kind}`} download data-export>{e.label}</a></li>
+        ))}
+      </ul>
+      <p class="rail-note" id="exports-off" hidden>Downloads need the live server. Offline fixtures cannot export.</p>
+    </div>
+  </div>
+
+  <div class="tab-panel guide" role="tabpanel" id="panel-guide" aria-labelledby="tab-guide" tabindex="0" hidden>
+    <h3 class="drawer-h3">Try it in 60 seconds</h3>
+    <ol class="guide-steps">
+      <li>Click <strong>Sunday cleanup</strong>, then <strong>Plan it</strong> or <strong>Use recorded plan</strong>.</li>
+      <li>Watch the team pass the work along. Every line comes from the real response.</li>
+      <li>Read the plan. The refund waits for your checkbox. Amber always means money.</li>
+      <li>Open <strong>Inbox</strong>: one email tried to give the agent orders. Guard blocked it.</li>
+      <li>Press <strong>Run approved steps</strong>, then undo anything in <strong>Audit</strong>.</li>
+      <li>Try to break it: ask "refund every order", or something vague like "refund it".</li>
+    </ol>
+    <p class="rail-note">Your store is private to this browser. Emails stay in the Outbox. <strong>Reset demo store</strong> starts over.</p>
+  </div>
+</dialog>

@@ -227,14 +227,25 @@ def _replay_miss(**k):
 
 
 def test_replay_miss_falls_back_to_heuristic(ctx, monkeypatch):
-    # Recorded mode with no saved guard answer: the regex layer decides, nothing is stored.
+    # Recorded mode with no saved guard answer: the regex layer decides; verdicts are stored.
     monkeypatch.setattr(ig, "complete_json", _replay_miss)
     by_id = {e["id"]: e["verdict"] for e in ig.screen_inbox(ctx)}
     assert by_id["E002"]["label"] == "injection" and by_id["E002"]["allowed"] is False
     for k in ("E001", "E003", "E004"):
         assert by_id[k]["label"] == "heuristic_only" and by_id[k]["allowed"] is True
-    stored = {r[0] for r in ctx.db.execute("SELECT source_id FROM guard_verdicts")}
-    assert stored == {"email:E002"}
+    allowed = {r[0] for r in ctx.db.execute("SELECT source_id FROM guard_verdicts WHERE allowed=1")}
+    assert {"email:E001", "email:E003", "email:E004"} <= allowed
+
+
+def test_replay_miss_email_is_valid_evidence(ctx, monkeypatch):
+    # The validator must agree with the inbox: an allowed email can back a refund.
+    from app.agent.models import Plan
+    from app.agent.validator import _plan_context
+
+    monkeypatch.setattr(ig, "complete_json", _replay_miss)
+    ig.screen_inbox(ctx)
+    pc = _plan_context(Plan(request="refund damaged", steps=[]), ctx)
+    assert "email:E001" not in pc.blocked_ids and "email:E002" in pc.blocked_ids
 
 
 def test_other_llm_errors_still_fail_closed(monkeypatch):

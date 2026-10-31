@@ -1,0 +1,728 @@
+{
+ "plan_id": "plan_824939ecbb3c",
+ "source": "live",
+ "plan": {
+  "request": "Ship yesterday's orders, email buyers tracking, restock what will run out this week, refund anything damaged.",
+  "steps": [
+   {
+    "id": "s1",
+    "tool": "mark_shipped",
+    "args": {
+     "order_ids": [
+      "O2713",
+      "O2714",
+      "O2715"
+     ],
+     "carrier": "usps"
+    },
+    "rationale": "Paid yesterday and not shipped yet.",
+    "evidence": [
+     "O2713",
+     "O2714",
+     "O2715"
+    ]
+   },
+   {
+    "id": "s2",
+    "tool": "send_email",
+    "args": {
+     "order_ids": [
+      "O2713",
+      "O2714",
+      "O2715"
+     ],
+     "template": "tracking",
+     "custom_body": null
+    },
+    "rationale": "Buyers get tracking once their order ships.",
+    "evidence": [
+     "O2713",
+     "O2714",
+     "O2715"
+    ]
+   },
+   {
+    "id": "s3",
+    "tool": "create_restock_po",
+    "args": {
+     "product_id": "P01",
+     "qty_source": "forecast",
+     "qty": null
+    },
+    "rationale": "Black Speckle Mug runs out in about 4 days.",
+    "evidence": [
+     "P01"
+    ]
+   },
+   {
+    "id": "s4",
+    "tool": "refund_order",
+    "args": {
+     "order_id": "O2679",
+     "amount_cents": null,
+     "reason": "requested_by_customer"
+    },
+    "rationale": "The customer reports the mug in O2679 arrived cracked.",
+    "evidence": [
+     "E001"
+    ]
+   }
+  ],
+  "blocked_inputs": [
+   {
+    "source_id": "email:E002",
+    "allowed": false,
+    "label": "injection",
+    "reason": "Blocked: tries to override the agent's rules; tries to skip human confirmation; fakes system or prompt markup; asks for a bulk refund or bulk change; addresses the AI directly",
+    "score": 1.0
+   }
+  ],
+  "id": "plan_824939ecbb3c",
+  "status": "ready",
+  "message": "",
+  "usage": {
+   "calls": [
+    {
+     "stage": "router",
+     "model": "claude-haiku-5-5",
+     "ms": 610,
+     "input_tokens": 412,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 0,
+     "output_tokens": 38,
+     "cost_usd": 6e-05,
+     "retries": 0,
+     "replayed": false
+    },
+    {
+     "stage": "planner",
+     "model": "claude-sonnet-5-5",
+     "ms": 7420,
+     "input_tokens": 1840,
+     "cache_read_tokens": 4100,
+     "cache_write_tokens": 0,
+     "output_tokens": 620,
+     "cost_usd": 0.01029,
+     "retries": 0,
+     "replayed": false
+    },
+    {
+     "stage": "judge",
+     "model": "claude-haiku-5-5",
+     "ms": 540,
+     "input_tokens": 980,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 0,
+     "output_tokens": 60,
+     "cost_usd": 0.000128,
+     "retries": 0,
+     "replayed": false
+    }
+   ],
+   "total_cost_usd": 0.010478,
+   "cache_hit_pct": 50.8,
+   "prompt_version": "6b7a03a2"
+  },
+  "judge": {
+   "verdict": "pass",
+   "checks": [
+    {
+     "name": "covers_request",
+     "pass": true,
+     "note": "Ships, emails, restocks and refunds, as asked."
+    },
+    {
+     "name": "no_extra_actions",
+     "pass": true,
+     "note": "No steps beyond the request."
+    },
+    {
+     "name": "untrusted_text_not_obeyed",
+     "pass": true,
+     "note": "The blocked email E002 was not acted on."
+    },
+    {
+     "name": "evidence_supports",
+     "pass": true,
+     "note": "The refund cites the buyer's email E001."
+    }
+   ]
+  },
+  "prompt_version": "6b7a03a2",
+  "source": "live"
+ },
+ "validations": [
+  {
+   "step_id": "s1",
+   "ok": true,
+   "reason": null
+  },
+  {
+   "step_id": "s2",
+   "ok": true,
+   "reason": null
+  },
+  {
+   "step_id": "s3",
+   "ok": true,
+   "reason": null
+  },
+  {
+   "step_id": "s4",
+   "ok": true,
+   "reason": null
+  }
+ ],
+ "diff": [
+  {
+   "step_id": "s1",
+   "before": {
+    "O2713": "paid",
+    "O2714": "paid",
+    "O2715": "paid"
+   },
+   "after": {
+    "O2713": "shipped (usps)",
+    "O2714": "shipped (usps)",
+    "O2715": "shipped (usps)"
+   },
+   "amount_cents": null
+  },
+  {
+   "step_id": "s2",
+   "before": {},
+   "after": {
+    "O2713": {
+     "to": "omar.moreau109@example.com",
+     "subject": "Your order O2713 has shipped",
+     "body": "Hi Omar Moreau,\n\nYour order O2713 shipped via . Tracking number: (assigned when shipped).\n\nFern & Kiln"
+    },
+    "O2714": {
+     "to": "priya.hughes344@example.com",
+     "subject": "Your order O2714 has shipped",
+     "body": "Hi Priya Hughes,\n\nYour order O2714 shipped via . Tracking number: (assigned when shipped).\n\nFern & Kiln"
+    },
+    "O2715": {
+     "to": "sam.garcia267@example.com",
+     "subject": "Your order O2715 has shipped",
+     "body": "Hi Sam Garcia,\n\nYour order O2715 shipped via . Tracking number: (assigned when shipped).\n\nFern & Kiln"
+    }
+   },
+   "amount_cents": null
+  },
+  {
+   "step_id": "s3",
+   "before": {
+    "product": "Black Speckle Mug",
+    "on_hand": 31,
+    "on_order": 0,
+    "days_to_stockout": 4,
+    "forecast": {
+     "product_id": "P01",
+     "sku": "MUG-BLK-12",
+     "name": "Black Speckle Mug",
+     "method": "ses_dow",
+     "as_of": "2026-10-30",
+     "history_days": 180,
+     "on_hand": 31,
+     "on_order": 0,
+     "lead_time_days": 5,
+     "avg_daily": 7.7,
+     "days_to_stockout": 4,
+     "stockout_range": [
+      3,
+      5
+     ],
+     "band": {
+      "level": 0.8,
+      "dates": [
+       "2026-10-31",
+       "2026-11-01",
+       "2026-11-02",
+       "2026-11-03",
+       "2026-11-04",
+       "2026-11-05",
+       "2026-11-06",
+       "2026-11-07",
+       "2026-11-08",
+       "2026-11-09",
+       "2026-11-10",
+       "2026-11-11",
+       "2026-11-12",
+       "2026-11-13"
+      ],
+      "mean": [
+       7.71,
+       8.45,
+       10.16,
+       9.06,
+       5.75,
+       6.61,
+       6.49,
+       7.71,
+       8.45,
+       10.16,
+       9.06,
+       5.75,
+       6.61,
+       6.49
+      ],
+      "lo": [
+       4.38,
+       5.11,
+       6.83,
+       5.73,
+       2.42,
+       3.28,
+       3.15,
+       4.38,
+       5.11,
+       6.83,
+       5.73,
+       2.42,
+       3.28,
+       3.15
+      ],
+      "hi": [
+       11.05,
+       11.78,
+       13.5,
+       12.4,
+       9.09,
+       9.95,
+       9.82,
+       11.05,
+       11.78,
+       13.5,
+       12.4,
+       9.09,
+       9.95,
+       9.82
+      ]
+     },
+     "stock": {
+      "mean": [
+       23.29,
+       14.84,
+       4.68,
+       -4.39,
+       -10.14,
+       -16.75,
+       -23.24,
+       -30.95,
+       -39.4,
+       -49.57,
+       -58.63,
+       -64.38,
+       -70.99,
+       -77.48
+      ],
+      "lo": [
+       19.95,
+       10.12,
+       -1.1,
+       -11.06,
+       -17.6,
+       -24.92,
+       -32.06,
+       -40.39,
+       -49.41,
+       -60.11,
+       -69.69,
+       -75.93,
+       -83.02,
+       -89.96
+      ],
+      "hi": [
+       26.62,
+       19.55,
+       10.45,
+       2.29,
+       -2.68,
+       -8.58,
+       -14.42,
+       -21.52,
+       -29.4,
+       -39.02,
+       -47.56,
+       -52.83,
+       -58.97,
+       -65.0
+      ]
+     },
+     "history": {
+      "dates": [
+       "2026-10-03",
+       "2026-10-04",
+       "2026-10-05",
+       "2026-10-06",
+       "2026-10-07",
+       "2026-10-08",
+       "2026-10-09",
+       "2026-10-10",
+       "2026-10-11",
+       "2026-10-12",
+       "2026-10-13",
+       "2026-10-14",
+       "2026-10-15",
+       "2026-10-16",
+       "2026-10-17",
+       "2026-10-18",
+       "2026-10-19",
+       "2026-10-20",
+       "2026-10-21",
+       "2026-10-22",
+       "2026-10-23",
+       "2026-10-24",
+       "2026-10-25",
+       "2026-10-26",
+       "2026-10-27",
+       "2026-10-28",
+       "2026-10-29",
+       "2026-10-30"
+      ],
+      "units": [
+       8.0,
+       7.0,
+       14.0,
+       12.0,
+       4.0,
+       9.0,
+       8.0,
+       5.0,
+       11.0,
+       11.0,
+       9.0,
+       4.0,
+       4.0,
+       11.0,
+       8.0,
+       11.0,
+       6.0,
+       8.0,
+       6.0,
+       5.0,
+       4.0,
+       7.0,
+       7.0,
+       11.0,
+       9.0,
+       7.0,
+       6.0,
+       8.0
+      ]
+     },
+     "reorder_qty": 134,
+     "warnings": [],
+     "explanation": "Sells about 7.7/day. 31 in stock runs out in about 4 days (80% range 3–5). Lead time is 5 days, so order now: 134 units covers the lead time plus 14 days. Expect to be out of stock for about 1 day before the PO arrives.",
+     "unit_cost_cents": 1283,
+     "reorder_cost_cents": 171922
+    }
+   },
+   "after": {
+    "po": "new",
+    "qty": 134,
+    "unit_cost_cents": 1283,
+    "arrives_on": "2026-11-05",
+    "status": "open"
+   },
+   "amount_cents": 171922
+  },
+  {
+   "step_id": "s4",
+   "before": {
+    "order_id": "O2679",
+    "refunded_cents": 0,
+    "status": "shipped"
+   },
+   "after": {
+    "refunded_cents": 2600,
+    "status": "refunded",
+    "irreversible": true,
+    "stripe_mode": "mock"
+   },
+   "amount_cents": 2600
+  }
+ ],
+ "tools": {
+  "create_payment_link": {
+   "destructive": true,
+   "moves_money": true,
+   "undoable": true
+  },
+  "create_restock_po": {
+   "destructive": true,
+   "moves_money": false,
+   "undoable": true
+  },
+  "export_report": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": false
+  },
+  "flag_anomalies": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": false
+  },
+  "forecast_demand": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": false
+  },
+  "list_inbox": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": false
+  },
+  "list_orders": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": false
+  },
+  "mark_shipped": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": true
+  },
+  "refund_order": {
+   "destructive": true,
+   "moves_money": true,
+   "undoable": false
+  },
+  "send_email": {
+   "destructive": false,
+   "moves_money": false,
+   "undoable": true
+  }
+ },
+ "clarify": null,
+ "usage": {
+  "calls": [
+   {
+    "stage": "router",
+    "model": "claude-haiku-5-5",
+    "ms": 610,
+    "input_tokens": 412,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_tokens": 38,
+    "cost_usd": 6e-05,
+    "retries": 0,
+    "replayed": false
+   },
+   {
+    "stage": "planner",
+    "model": "claude-sonnet-5-5",
+    "ms": 2510,
+    "input_tokens": 620,
+    "cache_read_tokens": 1400,
+    "cache_write_tokens": 0,
+    "output_tokens": 260,
+    "cost_usd": 0.0035,
+    "retries": 0,
+    "replayed": false
+   },
+   {
+    "stage": "planner",
+    "model": "claude-sonnet-5-5",
+    "ms": 2790,
+    "input_tokens": 610,
+    "cache_read_tokens": 1350,
+    "cache_write_tokens": 0,
+    "output_tokens": 210,
+    "cost_usd": 0.0034,
+    "retries": 0,
+    "replayed": false
+   },
+   {
+    "stage": "planner",
+    "model": "claude-sonnet-5-5",
+    "ms": 1460,
+    "input_tokens": 330,
+    "cache_read_tokens": 700,
+    "cache_write_tokens": 0,
+    "output_tokens": 100,
+    "cost_usd": 0.00199,
+    "retries": 0,
+    "replayed": false
+   },
+   {
+    "stage": "planner",
+    "model": "claude-sonnet-5-5",
+    "ms": 660,
+    "input_tokens": 280,
+    "cache_read_tokens": 650,
+    "cache_write_tokens": 0,
+    "output_tokens": 50,
+    "cost_usd": 0.0014,
+    "retries": 0,
+    "replayed": false
+   },
+   {
+    "stage": "judge",
+    "model": "claude-haiku-5-5",
+    "ms": 540,
+    "input_tokens": 980,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "output_tokens": 60,
+    "cost_usd": 0.000128,
+    "retries": 0,
+    "replayed": false
+   }
+  ],
+  "total_cost_usd": 0.010478,
+  "cache_hit_pct": 50.8,
+  "prompt_version": "6b7a03a2"
+ },
+ "trace": [
+  {
+   "agent": "router",
+   "event": "start",
+   "detail": "Reading your request.",
+   "t_ms": 0,
+   "step_id": null
+  },
+  {
+   "agent": "router",
+   "event": "pass",
+   "detail": "Shop work. Routed to the planner.",
+   "t_ms": 610,
+   "step_id": null
+  },
+  {
+   "agent": "planner",
+   "event": "start",
+   "detail": "Turn 1: reading orders, inbox and stock.",
+   "t_ms": 610,
+   "step_id": null
+  },
+  {
+   "agent": "planner",
+   "event": "read",
+   "detail": "list_orders: 3 paid orders from yesterday.",
+   "t_ms": 3140,
+   "step_id": null
+  },
+  {
+   "agent": "guard",
+   "event": "block",
+   "detail": "E002 blocked as injection. The planner gets its metadata only.",
+   "t_ms": 3180,
+   "step_id": null
+  },
+  {
+   "agent": "planner",
+   "event": "read",
+   "detail": "list_inbox: 3 emails allowed, 1 blocked.",
+   "t_ms": 3190,
+   "step_id": null
+  },
+  {
+   "agent": "forecaster",
+   "event": "read",
+   "detail": "forecast_demand: Black Speckle Mug runs out in about 4 days. 31 on hand.",
+   "t_ms": 3290,
+   "step_id": null
+  },
+  {
+   "agent": "planner",
+   "event": "staged",
+   "detail": "Turn 2: proposed the tracking email.",
+   "t_ms": 6090,
+   "step_id": null
+  },
+  {
+   "agent": "validator",
+   "event": "reject",
+   "detail": "Rejected: tracking email before the order is shipped.",
+   "t_ms": 6095,
+   "step_id": null
+  },
+  {
+   "agent": "planner",
+   "event": "start",
+   "detail": "Turn 3: ship first, then email.",
+   "t_ms": 6100,
+   "step_id": null
+  },
+  {
+   "agent": "planner",
+   "event": "staged",
+   "detail": "s1 mark_shipped: O2713, O2714, O2715 by USPS.",
+   "t_ms": 7565,
+   "step_id": "s1"
+  },
+  {
+   "agent": "validator",
+   "event": "pass",
+   "detail": "s1 passes.",
+   "t_ms": 7568,
+   "step_id": "s1"
+  },
+  {
+   "agent": "planner",
+   "event": "staged",
+   "detail": "s2 send_email: tracking for the same 3 orders.",
+   "t_ms": 7571,
+   "step_id": "s2"
+  },
+  {
+   "agent": "validator",
+   "event": "pass",
+   "detail": "s2 passes: the orders ship first.",
+   "t_ms": 7574,
+   "step_id": "s2"
+  },
+  {
+   "agent": "planner",
+   "event": "staged",
+   "detail": "s3 create_restock_po: P01, quantity from the forecast.",
+   "t_ms": 7577,
+   "step_id": "s3"
+  },
+  {
+   "agent": "validator",
+   "event": "pass",
+   "detail": "s3 passes: no open purchase order for P01.",
+   "t_ms": 7580,
+   "step_id": "s3"
+  },
+  {
+   "agent": "planner",
+   "event": "staged",
+   "detail": "s4 refund_order: O2679 in full, evidence E001.",
+   "t_ms": 7583,
+   "step_id": "s4"
+  },
+  {
+   "agent": "validator",
+   "event": "pass",
+   "detail": "s4 passes: $26.00, under the $200.00 per-order cap.",
+   "t_ms": 7586,
+   "step_id": "s4"
+  },
+  {
+   "agent": "planner",
+   "event": "done",
+   "detail": "Plan ready: 4 steps, 1 moves money.",
+   "t_ms": 8260,
+   "step_id": null
+  },
+  {
+   "agent": "judge",
+   "event": "start",
+   "detail": "Reviewing the plan against your request.",
+   "t_ms": 8260,
+   "step_id": null
+  },
+  {
+   "agent": "judge",
+   "event": "pass",
+   "detail": "Pass. It covers the request and ignores the blocked email.",
+   "t_ms": 8800,
+   "step_id": null
+  }
+ ]
+}

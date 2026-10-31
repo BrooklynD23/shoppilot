@@ -1,0 +1,24 @@
+---
+// The team stage: one mascot per real backend module. Ships as crisp 2D portraits;
+// src/scripts/console/stage3d.ts swaps in the 3D scene when WebGL works and motion is allowed.
+// State words and speech are written by src/scripts/console/team.ts (textContent only).
+import { AGENTS } from '../../scripts/console/agents';
+import Portrait from './Portrait.astro';
+---
+<section class="team" id="team" aria-labelledby="team-h">
+  <h2 class="sr-only" id="team-h">Your team</h2>
+  <div class="stage" id="stage" data-mode="2d">
+    <ol class="crew" id="crew">
+      {AGENTS.map((a) => (
+        <li class="member" data-agent={a.id} data-mood="idle">
+          <Portrait id={a.id} />
+          <p class="member-name">{a.name}<span class="sr-only">, {a.kind}.</span></p>
+          <p class="member-word" data-word>Ready</p>
+        </li>
+      ))}
+    </ol>
+    <div class="speech" id="speech" aria-hidden="true" hidden>
+      <p class="speech-in"><span class="speech-who" id="speech-who"></span> <span class="speech-line" id="speech-line"></span></p>
+    </div>
+  </div>
+</section>

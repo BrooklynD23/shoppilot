@@ -1,110 +1,91 @@
 ---
-// ShopPilot+ landing, "night to morning". Night half: hero video, built-with, problem, how, safety.
-// Dawn band: the morning video and the finished run. Morning half: bento, proof, pricing, FAQ.
-// JS: one bundled script for the two videos (src/scripts/landing/video.ts). Everything else is CSS.
-import '../styles/page-landing.css';
+// ShopPilot+ landing, night to morning. Night: hero footage, the inbox, the team, the guard.
+// Dawn: the morning footage under the finished run. Morning: product, planned pricing, FAQ.
+// Copy: src/data/landing.ts. Product facts: src/data/run.ts (the console's recorded fixture). Product fragments are [data-ui].
+// JS: only the footage toggle (src/scripts/landing/video.ts). The hero checkbox is CSS (:has).
 import Site from '../layouts/Site.astro';
+import '../styles/page-landing.css'; // after Site, so page rules win over site.css at equal specificity
 import BgVideo from '../components/landing/BgVideo.astro';
 import HeroStage from '../components/landing/HeroStage.astro';
-import Walkthrough from '../components/landing/Walkthrough.astro';
-import Bento from '../components/landing/Bento.astro';
-import Receipt from '../components/landing/Receipt.astro';
-import ForecastChart from '../components/landing/ForecastChart.astro';
 import InboxNight from '../components/landing/InboxNight.astro';
+import TeamRoom from '../components/landing/TeamRoom.astro';
 import RunDone from '../components/landing/RunDone.astro';
+import Bento from '../components/landing/Bento.astro';
 import Icon from '../components/landing/Icon.astro';
-import { hero, how, bento, safety, quote, pricingH2, faqH2, closing } from '../data/v3';
-import { pricing, pricingLabel, faq, anomalies } from '../data/v2';
-import { inbox, plan } from '../data/demo';
 import * as L from '../data/landing';
+import { blocked } from '../data/run';
 
 const APP = '/app/';
-const [h1a, h1b] = hero.h1.split('. ').map((s, i) => (i === 0 ? `${s}.` : s));
-const blocked = inbox[0];
-const ps = L.proof.stats;
 ---
-<Site title="ShopPilot+: autopilot for your shop" description={hero.sub} surface="night" current="/" showVeoNote footerSurface="morning">
+<Site title={L.hero.title} description={L.hero.sub} surface="night" current="/" showVeoNote footerSurface="morning">
   <main id="main" class="landing">
-    <!-- 1. Hero: night footage, scrim, layered product -->
+    <!-- 1. Hero: night footage, scrim, the product layered flat on top -->
     <section class="hero" aria-labelledby="hero-title">
       <BgVideo name="night" eager cssFallback class="hero-vid" label="background video" />
       <div class="wrap hero-copy">
-        <h1 id="hero-title"><span>{h1a}</span> <span>{h1b}</span></h1>
+        <h1 id="hero-title">{L.hero.h1.map((line) => <span>{line}</span>)}</h1>
         <div class="hero-row">
-          <p class="hero-sub" data-hero-sub>{hero.sub}</p>
+          <p class="hero-sub" data-hero-sub>{L.hero.sub}</p>
           <div class="hero-cta">
-            <a class="btn btn-primary btn-lg" href={APP}>{hero.cta}</a>
-            <p class="hero-note">{hero.note}</p>
+            <a class="btn btn-primary btn-lg" href={APP}>{L.hero.cta}</a>
+            <p class="hero-note">{L.hero.note}</p>
           </div>
         </div>
       </div>
-      <div class="wrap">
-        <HeroStage />
-      </div>
+      <div class="wrap"><HeroStage /></div>
     </section>
 
-    <!-- 2. Built with: text wordmarks only -->
-    <section class="built" aria-label="Built with">
-      <div class="wrap built-row">
-        <p class="built-label">Built with</p>
-        <ul class="built-list">
-          {L.builtWith.map((b) => (
-            <li class="built-item"><span class="built-name">{b.name}</span>{b.by && <span class="built-by">{b.by}</span>}</li>
-          ))}
-        </ul>
-      </div>
-    </section>
-
-    <!-- 3. Problem: the quote beside the inbox at night -->
+    <!-- 2. Problem: a real quote beside the inbox at 21:50 -->
     <section class="problem wrap" aria-labelledby="problem-title">
       <h2 id="problem-title" class="sr-only">{L.problem.h2}</h2>
-      <figure class="quote-fig">
-        <blockquote><p>{quote.text}</p></blockquote>
-        <figcaption>{quote.source}</figcaption>
+      <figure class="quote">
+        <blockquote><p>“{L.problem.quote}”</p></blockquote>
+        <figcaption>{L.problem.source}</figcaption>
       </figure>
-      <div class="reveal"><InboxNight /></div>
+      <InboxNight />
     </section>
 
-    <!-- 4. How: walkthrough loop with Pause and the step rail -->
-    <section class="how wrap" id="how" aria-labelledby="how-title">
+    <!-- 3. Team: seven specialists, one approver, one run as they report it -->
+    <section class="team wrap" id="team" aria-labelledby="team-title">
       <div class="sh sh--center">
-        <h2 id="how-title">{how.h2}</h2>
-        <p>{L.how.line}</p>
+        <h2 id="team-title">{L.team.h2}</h2>
+        <p>{L.team.line}</p>
       </div>
-      <div class="reveal"><Walkthrough /></div>
+      <TeamRoom />
     </section>
 
-    <!-- 5. Safety: the blocked email, caps, receipt -->
-    <section class="safety" id="safety" aria-labelledby="safety-title">
-      <div class="wrap safety-grid">
-        <div class="safety-copy">
-          <div class="sh">
-            <h2 id="safety-title">{safety.h2}</h2>
-            <p>{L.safety.line}</p>
+    <!-- 4. Safety: the hard caps beside the blocked email, shown as text -->
+    <section class="safety wrap" id="safety" aria-labelledby="safety-title">
+      <div class="sh">
+        <h2 id="safety-title">{L.safety.h2}</h2>
+        <p>{L.safety.line}</p>
+      </div>
+      <div class="safety-grid">
+        <figure class="caps panel" data-ui>
+          <figcaption class="panel-head"><Icon name="lock" /><span class="panel-title">{L.safety.capsNote}</span></figcaption>
+          <table class="caps-t">
+            <tbody>
+              {L.safety.caps.map((c) => <tr><th scope="row">{c.name}</th><td class="num">{c.value}</td></tr>)}
+            </tbody>
+          </table>
+          <p class="caps-src"><code>{L.safety.capsSource}</code></p>
+        </figure>
+        <article class="mail-big panel" data-ui aria-label="Blocked email, demo store">
+          <header class="panel-head">
+            <span class="stamp stamp--big">BLOCKED</span>
+            <p class="panel-meta">Never sent to the planner</p>
+            <span class="tag">Demo store</span>
+          </header>
+          <div class="mb-body">
+            <p class="mb-from">From <span class="addr">{blocked.from}</span></p>
+            <p class="mb-raw">{blocked.body}</p>
           </div>
-          <ul class="caps" data-ui>
-            {safety.caps.map((c) => <li class="cap"><Icon name="lock" />{c}</li>)}
-          </ul>
-        </div>
-        <div class="specimen reveal" data-ui>
-          <article class="mail mail--big">
-            <div class="mail-head">
-              <span class="stamp stamp--big">BLOCKED</span>
-              <span class="mail-from">From <span class="addr">{blocked.from}</span></span>
-            </div>
-            <p class="mail-subj">{blocked.subject}</p>
-            <p class="mail-raw">{blocked.preview}</p>
-            <p class="mail-verdict"><Icon name="shield" />{blocked.reason}</p>
-            <p class="receipt-ids">Guard label <code class="id">{blocked.label}</code> score <span class="num">{blocked.score}</span></p>
-          </article>
-          <div class="specimen-receipt">
-            <Receipt pick={['refund_order', 'create_restock_po']} />
-          </div>
-        </div>
+          <p class="mb-verdict"><Icon name="shield" /><span>{blocked.reason}</span><code class="id">Guard label {blocked.label}, score {blocked.score}</code></p>
+        </article>
       </div>
     </section>
 
-    <!-- 6. Dawn: night fades to cream; morning footage beside the finished run -->
+    <!-- 5. Dawn: night fades to tissue; the morning footage under the finished run -->
     <section class="dawn morning" aria-labelledby="dawn-title">
       <div class="dawn-fade" aria-hidden="true"></div>
       <div class="wrap dawn-inner">
@@ -112,70 +93,35 @@ const ps = L.proof.stats;
           <h2 id="dawn-title">{L.morning.h2}</h2>
           <p>{L.morning.line}</p>
         </div>
-        <div class="dawn-grid">
+        <div class="dawn-stage">
           <BgVideo name="morning" class="dawn-vid" label="morning video" />
-          <div class="reveal"><RunDone /></div>
+          <RunDone />
         </div>
       </div>
     </section>
 
     <div class="morning">
-      <!-- 7. Bento: every guard as a tile -->
+      <!-- 6. Product: the Forecaster's two tiles, each a real fragment -->
       <section class="product wrap" id="product" aria-labelledby="product-title">
-        <div class="sh">
-          <h2 id="product-title">{bento.h2}</h2>
-          <p>{L.bentoLine}</p>
-        </div>
+        <div class="sh"><h2 id="product-title">{L.product.h2}</h2></div>
         <Bento />
       </section>
 
-      <!-- 8. Proof: 3 stats with source labels -->
-      <section class="proof wrap" aria-labelledby="proof-title">
-        <div class="sh"><h2 id="proof-title">{L.proof.h2}</h2></div>
-        <dl class="proof-strip reveal">
-          <div class="stat">
-            <dt class="stat-label">{ps[0].label}</dt>
-            <dd class="stat-value num">{ps[0].value}</dd>
-            <dd class="stat-src"><span class="tag">{ps[0].source}</span></dd>
-            <dd class="stat-ui" data-ui><ForecastChart id="pf-fc" bare /></dd>
-          </div>
-          <div class="stat">
-            <dt class="stat-label">{ps[1].label}</dt>
-            <dd class="stat-value num">{ps[1].value}</dd>
-            <dd class="stat-src"><span class="tag">{ps[1].source}</span></dd>
-            <dd class="stat-ui" data-ui>
-              {anomalies.map((a) => (
-                <p class="pf-anom"><code class="id">#{a.order}</code><span class="pill pill--approval">Flagged <span class="num">{a.score}</span></span></p>
-              ))}
-            </dd>
-          </div>
-          <div class="stat">
-            <dt class="stat-label">{ps[2].label}</dt>
-            <dd class="stat-value num money">{ps[2].value}</dd>
-            <dd class="stat-src"><span class="tag">{ps[2].source}</span></dd>
-            <dd class="stat-ui" data-ui>
-              <p class="pf-meter"><span><span class="num">{plan.usage.tokens}</span> tokens</span><span>cache <span class="num">{plan.usage.cacheHitPct}%</span></span></p>
-              <meter class="pf-meter-bar" min="0" max="100" value={plan.usage.cacheHitPct} aria-label="Cache hit rate"></meter>
-            </dd>
-          </div>
-        </dl>
-      </section>
-
-      <!-- 9. Planned pricing -->
+      <!-- 7. Planned pricing: a labelled simulation -->
       <section class="pricing wrap" id="pricing" aria-labelledby="pricing-title">
         <div class="pricing-head">
-          <h2 id="pricing-title">{pricingH2}</h2>
-          <p class="pricing-label"><Icon name="alert" />{pricingLabel}</p>
+          <h2 id="pricing-title">{L.pricing.h2}</h2>
+          <p class="pricing-label"><Icon name="info" />{L.pricing.label}</p>
         </div>
         <ul class="tiers">
-          {pricing.map((t, i) => (
-            <li class:list={['tier', { 'tier--now': i === 0 }]}>
+          {L.pricing.tiers.map((t) => (
+            <li class:list={['tier', { 'tier--now': t.live }]}>
               <h3>{t.name}</h3>
-              <p class="tier-price"><span class="num">{t.price}</span>{t.period && <span class="tier-period"> {t.period}</span>}</p>
+              <p class="tier-price"><span class="num">{t.price}</span>{t.period && <span class="tier-period">{t.period}</span>}</p>
               <ul class="tier-feats">
                 {t.features.map((f) => <li><Icon name="tick" />{f}</li>)}
               </ul>
-              {i === 0
+              {t.live
                 ? <a class="btn btn-primary" href={APP}>{t.cta}</a>
                 : <button class="btn btn-line" type="button" disabled>{t.cta}</button>}
             </li>
@@ -183,11 +129,11 @@ const ps = L.proof.stats;
         </ul>
       </section>
 
-      <!-- 10. FAQ -->
+      <!-- 8. FAQ -->
       <section class="faq wrap" id="faq" aria-labelledby="faq-title">
-        <h2 id="faq-title">{faqH2}</h2>
+        <h2 id="faq-title">{L.faq.h2}</h2>
         <div class="faq-list">
-          {faq.map((f) => (
+          {L.faq.items.map((f) => (
             <details class="qa">
               <summary>{f.q}</summary>
               <p>{f.a}</p>
@@ -196,12 +142,11 @@ const ps = L.proof.stats;
         </div>
       </section>
 
-      <!-- 11. Closing band: amber -->
+      <!-- 9. Closing -->
       <section class="closing" aria-labelledby="closing-title">
         <div class="wrap closing-inner">
-          <h2 id="closing-title">{closing.h2}</h2>
-          <p>{L.closingLine}</p>
-          <a class="btn btn-ink btn-lg" href={APP}>{closing.cta}</a>
+          <h2 id="closing-title">{L.closing.h2}</h2>
+          <a class="btn btn-primary btn-lg" href={APP}>{L.closing.cta}</a>
         </div>
       </section>
     </div>

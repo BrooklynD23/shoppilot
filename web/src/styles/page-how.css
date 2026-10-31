@@ -114,7 +114,7 @@
 .frag-total { display: flex; justify-content: space-between; align-items: baseline; padding-top: 10px; border-top: 1px solid var(--line-ctl); font-size: .9375rem; }
 .frag-total strong { font-size: 1.125rem; }
 .frag-approve { display: flex; gap: 10px; align-items: flex-start; font-size: .9375rem; }
-.frag-box { display: grid; place-items: center; flex: none; width: 20px; height: 20px; margin-top: 1px; border-radius: 5px; background: var(--amber-fill); color: #1f1810; }
+.frag-box { display: grid; place-items: center; flex: none; width: 20px; height: 20px; margin-top: 1px; border-radius: var(--r-xs); background: var(--money-fill); color: var(--on-money); }
 .frag-box .icon { width: 14px; height: 14px; }
 .frag-flag { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: .875rem; }
 .frag-flag span:not(.pill) { flex: 1 1 18ch; min-width: 0; }

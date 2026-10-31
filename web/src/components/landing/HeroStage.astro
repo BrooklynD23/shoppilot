@@ -1,86 +1,47 @@
 ---
-// Hero composition, server-rendered from demo data (no fetch, no skeleton).
-// Layers back to front: glow, receipt side panel, plan card, floating chips.
-// Signature (CSS only, v3-a.css): pills tick Planned -> Checked 1..5, then the badge lands.
-import { plan, inbox, money, forecast, store } from '../../data/demo';
-import { safety } from '../../data/v2';
+// Hero product: the recorded plan (src/data/run.ts, the console's own fixture) as a terminal-like table,
+// and the approval card beside it in its own grid column: nothing overlaps, so nothing can collide.
+// Every status is final in the markup; nothing animates in.
+// The approval checkbox is real: :has() swaps "Needs approval" and "Money out" with zero JS.
+import { planId, request, steps, gated, refund, moneyOutCents, money } from '../../data/run';
 import Icon from './Icon.astro';
-import ForecastChart from './ForecastChart.astro';
 
-const blocked = inbox[0];
-const refund = plan.steps.find((s) => s.movesMoney)!;
-const receipt = safety.auditReceipt.slice(0, 3);
+const [whole, frac] = money(refund.cents).split('.');
 ---
 <div class="stage" data-ui>
-  <div class="stage-glow" aria-hidden="true"></div>
-
-  <article class="hs-panel hs-receipt" aria-label="Audit log, demo store">
-    <header class="hs-head">
-      <p class="hs-title">Audit log</p>
+  <article class="plan panel" aria-label="Plan, demo store">
+    <header class="panel-head">
+      <p class="panel-title">Plan <code class="id">{planId}</code></p>
+      <p class="panel-meta">{steps.length} steps, {gated} {gated === 1 ? 'needs' : 'need'} your approval</p>
       <span class="tag">Demo store</span>
     </header>
-    <ol class="hs-feed">
-      {receipt.map((r) => (
-        <li class="hs-feed-row">
-          <div class="hs-feed-main">
-            <p class="hs-feed-sum">{r.summary}</p>
-            <p class="receipt-ids"><span class="num">{r.ts}</span> <code class="tool">{r.tool}</code></p>
-          </div>
-          {r.undo
-            ? <span class="receipt-undo"><Icon name="undo" />Undo</span>
-            : <span class="pill pill--blocked">Irreversible</span>}
-        </li>
-      ))}
-    </ol>
-  </article>
-
-  <article class="hs-panel hs-plan" aria-label="Plan, demo store">
-    <header class="hs-head">
-      <p class="hs-title">Plan <code class="id">{plan.planId}</code></p>
-      <p class="hs-meta">{plan.steps.length} steps, 1 needs your approval</p>
-      <span class="tag">{store.name}, demo store</span>
-    </header>
-    <ol class="hs-steps">
-      {plan.steps.map((s) => (
-        <li class:list={['hs-step', { 'hs-step--money': s.movesMoney }]}>
-          <span class="step-n num" aria-hidden="true">{s.n}</span>
-          <div class="hs-step-main">
-            <p class="step-title">{s.title}</p>
-            <p class="step-meta"><code class="tool">{s.tool}</code></p>
-          </div>
-          {s.amountCents != null && (
-            <p class="step-money num">{money(s.amountCents)}{s.movesMoney ? '' : ' est.'}</p>
-          )}
-          <span class="tick">
-            <span class="pill pill--planned tick-from" aria-hidden="true">Planned</span>
-            {s.movesMoney
-              ? <span class="pill pill--approval tick-to">Needs approval</span>
-              : <span class="pill pill--checked tick-to">Checked</span>}
+    <p class="plan-ask"><Icon name="chev" class="plan-caret" /><span>{request}</span></p>
+    <ol class="plan-steps">
+      {steps.map((s) => (
+        <li class:list={['ps', { 'ps--money': s.moneyOut }]}>
+          <span class="ps-n num" aria-hidden="true">{s.n}</span>
+          <span class="ps-main">
+            <span class="ps-title">{s.title}</span>
+            <code class="tool">{s.tool}</code>
           </span>
-          {s.movesMoney && (
-            <p class="hs-badge"><span class="num">{money(refund.amountCents ?? 0)}</span> awaiting approval</p>
-          )}
+          <span class:list={['ps-amt num', { money: s.moneyOut }]}>{s.cents != null && `${money(s.cents)}${s.moneyOut ? '' : ' est.'}`}</span>
+          {s.gated
+            ? <span class="ps-state"><span class="pill pill--approval st-wait">Needs approval</span><span class="pill pill--done st-ok">Approved</span></span>
+            : <span class="ps-state"><span class="pill pill--checked">Checked</span></span>}
         </li>
       ))}
     </ol>
-    <footer class="hs-foot">
-      <p class="hs-out">Money out if you run <span class="num">{money(0)}</span></p>
-      <p class="hs-meta">Stripe test mode</p>
+    <footer class="panel-foot">
+      <p class="plan-out">Money out if you run <span class="plan-out-v num"><span class="st-wait">{money(0)}</span><span class="st-ok money">{money(moneyOutCents)}</span></span></p>
     </footer>
   </article>
 
-  <article class="hs-chip hs-mail" aria-label="Blocked inbox email">
-    <div class="mail-head">
-      <span class="stamp">BLOCKED</span>
-      <span class="mail-from addr">{blocked.from}</span>
-    </div>
-    <p class="mail-subj">{blocked.subject}</p>
-    <p class="hs-mail-why"><Icon name="shield" />Never sent to the planner</p>
+  <article class="appr panel" aria-label={`Approval, step ${refund.n}`}>
+    <p class="appr-head"><span class="appr-step">Step {refund.n}</span><span class="appr-what">{refund.why}</span></p>
+    <p class="appr-amt num money">{whole}<span class="cents">.{frac}</span></p>
+    <label class="appr-check">
+      <input type="checkbox" />
+      <span>Approve this refund. Card refunds cannot be undone.</span>
+    </label>
   </article>
-
-  <div class="hs-chip hs-fc">
-    <p class="hs-fc-head"><span>{forecast.product}</span> <code class="id">{forecast.sku}</code></p>
-    <ForecastChart id="hs-fc" bare />
-    <p class="hs-fc-out">Runs out about day {forecast.daysToStockout}</p>
-  </div>
 </div>

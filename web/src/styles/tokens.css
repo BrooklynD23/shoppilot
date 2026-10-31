@@ -1,0 +1,154 @@
+/* ShopPilot+ design tokens: the one source for colour, type, space, radius, elevation, light and motion.
+   Rules and reasons: web/BRAND.md. Check after any colour change: node scripts/check-contrast.mjs
+   Components read the generic names (--bg, --ink, --money...). .night / .morning re-point them,
+   so one component works on both surfaces. Never hard-code a hex in page CSS. */
+
+:root {
+  /* Night: warm graphite. Chroma kept under .005 so the dusk footage carries the warmth, not the UI. */
+  --n-bg: #0f0e0c;
+  --n-bg-rgb: 15 14 12;               /* for scrims: rgb(var(--n-bg-rgb) / .5) */
+  --n-s1: #161513;
+  --n-s2: #1d1b19;
+  --n-s3: #272523;
+  --n-line: rgb(242 240 236 / .08);   /* hairlines, dividers */
+  --n-line-2: rgb(242 240 236 / .14); /* hover edge, stronger divider */
+  --n-line-ctl: rgb(242 240 236 / .36); /* input and outline-button edge: 3.0:1 on bg */
+  --n-ink: #f2f0ec;                   /* 17.0:1 on bg */
+  --n-ink-2: #bab7b2;                 /* 9.7:1 on bg, 8.6:1 on s2 */
+  --n-ink-3: #97938e;                 /* 6.3:1 on bg, 5.0:1 on s3 */
+  --n-money: #f0be6d;                 /* 11.3:1 on bg */
+  --n-money-bg: rgb(240 190 109 / .14); /* money on it: 7.9:1 */
+  --n-ok: #91cea6;                    /* 9.5:1 on s2 */
+  --n-ok-bg: rgb(145 206 166 / .10);
+  --n-bad: #ea8f7d;                   /* 7.1:1 on s2 */
+  --n-bad-bg: rgb(234 143 125 / .14); /* bad on it: 6.0:1 */
+  --n-run: #9bc0db;                   /* 9.0:1 on s2 */
+  --n-run-bg: rgb(155 192 219 / .10);
+  --n-muted-bg: rgb(242 240 236 / .06);
+
+  /* Morning: tissue paper. Same low chroma; the kraft footage and the product carry the colour. */
+  --m-bg: #f7f6f3;
+  --m-s1: #fdfdfb;
+  --m-s2: #eeede9;
+  --m-s3: #e1dfdb;
+  --m-line: rgb(27 25 22 / .09);
+  --m-line-2: rgb(27 25 22 / .16);
+  --m-line-ctl: rgb(27 25 22 / .48);  /* 3.1:1 on bg */
+  --m-ink: #1b1916;                   /* 16.2:1 on bg */
+  --m-ink-2: #504c48;                 /* 7.9:1 on bg, 7.3:1 on s2 */
+  --m-ink-3: #67625e;                 /* 5.6:1 on bg, 4.5:1 on s3 */
+  --m-money: #8a560c;                 /* 5.7:1 on bg, 5.3:1 on money-bg */
+  --m-money-bg: #f9edd7;
+  --m-ok: #2d6945;                    /* 6.0:1 on bg */
+  --m-ok-bg: #e9f2ec;
+  --m-bad: #a8372a;                   /* 6.0:1 on bg, 5.6:1 on bad-bg */
+  --m-bad-bg: #fcece9;
+  --m-run: #376285;                   /* 6.0:1 on bg */
+  --m-run-bg: #e8eef4;
+  --m-muted-bg: rgb(27 25 22 / .05);
+
+  /* The one accent: lamp amber = money waiting for a human. Fill for the approval badge and money checkbox only. */
+  --money-fill: #f0be6d;              /* ink #1b1916 on it: 10.3:1 */
+  --on-money: #1b1916;
+
+  /* 3D agents and illustration: materials from the footage, never neon. Lamp amber stays reserved for money. */
+  --mat-tin: #a7a49d;
+  --mat-kraft: #b69770;
+  --mat-walnut: #775531;
+  --mat-tissue: #e9e4da;
+  --mat-dusk: #546f7b;
+  --mat-graphite: #3a3734;            /* Validator: the rubber stamp and its ink */
+  --mat-sage: #8f9a8a;                /* Judge: desk-plant felt, deliberately greyer than --ok */
+
+  /* Type: one family. Mono only for code, tool names and IDs. */
+  --font: 'Mona Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+  --fs-display: clamp(2.5rem, 1.15rem + 4.2vw, 4.5rem);  /* h1: 40 to 72 px */
+  --fs-h2: clamp(1.75rem, 1.2rem + 1.7vw, 2.75rem);      /* 28 to 44 px */
+  --fs-h3: 1.25rem;                                       /* 20 px */
+  --fs-lead: clamp(1.0625rem, 1rem + .25vw, 1.1875rem);   /* 17 to 19 px */
+  --fs-body: 1rem;
+  --fs-small: .875rem;
+  --fs-micro: .75rem;
+  --fw-body: 420;
+  --fw-display: 500;                  /* h1, h2: light enough to read expensive */
+  --fw-title: 560;                    /* h3, card titles, buttons */
+  --tr-display: -0.03em;
+  --tr-h2: -0.024em;
+  --tr-h3: -0.012em;
+
+  /* Space: 4 px base. Sections breathe: --section between landing sections. */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px; --sp-9: 96px;
+  --section: clamp(96px, 11vw, 168px);
+  --gutter: clamp(16px, 4vw, 40px);
+  --maxw: 1200px;
+
+  /* Radius: one scale. Nested corners: inner = outer minus padding. */
+  --r-xs: 4px;      /* stamps, checkboxes, kbd */
+  --r-sm: 6px;      /* tags, inline chips, code */
+  --r-ctl: 12px;    /* buttons, inputs, menus */
+  --r-card: 16px;   /* cards, panels, product windows */
+  --r-media: 20px;  /* video frames, the hero stage */
+  --r-pill: 999px;  /* status pills and small toggles only, never primary buttons */
+
+  /* Light, not colour. Gradients only describe light falling on a surface. */
+  --light-top: radial-gradient(70% 55% at 50% 0%, rgb(255 250 240 / .06), transparent 70%);
+  --light-edge: linear-gradient(90deg, transparent, rgb(255 250 240 / .22) 50%, transparent); /* use at background-size 100% 1px, top */
+  --light-sheen: linear-gradient(180deg, rgb(255 255 255 / .10), rgb(255 255 255 / 0) 55%);
+  --light-lamp: radial-gradient(40% 50% at 70% 25%, rgb(240 190 109 / .10), transparent 70%); /* hero only, once per page */
+  --dawn: linear-gradient(180deg, var(--n-bg), 45%, var(--m-bg)); /* two stops, neutral midtones, no brown */
+
+  /* Motion. UI = ease-out under 300 ms. --ease-sig is for the one Persuade moment and reveals. */
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  --ease-in-out: cubic-bezier(.77, 0, .175, 1);
+  --ease-drawer: cubic-bezier(.32, .72, 0, 1);
+  --ease-sig: cubic-bezier(.16, 1, .3, 1);
+  --ease: var(--ease-out);
+  --dur-press: 140ms;
+  --dur-1: 160ms;    /* hover, colour */
+  --dur-2: 220ms;    /* popovers, state changes */
+  --dur-3: 320ms;    /* drawers, larger panels */
+  --dur-reveal: 700ms; /* Persuade reveals only */
+
+  --icon-stroke: 1.5px;
+
+  /* Legacy aliases still read by older page CSS. New code uses --money-fill / --n-money. */
+  --amber-fill: var(--money-fill);
+  --n-amber: var(--n-money);
+}
+
+/* Surface switches: every component reads these generic names. */
+.night, :root.night {
+  --bg: var(--n-bg); --s1: var(--n-s1); --s2: var(--n-s2); --s3: var(--n-s3);
+  --line: var(--n-line); --line-2: var(--n-line-2); --line-ctl: var(--n-line-ctl);
+  --ink: var(--n-ink); --ink-2: var(--n-ink-2); --ink-3: var(--n-ink-3);
+  --money: var(--n-money); --money-bg: var(--n-money-bg);
+  --ok: var(--n-ok); --ok-bg: var(--n-ok-bg); --bad: var(--n-bad); --bad-bg: var(--n-bad-bg);
+  --run: var(--n-run); --run-bg: var(--n-run-bg); --undone: var(--n-ink-2); --undone-bg: var(--n-muted-bg);
+  --muted-bg: var(--n-muted-bg);
+  --focus: var(--n-ink);
+  --selection: rgb(242 240 236 / .22);
+  --elev-1: 0 0 0 1px var(--n-line), inset 0 1px 0 rgb(255 255 255 / .04);
+  --elev-2: 0 0 0 1px var(--n-line-2), inset 0 1px 0 rgb(255 255 255 / .06), 0 24px 56px -16px rgb(0 0 0 / .7);
+  --shadow: var(--elev-1);
+  color-scheme: dark;
+  accent-color: var(--ink); /* checkboxes and radios in ink, never the browser blue; here because --ink only exists on a surface */
+  background: var(--bg); color: var(--ink);
+}
+.morning, :root.morning {
+  --bg: var(--m-bg); --s1: var(--m-s1); --s2: var(--m-s2); --s3: var(--m-s3);
+  --line: var(--m-line); --line-2: var(--m-line-2); --line-ctl: var(--m-line-ctl);
+  --ink: var(--m-ink); --ink-2: var(--m-ink-2); --ink-3: var(--m-ink-3);
+  --money: var(--m-money); --money-bg: var(--m-money-bg);
+  --ok: var(--m-ok); --ok-bg: var(--m-ok-bg); --bad: var(--m-bad); --bad-bg: var(--m-bad-bg);
+  --run: var(--m-run); --run-bg: var(--m-run-bg); --undone: var(--m-ink-2); --undone-bg: var(--m-muted-bg);
+  --muted-bg: var(--m-muted-bg);
+  --focus: var(--m-ink);
+  --selection: rgb(27 25 22 / .14);
+  --elev-1: 0 0 0 1px var(--m-line);
+  --elev-2: 0 0 0 1px rgb(27 25 22 / .06), 0 2px 4px -2px rgb(27 25 22 / .06), 0 16px 40px -16px rgb(27 25 22 / .22);
+  --shadow: var(--elev-1);
+  color-scheme: light;
+  accent-color: var(--ink);
+  background: var(--bg); color: var(--ink);
+}

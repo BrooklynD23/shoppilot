@@ -1,41 +1,32 @@
 ---
-// Morning band: the finished run. All five steps Done; the refund is Irreversible (no Undo, ever).
-import { plan, money, store } from '../../data/demo';
-import { safety } from '../../data/v2';
+// Morning: the finished run as audit receipts, oldest first, from the console's recorded execute results
+// (src/data/run.ts). Refunds are final: never an Undo on refund_order. The clock times are the story's.
+import { planId, receipts, moneyOutCents, money } from '../../data/run';
+import { morning } from '../../data/landing';
 import Icon from './Icon.astro';
 
-const byTool = Object.fromEntries(safety.auditReceipt.map((r) => [r.tool, r]));
-const out = plan.steps.filter((s) => s.movesMoney).reduce((t, s) => t + (s.amountCents ?? 0), 0);
+if (receipts.length > morning.runAt.length) throw new Error('landing.ts morning.runAt needs one time per receipt');
+const rows = receipts.map((r, i) => ({ ...r, ts: morning.runAt[i] }));
 ---
-<article class="rundone" data-ui aria-label="Finished run, demo store">
-  <header class="rd-head">
-    <p class="rd-title"><Icon name="tick" />Run complete <code class="id">{plan.planId}</code></p>
-    <span class="tag">{store.name}, demo store</span>
+<article class="run panel" data-ui aria-label="Finished run, demo store">
+  <header class="panel-head">
+    <p class="panel-title"><Icon name="tick" class="run-ok" />Run complete <code class="id">{planId}</code></p>
+    <span class="tag">Demo store</span>
   </header>
-  <ol class="rd-steps">
-    {plan.steps.map((s) => {
-      const r = byTool[s.tool];
-      return (
-        <li class:list={['rd-step', { 'rd-step--money': s.movesMoney }]}>
-          <span class="step-n num" aria-hidden="true">{s.n}</span>
-          <div class="rd-main">
-            <p class="rd-t">{s.title}{s.movesMoney && <span class="num money"> {money(s.amountCents ?? 0)}</span>}</p>
-            <p class="receipt-ids">
-              {r && <span class="num">{r.ts}</span>}
-              <code class="tool">{s.tool}</code>
-              {r && <code class="id">{r.id}</code>}
-            </p>
-          </div>
-          <span class="rd-pills">
-            <span class="pill pill--done">Done</span>
-            {s.movesMoney && <span class="pill pill--irreversible">Irreversible</span>}
-          </span>
-        </li>
-      );
-    })}
-  </ol>
-  <footer class="rd-foot">
-    <p>Money out <span class="num money">{money(out)}</span></p>
-    <p class="rd-note">Approved by you, Stripe test mode</p>
+  <table class="run-t">
+    <thead class="sr-only"><tr><th scope="col">Time</th><th scope="col">Receipt</th><th scope="col">Undo</th></tr></thead>
+    <tbody>
+      {rows.map((r) => (
+        <tr>
+          <td class="run-ts num">{r.ts}</td>
+          <td class="run-what"><span class="run-sum">{r.text}</span> <span class="run-ids"><code class="tool">{r.tool}</code> <code class="id">{r.id}</code></span></td>
+          <td class="run-undo">{r.undo ? <span class="undo"><Icon name="undo" />Undo</span> : <span class="pill pill--irreversible">Irreversible</span>}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+  <footer class="panel-foot">
+    <p class="run-out">Money out <span class="num money">{money(moneyOutCents)}</span></p>
+    <p class="panel-meta">Approved by you at <span class="num">{morning.approvedAt}</span></p>
   </footer>
 </article>

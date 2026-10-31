@@ -2,7 +2,8 @@
 // generated from the real FastAPI routes). 300 ms latency. In-memory state only.
 import type { Res } from './api';
 
-export const SCENARIOS = ['happy', 'invalid', 'clarify', 'ratelimit', 'llmdown', 'fail', 'slow', 'empty', 'mock'];
+// trace: the happy plan plus the proposed agent trace (docs/specs/09-agent-trace.md), not served by the backend yet.
+export const SCENARIOS = ['happy', 'invalid', 'clarify', 'ratelimit', 'llmdown', 'fail', 'slow', 'empty', 'mock', 'trace'];
 const LATENCY_MS = 300;
 const SLOW_MS = 14000;
 
@@ -35,6 +36,7 @@ async function plan<T>(sc: string, body: { request?: string; replay?: boolean },
   if (sc === 'llmdown' && !body.replay) return ok(await load('plan-llmdown'));
   const name = sc === 'invalid' ? 'plan-invalid'
     : sc === 'empty' ? 'plan-empty'
+    : sc === 'trace' ? 'plan-trace'
     : sc === 'clarify' && mem.planCalls === 1 ? 'plan-clarify'
     : 'plan';
   const p = await load(name);

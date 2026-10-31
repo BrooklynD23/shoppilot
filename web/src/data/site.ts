@@ -20,5 +20,6 @@ export const footer = {
     { label: 'Report', href: '/report/' },
   ],
   course: 'ShopPilot+ is a CS4680 course project and a student startup simulation. Nothing is for sale.',
+  built: 'Built with Claude by Anthropic and Stripe.', // text only, no logos
   veo: 'Background footage is AI-generated (Google Veo).',
 };

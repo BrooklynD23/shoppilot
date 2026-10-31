@@ -47,6 +47,7 @@ for (const [name, url] of jobs) {
     const { result: { sessionId } } = await send('Target.attachToTarget', { targetId, flatten: true });
     await send('Page.enable', {}, sessionId);
     await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: w < 600 }, sessionId);
+    if (process.env.REDUCED) await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] }, sessionId);
     await send('Network.setUserAgentOverride', { userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36' }, sessionId);
     const loaded = once((m) => m.method === 'Page.loadEventFired' && m.sessionId === sessionId, 30000);
     await send('Page.navigate', { url }, sessionId);

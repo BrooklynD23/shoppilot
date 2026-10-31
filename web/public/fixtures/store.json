@@ -3,7 +3,7 @@
  "store_reset": false,
  "store_name": "Fern & Kiln",
  "llm_mode": "live",
- "stripe_mode": "test",
+ "stripe_mode": "mock",
  "products": [
   {
    "id": "P01",

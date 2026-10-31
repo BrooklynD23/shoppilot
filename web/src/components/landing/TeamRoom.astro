@@ -1,0 +1,42 @@
+---
+// "Night shift": the console's team (same roster, same portraits as /app/) at the moment the plan
+// waits for you, then the hand-offs that got it there. Static and complete on first paint.
+// Each member shows what it really is (agents.ts `kind`: a Claude model, statistics or plain code).
+// Roster and portraits are imported read-only from the console; portrait fills are .pt-* in page-landing.css.
+import { AGENTS } from '../../scripts/console/agents';
+import Portrait from '../console/Portrait.astro';
+import { states, thread, team } from '../../data/landing';
+import { planId, money } from '../../data/run';
+import Icon from './Icon.astro';
+
+const byId = Object.fromEntries(AGENTS.map((a) => [a.id, a]));
+const name = (id: string) => (id === 'you' ? 'You' : byId[id]?.name ?? id);
+const pill = { ok: 'pill--done', bad: 'pill--blocked', money: 'pill--approval' } as const;
+---
+<div class="room panel" data-ui>
+  <header class="panel-head">
+    <p class="panel-title">{team.room} <code class="id">{planId}</code></p>
+    <p class="panel-meta num">{team.span}</p>
+    <span class="tag">Demo store</span>
+  </header>
+  <ul class="crew morning" aria-label="Team">
+    {AGENTS.map((a) => (
+      <li class:list={['crew-m', `mat-${a.mat}`]}>
+        <Portrait id={a.id} />
+        <p class="crew-name">{a.name}</p>
+        <p class="crew-kind">{a.kind}</p>
+        <span class:list={['pill', pill[states[a.id].tone]]}>{states[a.id].word}</span>
+      </li>
+    ))}
+  </ul>
+  <ol class="thread" aria-label="Hand-offs">
+    {thread.map((m) => (
+      <li class="msg">
+        <span class:list={['msg-av morning', `mat-${byId[m.from]?.mat}`]} aria-hidden="true"><Portrait id={m.from} /></span>
+        <p class="msg-who"><span>{name(m.from)}</span><Icon name="arrow" class="msg-arr" /><span class="sr-only">to</span><span class="msg-to">{name(m.to)}</span></p>
+        <p class="msg-text">{m.text}{m.money != null && <><span class="num money">{money(m.money)}</span> {m.after}</>}{m.code && <code class="id">{m.code}</code>}</p>
+        <time class="msg-ts num">{m.ts}</time>
+      </li>
+    ))}
+  </ol>
+</div>

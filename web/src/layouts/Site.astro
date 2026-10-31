@@ -19,13 +19,13 @@ interface Props {
 const { title, description, surface = 'morning', current, skipTo = 'main', showVeoNote = false, headerSurface, footerSurface = 'morning' } = Astro.props;
 const hs = headerSurface ?? surface;
 ---
-<Base title={title} description={description} themeLight={surface === 'night' ? '#14100c' : '#f7f1e7'} themeDark="#14100c">
+<Base title={title} description={description} themeLight={surface === 'night' ? '#0f0e0c' : '#f7f6f3'} themeDark="#0f0e0c">
   <div class:list={[surface, "shell"]}>
     <a class="skip" href={`#${skipTo}`}>Skip to content</a>
     <header class:list={['site-header', hs]}>
       <div class="wrap">
         <a class="wordmark" href="/" aria-label="ShopPilot+ home">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="6" fill="#f5b544"/><path d="M7 12.5l3 3 7-7" fill="none" stroke="#1f1810" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="6" fill="currentColor"/><path d="M7 12.5l3 3 7-7" fill="none" stroke="#0f0e0c"stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
           ShopPilot+
         </a>
         <nav class="site-nav" aria-label="Main">
@@ -43,6 +43,7 @@ const hs = headerSurface ?? surface;
       <div class="wrap">
         <div class="notes">
           <p>{footer.course}</p>
+          <p>{footer.built}</p>
           {showVeoNote && <p>{footer.veo}</p>}
         </div>
         <ul>

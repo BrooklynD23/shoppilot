@@ -116,23 +116,38 @@ export function stepRow(n: number, s: Step, v: Validation | undefined, d: Diff |
   const box = el('input', { type: 'checkbox', 'data-approve': s.id }) as HTMLInputElement;
   box.checked = valid && !money_;
   box.disabled = !valid;
-  const args = el('details', { class: 'more' }, el('summary', {}, 'Arguments'), el('pre', { class: 'args' }, JSON.stringify(s.args, null, 2)));
-  return el('li', { class: `step${valid ? '' : ' step--invalid'}`, 'data-step': s.id, 'data-tool': s.tool },
+  // One disclosure for the detail a grader may want: the dry-run diff, the tool and its arguments.
+  const details = el('details', { class: 'more' }, el('summary', {}, 'Details'),
+    d && !d.after?.error ? diffTable(d) : null,
+    el('p', { class: 'step-meta' }, 'Tool ', el('code', { class: 'tool' }, s.tool)),
+    el('pre', { class: 'args' }, JSON.stringify(s.args, null, 2)));
+  const approval = valid && money_;
+  return el('li', { class: `step${valid ? '' : ' step--invalid'}${approval ? ' step--approval' : ''}`, 'data-step': s.id, 'data-tool': s.tool },
     el('span', { class: 'step-n', 'aria-hidden': 'true' }, String(n)),
     el('div', { class: 'step-body' },
       el('div', { class: 'step-top' },
         el('h3', { class: 'step-title' }, el('span', { class: 'sr-only' }, `Step ${n}: `), stepTitle(s)),
         amount, pills),
       el('p', { class: 'step-target' }, stepTarget(s, products)),
-      el('p', { class: 'step-meta' }, el('code', { class: 'tool' }, s.tool), el('span', { class: 'step-status', 'data-status': '' })),
       valid ? null : el('p', { class: 'step-reason' }, icon('cross'), `Blocked by validator: ${clean(v?.reason)}`),
       s.rationale ? el('p', { class: 'step-why' }, `Why: ${clean(s.rationale)}`) : null,
-      d?.after?.error ? el('p', { class: 'step-reason' }, icon('alert'), `Preview: ${clean(d.after.error)}`) : d ? diffTable(d) : null,
+      d?.after?.error ? el('p', { class: 'step-reason' }, icon('alert'), `Preview: ${clean(d.after.error)}`) : null,
       f ? drawForecast(f, `fc-${s.id}`) : null,
-      args,
+      details,
       el('div', { class: 'step-approve' },
         el('label', { class: 'check' }, box, el('span', {}, valid ? approveLabel(s, d, t) : 'Cannot run: blocked by validator'))),
     ));
+}
+
+// ---------- guard verdicts: counted one way for the console bar, the inbox stamps and Guard ----------
+type Verdict = { allowed?: boolean; label?: string } | null | undefined;
+/** guard_error: the screen could not run, so the email is held for a person (fails closed), not blocked. */
+export const isHeld = (v: Verdict) => !v?.allowed && v?.label === 'guard_error';
+export function verdicts(vs: readonly Verdict[]) {
+  const out = vs.filter((v) => !v?.allowed);
+  const held = out.filter(isHeld).length;
+  const blocked = out.length - held;
+  return { blocked, held, text: [blocked && `${blocked} blocked`, held && `${held} held`].filter(Boolean).join(', ') };
 }
 
 // ---------- rail ----------
@@ -140,9 +155,11 @@ export interface Email { id: string; from: string; subject: string; body: string
   verdict: { source_id: string; allowed: boolean; label: string; reason: string; score: number | null } }
 export function mailItem(m: Email): HTMLElement {
   const v = m.verdict ?? { allowed: false, label: 'unknown', reason: '', score: null };
-  return el('article', { class: `mail${v.allowed ? ' mail--ok' : ''}`, id: `mail-${m.id}`, tabindex: '-1' },
+  const held = isHeld(v);
+  return el('article', { class: `mail${v.allowed ? ' mail--ok' : held ? ' mail--held' : ''}`, id: `mail-${m.id}`, tabindex: '-1' },
     el('div', { class: 'mail-head' },
-      v.allowed ? el('span', { class: 'pill pill--allowed' }, 'Allowed') : el('span', { class: 'stamp' }, 'BLOCKED'),
+      v.allowed ? el('span', { class: 'pill pill--allowed' }, 'Allowed')
+        : el('span', { class: `stamp${held ? ' stamp--held' : ''}` }, held ? 'HELD' : 'BLOCKED'),
       el('span', { class: 'mail-from addr' }, clean(m.from)),
       el('span', { class: 'mail-ts num' }, time(m.received_at))),
     el('p', { class: 'mail-subj' }, clean(m.subject)),

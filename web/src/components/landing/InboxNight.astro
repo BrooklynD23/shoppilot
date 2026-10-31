@@ -1,22 +1,21 @@
 ---
-// Problem section: the demo-store inbox piling up on a Sunday night (real UI fragment, static).
-import { problem } from '../../data/landing';
-import { store } from '../../data/demo';
+// Problem: the demo-store inbox before the run, the same emails GET /api/inbox returns (src/data/run.ts).
+// Unread dots are ink: amber is money only.
+import { inbox } from '../../data/run';
 ---
-<article class="inbox" data-ui aria-label="Inbox, demo store">
-  <header class="inbox-head">
-    <p class="inbox-title">Inbox <span class="inbox-count num">{problem.inbox.length} unread</span></p>
-    <span class="tag">{store.name}, demo store</span>
+<article class="inbox panel" data-ui aria-label="Inbox, demo store">
+  <header class="panel-head">
+    <p class="panel-title">Inbox</p>
+    <p class="panel-meta"><span class="num">{inbox.length}</span> unread</p>
+    <span class="tag">Demo store</span>
   </header>
   <ol class="inbox-list">
-    {[...problem.inbox].reverse().map((m) => (
+    {inbox.map((m) => (
       <li class="inbox-row">
         <span class="inbox-dot" aria-hidden="true"></span>
-        <div class="inbox-main">
-          <p class="inbox-subj">{m.subject}</p>
-          <p class="inbox-from addr">{m.from}</p>
-        </div>
-        <time class="inbox-ts num">{m.ts}</time>
+        <p class="inbox-subj">{m.subject}</p>
+        <p class="inbox-from addr">{m.from}</p>
+        <time class="inbox-ts num" datetime={m.at}>{m.when}</time>
       </li>
     ))}
   </ol>

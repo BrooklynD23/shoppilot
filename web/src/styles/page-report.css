@@ -37,15 +37,15 @@
 .rp-sec > p .rp-tag { vertical-align: 1px; }
 .rp-result { color: var(--ink) !important; }
 .rp-note { font-size: .875rem; }
-.rp-caveat { padding: 14px 16px; border-radius: var(--r-ctl); background: var(--s2); color: var(--ink) !important; border-left: 3px solid var(--ink-3); }
+.rp-caveat { padding: 14px 16px; border-radius: var(--r-ctl); background: var(--s2); color: var(--ink) !important; box-shadow: var(--elev-1); }
 
 /* Video slot: a link out, never an embed (CSP forbids frames). */
 .rp-video { position: relative; display: block; aspect-ratio: 16 / 9; max-width: 960px; border-radius: var(--r-card); overflow: hidden; background: var(--n-bg); color: var(--n-ink); text-decoration: none; box-shadow: var(--shadow); }
 .rp-video img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.rp-video::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20, 16, 12, .25) 0%, rgba(20, 16, 12, .55) 55%, rgba(20, 16, 12, .88) 100%); }
+.rp-video::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(var(--n-bg-rgb) / .25) 0%, rgb(var(--n-bg-rgb) / .55) 55%, rgb(var(--n-bg-rgb) / .88) 100%); }
 .rp-play { position: absolute; z-index: 1; left: 50%; top: 46%; width: clamp(56px, 9vw, 84px); translate: -50% -50%; }
 .rp-play svg { display: block; width: 100%; height: auto; }
-.rp-play circle { fill: rgba(20, 16, 12, .55); stroke: var(--n-ink); stroke-width: 2; }
+.rp-play circle { fill: rgb(var(--n-bg-rgb) / .55); stroke: var(--n-ink); stroke-width: 2; }
 .rp-play path { fill: var(--n-ink); }
 .rp-video-cap { position: absolute; z-index: 1; left: 0; right: 0; bottom: 0; padding: 16px 20px; font-weight: 600; font-size: clamp(.9375rem, 1.8vw, 1.125rem); }
 .rp-video.is-pending { cursor: not-allowed; }
@@ -53,7 +53,7 @@
 .rp-video.is-pending .rp-video-cap { font-family: var(--mono); font-weight: 500; }
 a.rp-video { transition: transform 150ms var(--ease); }
 a.rp-video:active { transform: scale(.97); }
-@media (hover: hover) and (pointer: fine) { a.rp-video:hover .rp-play circle { fill: rgba(245, 181, 68, .35); } }
+@media (hover: hover) and (pointer: fine) { a.rp-video:hover .rp-play circle { fill: rgb(var(--n-bg-rgb) / .85); } }
 
 /* Charts */
 .rp-fig { display: grid; gap: 10px; max-width: 760px; padding: 18px 18px 14px; border-radius: var(--r-card); background: var(--s1); box-shadow: var(--shadow); }
