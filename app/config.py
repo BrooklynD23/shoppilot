@@ -19,12 +19,13 @@ class Settings(BaseModel):
     max_sessions: int = Field(100, gt=0)
     plan_ttl_minutes: int = Field(15, gt=0)
     anthropic_api_key: SecretStr | None = None
-    planner_model: str = "claude-sonnet-5-5"
+    # User decision 2026-11-02: Haiku 5.5 only for every live LLM call, to cap API spend.
+    planner_model: str = "claude-haiku-5-5"
     judge_model: str = "claude-haiku-5-5"
     planner_effort: Literal["low", "medium", "high"] = "medium"
     llm_mode: Literal["live", "replay", "record"] = "live"
-    llm_daily_budget_usd: float = Field(5.0, gt=0, allow_inf_nan=False)
-    llm_session_budget_usd: float = Field(0.5, gt=0, allow_inf_nan=False)
+    llm_daily_budget_usd: float = Field(2.0, gt=0, allow_inf_nan=False)
+    llm_session_budget_usd: float = Field(0.25, gt=0, allow_inf_nan=False)
     llm_max_plans_per_session_hour: int = Field(20, gt=0)
     stripe_secret_key: SecretStr | None = None
     stripe_mode: Literal["auto", "mock"] = "auto"
@@ -34,6 +35,13 @@ class Settings(BaseModel):
     @classmethod
     def _empty_is_none(cls, v):
         return None if v == "" else v
+
+    @field_validator("planner_model", "judge_model")
+    @classmethod
+    def _haiku_only(cls, v: str):
+        if not v.startswith("claude-haiku-"):
+            raise ValueError("Only Claude Haiku models are allowed (API spend limit)")
+        return v
 
     @field_validator("stripe_secret_key")
     @classmethod

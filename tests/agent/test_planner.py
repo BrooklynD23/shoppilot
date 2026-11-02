@@ -17,7 +17,8 @@ from app.safety.inbound_guard import GuardVerdict
 from app.seed.generate import DAMAGED_EMAIL_ID, DAMAGED_ORDER_ID, INJECTION_EMAIL_ID
 from app.tools import registry
 
-HAIKU, SONNET = "claude-haiku-5-5", "claude-sonnet-5-5"
+# Haiku-only (user decision 2026-11-02): the planner runs on the same model as router/judge.
+HAIKU = PLANNER = "claude-haiku-5-5"
 USAGE = {
     "input_tokens": 100,
     "cache_creation_input_tokens": 0,
@@ -27,7 +28,7 @@ USAGE = {
 ANY = {"status": "any", "created_from": None, "created_to": None, "order_ids": None}
 
 
-def _resp(content, stop="end_turn", model=SONNET):
+def _resp(content, stop="end_turn", model=PLANNER):
     return {"content": content, "stop_reason": stop, "model": model, "usage": USAGE}
 
 
@@ -40,7 +41,7 @@ def router(route="plan", reply=""):
 
 
 def final(status="ready", message="ok"):
-    return _text({"status": status, "message": message}, SONNET)
+    return _text({"status": status, "message": message}, PLANNER)
 
 
 def judge_pass():
@@ -126,7 +127,7 @@ def _paid_ids(ctx, n=2):
     ]
 
 
-def test_router_reject_skips_sonnet(script, ctx):
+def test_router_reject_skips_planner(script, ctx):
     script.push(router("reject", reply="I help with shop operations."))
     p = make_plan("what's the weather?", ctx)
     assert p.status == "refused" and p.steps == [] and script.models == [HAIKU]
@@ -154,7 +155,7 @@ def test_read_then_stage_then_final(script, ctx):
     assert s.evidence == ids and s.rationale == "r" and s.id == "s1"
     assert "STAGED s1" in script.tool_results_after(3)[0]["content"]
     assert p.judge["verdict"] == "pass" and p.id == ""  # make_plan does not save (R32)
-    assert script.models == [HAIKU, SONNET, SONNET, SONNET, HAIKU]
+    assert script.models == [HAIKU, PLANNER, PLANNER, PLANNER, HAIKU]
 
 
 def test_rejected_step_fed_back_and_dropped(script, ctx):
@@ -208,7 +209,7 @@ def test_refusal_uses_stop_details(script, ctx):
     assert p.status == "refused" and p.message == "Not allowed."
 
 
-def test_router_refusal_skips_sonnet(script, ctx):
+def test_router_refusal_skips_planner(script, ctx):
     r = {**_resp([], stop="refusal", model=HAIKU), "stop_details": {"explanation": "No."}}
     script.push(r)
     p = make_plan("do something bad", ctx)
@@ -267,7 +268,7 @@ def test_max_turns(script, ctx):
     script.push(router(), *[tool_use(("list_inbox", {})) for _ in range(MAX_TURNS)])
     p = make_plan("loop forever", ctx)
     assert p.status == "error" and "split" in p.message and p.steps == []
-    assert script.models.count(SONNET) == MAX_TURNS
+    assert script.models.count(PLANNER) == MAX_TURNS + 1  # + the router call
 
 
 def test_llm_error_becomes_error_plan(script, ctx):
@@ -378,7 +379,7 @@ def test_force_replay_sets_source(script, ctx, tmp_path, monkeypatch):
         "request": req,
         "calls": [
             {"stage": "router", "model": HAIKU, "response": router()},
-            {"stage": "planner", "model": SONNET, "response": final("needs_clarification", "?")},
+            {"stage": "planner", "model": PLANNER, "response": final("needs_clarification", "?")},
         ],
     }
     (tmp_path / f"{recording_key(req)}.json").write_text(json.dumps(rec))
@@ -441,7 +442,7 @@ def test_no_call_after_deadline(script, ctx, monkeypatch):
         final(),
     )
     p = make_plan("ship it", ctx)
-    assert script.models == [HAIKU, SONNET, SONNET, SONNET]  # judge never sent
+    assert script.models == [HAIKU, PLANNER, PLANNER, PLANNER]  # judge never sent
     assert p.status == "ready" and p.judge["verdict"] == "warn"
 
 

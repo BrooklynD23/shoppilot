@@ -7,7 +7,7 @@ def test_defaults():
     s = load_settings({})
     assert s.app_env == "dev" and s.max_sessions == 100 and s.session_ttl_hours == 24
     assert s.llm_mode == "live" and s.planner_effort == "medium" and s.stripe_mode == "auto"
-    assert s.stripe_max_writes_per_session == 20 and s.llm_daily_budget_usd == 5.0
+    assert s.stripe_max_writes_per_session == 20 and s.llm_daily_budget_usd == 2.0
 
 
 def test_test_env_defaults_to_replay():
@@ -71,3 +71,17 @@ def test_boot_error_hides_secret(env):
 def test_limits_must_be_positive_finite(field, val):
     with pytest.raises(ValueError):
         load_settings({field: val})
+
+
+def test_haiku_only_by_default():
+    # User decision 2026-11-02: every live LLM call uses Haiku 5.5 to cap API spend.
+    s = load_settings({})
+    assert s.planner_model == s.judge_model == "claude-haiku-5-5"
+    assert s.llm_daily_budget_usd <= 2.0 and s.llm_session_budget_usd <= 0.25
+
+
+def test_non_haiku_model_rejected():
+    import pytest
+
+    with pytest.raises(ValueError, match="Haiku"):
+        load_settings({"PLANNER_MODEL": "claude-sonnet-5-5"})
