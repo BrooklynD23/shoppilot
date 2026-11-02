@@ -14,7 +14,7 @@ export interface Agent {
 export const AGENTS: readonly Agent[] = [
   { id: 'guard', name: 'Guard', kind: 'Rules + Haiku', does: 'Screens every inbox email before the planner can read it.', code: 'app/safety/inbound_guard.py', mat: 'tin' },
   { id: 'router', name: 'Router', kind: 'Haiku', does: 'Checks the request is shop work, or declines it.', code: 'app/agent/planner.py, route()', mat: 'tissue' },
-  { id: 'planner', name: 'Planner', kind: 'Sonnet', does: 'Reads the store, drafts typed steps, asks when unsure.', code: 'app/agent/planner.py', mat: 'kraft' },
+  { id: 'planner', name: 'Planner', kind: 'Haiku', does: 'Reads the store, drafts typed steps, asks when unsure.', code: 'app/agent/planner.py', mat: 'kraft' },
   { id: 'forecaster', name: 'Forecaster', kind: 'Statistics', does: 'Forecasts demand and flags odd orders.', code: 'app/ml/forecast.py, app/ml/anomaly.py', mat: 'dusk' },
   { id: 'validator', name: 'Validator', kind: 'Code', does: 'Checks every step against policy and money caps.', code: 'app/agent/validator.py, app/safety/policy.py', mat: 'graphite' },
   { id: 'judge', name: 'Judge', kind: 'Haiku', does: 'Reviews the finished plan. It can only add warnings.', code: 'app/agent/planner.py, judge()', mat: 'sage' },

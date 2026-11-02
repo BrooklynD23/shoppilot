@@ -15,7 +15,7 @@ const api: Line[][] = [
 const chain: { lines: Line[]; kind?: string }[] = [
   { lines: ['Haiku router', 'on topic? plan or reject'] },
   { lines: ['Haiku guard', 'screens customer email first'] },
-  { lines: ['Sonnet planner', 'strict tools, JSON output'], kind: 'hi' },
+  { lines: ['Haiku planner', 'strict tools, JSON output'], kind: 'hi' },
   { lines: ['Validator and policy', 'plain code, no LLM'] },
   { lines: ['Haiku judge', 'can only add friction'] },
 ];
@@ -31,7 +31,7 @@ const undo: Line[] = ['Undo', 'one undo per action', 'refunds are irreversible']
 
 const desc =
   'The browser console calls FastAPI (app/main.py), which checks the session cookie, the CSRF header, rate limits, CSP and a 16 KB body cap. ' +
-  'FastAPI hands the request to the agent core: a Haiku router, a Haiku guard that screens customer email, the Sonnet planner with strict tools and JSON output, ' +
+  'FastAPI hands the request to the agent core: a Haiku router, a Haiku guard that screens customer email, the Haiku planner with strict tools and JSON output, ' +
   'a deterministic validator and policy, and a Haiku judge. The owner approves, then the executor runs approved steps only. ' +
   'The planner reads from the tools and the executor runs them: the SQLite store, Stripe in test or mock mode, the fake outbox, and the forecast and anomaly ML. ' +
   'Everything is written to an append-only audit log; undo works once per action and refunds are irreversible.';
