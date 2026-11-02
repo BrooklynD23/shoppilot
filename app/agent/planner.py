@@ -37,9 +37,12 @@ from app.llm.prompts import (
 from app.tools.registry import Ctx, claude_tool_defs, get_tool
 
 MAX_TURNS = 6
+# Turn 1 must call a tool: Haiku otherwise answers from guesses. Haiku 5.5 accepts forced
+# tool_choice (Sonnet/Opus 5.5 return 400); that turn skips thinking, later turns are "auto".
+FIRST_TURN = {"type": "any"}
 PLAN_DEADLINE_S = 90
 MAX_REQUEST_CHARS = 2000
-RESULT_MAX_CHARS = 8000
+RESULT_MAX_CHARS = 24_000  # fits list_orders' 50-row max (seed: 22.4K); 8K hid 2 of 20 orders
 TRUNC = "…[truncated, narrow the query]"
 TOO_BIG = "Request too big; split it into smaller requests."
 REFUSED = "I can't help with that request."
@@ -102,6 +105,7 @@ def _complete(
     messages: list[dict],
     output_format: dict,
     tools: list[dict] | None = None,
+    tool_choice: dict | None = None,
 ) -> LLMResponse:
     s = get_settings()
     model = s.planner_model if stage == "planner" else s.judge_model
@@ -126,6 +130,7 @@ def _complete(
         tools=tools,
         output_format=output_format,
         timeout_s=timeout_s,
+        tool_choice=tool_choice,
     )
 
 
@@ -372,6 +377,7 @@ def _loop(lp: _Loop) -> tuple[str, str]:
             messages=messages,
             output_format=PLAN_FORMAT,
             tools=tools,
+            tool_choice=FIRST_TURN if n == 1 else None,
         )
         if r.stop_reason == "refusal":
             return "refused", _refusal_text(r)

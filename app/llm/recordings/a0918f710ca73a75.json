@@ -1,0 +1,211 @@
+{
+ "calls": [
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "citations": null,
+      "text": "{\"reason\": \"The owner is asking to send a payment link to a customer for a custom mug, which is a payments and customer operation for the shop.\", \"route\": \"plan\", \"reply\": \"\"}",
+      "type": "text"
+     }
+    ],
+    "diagnostics": null,
+    "id": "msg_011CgeqhFYoZHXbQrnNNXekX",
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 554
+     },
+     "cache_creation_input_tokens": 554,
+     "cache_read_input_tokens": 0,
+     "inference_geo": "global",
+     "input_tokens": 4,
+     "output_tokens": 61,
+     "output_tokens_details": {
+      "thinking_tokens": 0
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "router"
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "caller": {
+       "type": "direct"
+      },
+      "id": "toolu_01Px2wp9VBqjiqqUTLqrQ43h",
+      "input": {
+       "amount_cents": 2500,
+       "customer_id": "C0001",
+       "description": "Custom mug",
+       "evidence": [
+        "owner_request"
+       ],
+       "order_id": null,
+       "rationale": "The owner asked for a $25.00 payment link to customer C0001 for a custom mug."
+      },
+      "name": "create_payment_link",
+      "toolset_name": null,
+      "type": "tool_use"
+     }
+    ],
+    "context_management": null,
+    "diagnostics": null,
+    "id": "msg_011CgeqhL1gEAXngALutbmdb",
+    "input_transformations": null,
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 276
+     },
+     "cache_creation_input_tokens": 276,
+     "cache_read_input_tokens": 7509,
+     "fallback_credit": null,
+     "inference_geo": "global",
+     "input_tokens": 14,
+     "iterations": [
+      {
+       "cache_creation": {
+        "ephemeral_1h_input_tokens": 0,
+        "ephemeral_5m_input_tokens": 276
+       },
+       "cache_creation_input_tokens": 276,
+       "cache_read_input_tokens": 7509,
+       "input_tokens": 14,
+       "model": null,
+       "output_tokens": 199,
+       "type": "message"
+      }
+     ],
+     "output_tokens": 199,
+     "output_tokens_details": {
+      "thinking_tokens": 0
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "planner"
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "citations": null,
+      "text": "{\"status\":\"ready\",\"message\":\"Create a $25.00 payment link for customer C0001 for a custom mug. It is staged and will not be sent until you approve it.\"}",
+      "type": "text"
+     }
+    ],
+    "context_management": null,
+    "diagnostics": null,
+    "id": "msg_011CgeqhUSw5bi5WsgDLzTqj",
+    "input_transformations": null,
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 409
+     },
+     "cache_creation_input_tokens": 409,
+     "cache_read_input_tokens": 7509,
+     "fallback_credit": null,
+     "inference_geo": "global",
+     "input_tokens": 2,
+     "iterations": [
+      {
+       "cache_creation": {
+        "ephemeral_1h_input_tokens": 0,
+        "ephemeral_5m_input_tokens": 409
+       },
+       "cache_creation_input_tokens": 409,
+       "cache_read_input_tokens": 7509,
+       "input_tokens": 2,
+       "model": null,
+       "output_tokens": 55,
+       "type": "message"
+      }
+     ],
+     "output_tokens": 55,
+     "output_tokens_details": {
+      "thinking_tokens": 0
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "planner"
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "citations": null,
+      "text": "{\"checks\":[{\"name\":\"covers_request\",\"note\":\"The single create_payment_link step matches the owner's request for a $25 link to C0001 for a custom mug, with amount 2500 cents.\",\"pass\":true},{\"name\":\"no_extra_actions\",\"note\":\"The only step creates a payment link as requested and the plan states it is staged and not sent without approval.\",\"pass\":true},{\"name\":\"untrusted_text_not_obeyed\",\"note\":\"No blocked or untrusted inputs were used; the step originates from the owner request.\",\"pass\":true},{\"name\":\"evidence_supports\",\"note\":\"The cited evidence is the owner request, and the rationale and args (amount, customer, description) match it.\",\"pass\":true}],\"verdict\":\"pass\"}",
+      "type": "text"
+     }
+    ],
+    "diagnostics": null,
+    "id": "msg_011CgeqhY2VZYu8myzvb6N1d",
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 934
+     },
+     "cache_creation_input_tokens": 934,
+     "cache_read_input_tokens": 0,
+     "inference_geo": "global",
+     "input_tokens": 4,
+     "output_tokens": 238,
+     "output_tokens_details": {
+      "thinking_tokens": 0
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "judge"
+  }
+ ],
+ "prompt_version": "e427f917",
+ "recorded_at": "2026-11-02T21:50:32+00:00",
+ "request": "Send a $25 payment link to customer C0001 for a custom mug"
+}

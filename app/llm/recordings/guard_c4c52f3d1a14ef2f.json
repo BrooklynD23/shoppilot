@@ -1,0 +1,46 @@
+{
+ "calls": [
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "citations": null,
+      "text": "{\"label\":\"clean\",\"confidence\":0.97,\"reason\":\"Normal wholesale inquiry from a cafe about product pricing; no instructions to the AI or attempts to access others' data.\"}",
+      "type": "text"
+     }
+    ],
+    "diagnostics": null,
+    "id": "msg_011CgeqXMv1HdUvx2SWQ6C3S",
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 601
+     },
+     "cache_creation_input_tokens": 601,
+     "cache_read_input_tokens": 0,
+     "inference_geo": "global",
+     "input_tokens": 4,
+     "output_tokens": 64,
+     "output_tokens_details": {
+      "thinking_tokens": 0
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "guard"
+  }
+ ],
+ "guard_version": "91493fda",
+ "recorded_at": "2026-11-02T21:48:12+00:00",
+ "request": "guard:c4c52f3d1a14ef2f"
+}

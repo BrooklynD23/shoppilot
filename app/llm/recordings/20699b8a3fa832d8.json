@@ -1,0 +1,175 @@
+{
+ "calls": [
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "citations": null,
+      "text": "{\"reason\": \"The message asks to update the status of a specific order, which is an order-management request for this shop.\", \"route\": \"plan\", \"reply\": \"\"}",
+      "type": "text"
+     }
+    ],
+    "diagnostics": null,
+    "id": "msg_011CgeqgJEW16JQ4EqVpcQFq",
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 0,
+     "cache_read_input_tokens": 544,
+     "inference_geo": "global",
+     "input_tokens": 4,
+     "output_tokens": 49,
+     "output_tokens_details": {
+      "thinking_tokens": 0
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "router"
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "caller": {
+       "type": "direct"
+      },
+      "id": "toolu_01MGHsKTYT9rFBaf1pbQjDbb",
+      "input": {
+       "created_from": null,
+       "created_to": null,
+       "order_ids": [
+        "O2695"
+       ],
+       "status": "any"
+      },
+      "name": "list_orders",
+      "toolset_name": null,
+      "type": "tool_use"
+     }
+    ],
+    "context_management": null,
+    "diagnostics": null,
+    "id": "msg_011CgeqgMzDjrJMof1JVPz1v",
+    "input_transformations": null,
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 0,
+     "cache_read_input_tokens": 7775,
+     "fallback_credit": null,
+     "inference_geo": "global",
+     "input_tokens": 14,
+     "iterations": [
+      {
+       "cache_creation": {
+        "ephemeral_1h_input_tokens": 0,
+        "ephemeral_5m_input_tokens": 0
+       },
+       "cache_creation_input_tokens": 0,
+       "cache_read_input_tokens": 7775,
+       "input_tokens": 14,
+       "model": null,
+       "output_tokens": 113,
+       "type": "message"
+      }
+     ],
+     "output_tokens": 113,
+     "output_tokens_details": {
+      "thinking_tokens": 0
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "planner"
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "signature": "CAQSqwcKEAgTGAI4AUIIdGhpbmtpbmcSDNwVF/mcXvz/FNgPrhoMhTtMJ7HGRp0Xj8FxIjB2zvjLd/1baLE5lP+0fk43vIDxlW1Y1cPkNN0FWZoQqQHOeF/TPxKSVZs0P61U/7UqyAaaEqJojkfUIEBKVdXfogTUT8Z4fTxASOdMUlId4HuVjD03toEYW4WulecB9knGJBe3AHE2/fdEgKvpdnMDPlv+i5DU7TXBaz5l7ZejeICsNy4kuLARseQKvtB+jOx5z8NK6j439y7ttCqUk8IDsBM1iksVva0KpdhpZalX2xRQGywnW7hwW3UZUuMbgdNyV8u1oUCIVy6BMeqXHE1fnDMYe2dvbgQCyTl8I7SWoLGXPCyXJpPxQ/dGsgNpk5XWiMM80SAPPlHLzOW0cQAySn7eZHefyFFz5EeD43VDP1GAPa/eFvsSeN/RQkAn4Vp6US2QyrnjZfnH9KAaSCnUouKflj54gjV483nQEShQhCENCXv1OyCxt7wzcSeQHgBrf+5aevO4P2vRwSfZvC8RI2gG/GiKxATuV6mHUqBvauaw6guslo1M0UNyNPhpoKxM+Z96Q+jfjPMmuqZu3GSJPUHXsCW9oRK3hEwXLNEg2w8i6mzlsdcv7G9ZkINGym/tsHj1E/omYiRg2ZSm/4b+nauq2+OHsuBf/OJj9UEmf/sq7S6rr1CPNPgXdKr6U4UQxEUFOvmQqthBaEPz3NqS6gXmqoNKKcfLoEdnK8PyvptAAAzRvhmMGE6laEjTn8HKZW8WEAzZHUVvhwIkEpT0c+p08VvVpmlFMLmGObg2bqXOn0b5aGRw4crYEorp4yy82l4uFqgrhJw96tm44cBRoGxeNmXPu6UVKnqQ98tDNfFqOrbqpvcflwrsE/iuPWnszmND7Epfb2eaoKQl8YfapEi6hP9EJyUJoOGR5XeSynUQD4oPqcT3ciSex53wiFzsBEHzq3UCqvqn9lB8WVmvOI4ml6sBy46ehO5s0EdnwSEU6GWvNIwffZ0kAfH+iIFeYJuDciLZhNET2I5Updsu7FZj5kpT4miQ3V3ztXYuh4vBXBYgjWotT7fjIMQTRldTZDSdcAWqcc6RoZDHlPjHo3r9ENFGjqKxtltRankjpPspqxz8WgtXmLxDE5OjiLiiA+F/bpzak25uhz+ORgb3ycoZ9ivAogKE71r96I4k1uU+Iqbx3THYQP/YZU+HeWisAivwJhIValVCcgBq0IqHxMId95BaTaOv8skYAQ==",
+      "thinking": "",
+      "type": "thinking"
+     },
+     {
+      "citations": null,
+      "text": "{\"status\":\"needs_clarification\",\"message\":\"Order O2695 (Tara Fischer, $78.00) is already marked shipped with USPS tracking 1Z4831370253, so I haven't changed anything. Do you want me to re-send the tracking email to Tara, or is there a different order you meant to ship?\"}",
+      "type": "text"
+     }
+    ],
+    "context_management": null,
+    "diagnostics": null,
+    "id": "msg_011CgeqgWzwvgt1U5fHQGgK9",
+    "input_transformations": null,
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 0
+     },
+     "cache_creation_input_tokens": 0,
+     "cache_read_input_tokens": 8086,
+     "fallback_credit": null,
+     "inference_geo": "global",
+     "input_tokens": 2,
+     "iterations": [
+      {
+       "cache_creation": {
+        "ephemeral_1h_input_tokens": 0,
+        "ephemeral_5m_input_tokens": 0
+       },
+       "cache_creation_input_tokens": 0,
+       "cache_read_input_tokens": 8086,
+       "input_tokens": 2,
+       "model": null,
+       "output_tokens": 209,
+       "type": "message"
+      }
+     ],
+     "output_tokens": 209,
+     "output_tokens_details": {
+      "thinking_tokens": 105
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "planner"
+  }
+ ],
+ "prompt_version": "e427f917",
+ "recorded_at": "2026-11-02T21:50:18+00:00",
+ "request": "Mark order O2695 as shipped"
+}

@@ -1,0 +1,175 @@
+{
+ "calls": [
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "citations": null,
+      "text": "{\"reason\": \"The message asks for a refund on a specific order, which is a shop operations request.\", \"route\": \"plan\", \"reply\": \"\"}",
+      "type": "text"
+     }
+    ],
+    "diagnostics": null,
+    "id": "msg_011CgeqfcaXkky2hBht2U28y",
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 545
+     },
+     "cache_creation_input_tokens": 545,
+     "cache_read_input_tokens": 0,
+     "inference_geo": "global",
+     "input_tokens": 4,
+     "output_tokens": 46,
+     "output_tokens_details": {
+      "thinking_tokens": 0
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "router"
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "caller": {
+       "type": "direct"
+      },
+      "id": "toolu_01Bt3p79t2V8qkgjANb1Wv9t",
+      "input": {
+       "created_from": null,
+       "created_to": null,
+       "order_ids": [
+        "O2679"
+       ],
+       "status": "any"
+      },
+      "name": "list_orders",
+      "toolset_name": null,
+      "type": "tool_use"
+     }
+    ],
+    "context_management": null,
+    "diagnostics": null,
+    "id": "msg_011Cgeqfk2WCaEtiYC2k4PWN",
+    "input_transformations": null,
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 267
+     },
+     "cache_creation_input_tokens": 267,
+     "cache_read_input_tokens": 7509,
+     "fallback_credit": null,
+     "inference_geo": "global",
+     "input_tokens": 14,
+     "iterations": [
+      {
+       "cache_creation": {
+        "ephemeral_1h_input_tokens": 0,
+        "ephemeral_5m_input_tokens": 267
+       },
+       "cache_creation_input_tokens": 267,
+       "cache_read_input_tokens": 7509,
+       "input_tokens": 14,
+       "model": null,
+       "output_tokens": 113,
+       "type": "message"
+      }
+     ],
+     "output_tokens": 113,
+     "output_tokens_details": {
+      "thinking_tokens": 0
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "planner"
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "signature": "CAQSygUKEAgTGAI4AUIIdGhpbmtpbmcSDHcHg2njCOMgrjf21hoMyErs7X7Ae14d8rdfIjAotwRLH1micu8Z1tl2WaMx92lIUFs51pJo/iZYRzNlln5tcThFreZ6csKKmRKSQuYq5wQJK7P7d2velVIce03C2Kv6cA73FsvGuiDVJ04Zq4vKzyC7T0CvQE3Nk1sPF51S4axNj5bRJJ2BBnruPvxTm2Ujqck54c1FJ5zDoUa+N/kH8PubUdgF4k/brxO883Cpb4OT9Tki1V3Yb9umL6R3lF8N5DFzY+u/aMJewJJTTpHv+xWp17uA0MZVyFvr/7co+yAtTsKa9kjzy3FiXYN0i8fIWZ4Axcm5s+ng5BbQrADwbgsN1rX1uvp+DuB8Bkce6siunfu2DjAGuLAJR3ZyNVXCbCW4OVLRYXuxfW09M3Hqd1cZwVQrfT020WKrIXOoZXmjQweTo2al+TB8B9IrR7XHX41kezUAcd5Jtpjfwz+Lz2ayYiKVBzx25v70lGg9/luwYScmQAGT6d3cAgpcyBpfXlJqslbLt1GL15XJY7/TILJJoJvUzA4ryVnKICglax50a+aGaFb+ORiRho3T5SRnSYIthD8Uhwa68+DQCfCxehjSbZx1ipYQJSeEGDk4RjLCfZebdc/7cJkh5Gr+QHxioXyAHSzIdjhh1oApAiI1+HHUSwHdWvWvW4gvw82Lfm8wQw30gGCNeA9GxQksRpOdPl0ndzhSvUXxBr6DlcSOTFgDc3dd74XoIjbyT0tmuzfLhcYGGnx149/d5V/xtHmnMgzFQ5c36ev9UqF4csYfXKl+KjRUQqTX7jwK1iDOSyNkHNur3UGTPH/aoI6Ha/4Gs0UHVlRZafwju62svkAjLXTi542EmWyhnnMcJy9qsM9Oqth+oszyjeZVk633zItSqt+VI15RJjV0txMnpBpjWAxpDm2dJ2QYAQ==",
+      "thinking": "",
+      "type": "thinking"
+     },
+     {
+      "citations": null,
+      "text": "{\"status\":\"needs_clarification\",\"message\":\"Order O2679 (Ella Ito, Sage Glaze Mug) totals $26.00 with nothing refunded yet, so a $5,000.00 refund is more than the order. Should I refund the full $26.00, or a different amount?\"}",
+      "type": "text"
+     }
+    ],
+    "context_management": null,
+    "diagnostics": null,
+    "id": "msg_011CgeqfpD2RNH54JHMRYBy6",
+    "input_transformations": null,
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 479
+     },
+     "cache_creation_input_tokens": 479,
+     "cache_read_input_tokens": 7509,
+     "fallback_credit": null,
+     "inference_geo": "global",
+     "input_tokens": 2,
+     "iterations": [
+      {
+       "cache_creation": {
+        "ephemeral_1h_input_tokens": 0,
+        "ephemeral_5m_input_tokens": 479
+       },
+       "cache_creation_input_tokens": 479,
+       "cache_read_input_tokens": 7509,
+       "input_tokens": 2,
+       "model": null,
+       "output_tokens": 139,
+       "type": "message"
+      }
+     ],
+     "output_tokens": 139,
+     "output_tokens_details": {
+      "thinking_tokens": 43
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "planner"
+  }
+ ],
+ "prompt_version": "e427f917",
+ "recorded_at": "2026-11-02T21:50:07+00:00",
+ "request": "Refund $5,000 on order O2679"
+}

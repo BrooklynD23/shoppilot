@@ -35,3 +35,28 @@ turn 2 → refund_order(order_id="O9401", amount_cents=6000, reason="requested_b
 result: REJECTED: amount exceeds refundable $45.00
 final: {"status":"needs_clarification","message":"O9401 only has $45.00 left to refund, less than the $60 you asked for. Refund the full $45.00 instead?"}
 </example>
+
+<example name="restock-from-forecast">
+owner_request: Reorder whatever sells out in the next 10 days.
+turn 1 → forecast_demand(product_id=null, horizon_days=10, only_at_risk=true)
+result: 2 products run out within 10 days: P9101 (2d) and P9102 (9d), each with a reorder_qty and an explanation
+turn 2 → create_restock_po(product_id="P9101", qty_source="forecast", qty=null, rationale=<P9101's explanation, copied>, evidence=["P9101"])
+       → create_restock_po(product_id="P9102", qty_source="forecast", qty=null, rationale=<P9102's explanation, copied>, evidence=["P9102"])
+results: STAGED s1, STAGED s2
+final: {"status":"ready","message":"Reorder P9101 and P9102 at the forecast quantities; both run out within 10 days."}
+</example>
+
+<example name="owner-named-targets">
+owner_request: Export orders as CSV and send customer C9050 a $40 payment link for a gift box.
+turn 1 → export_report(kind="orders_csv", rationale="The owner asked for an orders CSV.", evidence=["owner_request"])
+       → create_payment_link(order_id=null, customer_id="C9050", amount_cents=4000, description="Gift box", rationale="The owner asked for a $40 gift box payment link for C9050.", evidence=["owner_request"])
+results: STAGED s1, STAGED s2
+final: {"status":"ready","message":"Export all orders as a CSV and create a $40.00 payment link for customer C9050's gift box."}
+</example>
+
+<example name="question-only">
+owner_request: Did anything odd happen with orders this month?
+turn 1 → flag_anomalies(since_days=30, limit=20)
+result: 2 flagged: O9601 (score 12.0, "30 units in one order; typical is 3") and O9602 (score 6.1, "paid 3% of the list price")
+final: {"status":"ready","message":"Two orders look unusual: O9601 has 30 units where a typical order has 3, and O9602 paid 3% of the list price. Nothing was changed."}
+</example>

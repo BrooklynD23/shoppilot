@@ -1,0 +1,166 @@
+{
+ "calls": [
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "citations": null,
+      "text": "{\"reason\": \"The owner is asking about odd orders from this week, which is a shop operations request.\", \"route\": \"plan\", \"reply\": \"\"}",
+      "type": "text"
+     }
+    ],
+    "diagnostics": null,
+    "id": "msg_011CgeqgnCzaJdrkR33AHnDW",
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 541
+     },
+     "cache_creation_input_tokens": 541,
+     "cache_read_input_tokens": 0,
+     "inference_geo": "global",
+     "input_tokens": 4,
+     "output_tokens": 47,
+     "output_tokens_details": {
+      "thinking_tokens": 0
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "router"
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "caller": {
+       "type": "direct"
+      },
+      "id": "toolu_01CGmZzNJb6qiRk9A7nn57UC",
+      "input": {
+       "limit": 50,
+       "since_days": 7
+      },
+      "name": "flag_anomalies",
+      "toolset_name": null,
+      "type": "tool_use"
+     }
+    ],
+    "context_management": null,
+    "diagnostics": null,
+    "id": "msg_011CgeqguBSqrrsYBvzTokZP",
+    "input_transformations": null,
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 263
+     },
+     "cache_creation_input_tokens": 263,
+     "cache_read_input_tokens": 7509,
+     "fallback_credit": null,
+     "inference_geo": "global",
+     "input_tokens": 14,
+     "iterations": [
+      {
+       "cache_creation": {
+        "ephemeral_1h_input_tokens": 0,
+        "ephemeral_5m_input_tokens": 263
+       },
+       "cache_creation_input_tokens": 263,
+       "cache_read_input_tokens": 7509,
+       "input_tokens": 14,
+       "model": null,
+       "output_tokens": 65,
+       "type": "message"
+      }
+     ],
+     "output_tokens": 65,
+     "output_tokens_details": {
+      "thinking_tokens": 0
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "planner"
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "citations": null,
+      "text": "{\"status\":\"ready\",\"message\":\"Eight orders from the last 7 days look unusual, and nothing was changed. O2693 (C0285) has 25 units in one order ($450.00) where a typical order has 3. O2663 (C0204) paid $0.98 for an item listed at $49.00. O2634, O2635, O2637, O2639 and O2640 (all C0401) were five orders placed within about an hour on Oct 9. O2671 (C0402) has 9 units ($441.00) and is a first order that ships to the US but is billed in CA.\"}",
+      "type": "text"
+     }
+    ],
+    "context_management": null,
+    "diagnostics": null,
+    "id": "msg_011Cgeqh2ZCeoGrDTNizvCkD",
+    "input_transformations": null,
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 1462
+     },
+     "cache_creation_input_tokens": 1462,
+     "cache_read_input_tokens": 7509,
+     "fallback_credit": null,
+     "inference_geo": "global",
+     "input_tokens": 2,
+     "iterations": [
+      {
+       "cache_creation": {
+        "ephemeral_1h_input_tokens": 0,
+        "ephemeral_5m_input_tokens": 1462
+       },
+       "cache_creation_input_tokens": 1462,
+       "cache_read_input_tokens": 7509,
+       "input_tokens": 2,
+       "model": null,
+       "output_tokens": 182,
+       "type": "message"
+      }
+     ],
+     "output_tokens": 182,
+     "output_tokens_details": {
+      "thinking_tokens": 0
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "planner"
+  }
+ ],
+ "prompt_version": "e427f917",
+ "recorded_at": "2026-11-02T21:50:25+00:00",
+ "request": "Any weird orders this week?"
+}

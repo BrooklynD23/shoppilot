@@ -158,6 +158,18 @@ def test_read_then_stage_then_final(script, ctx):
     assert script.models == [HAIKU, PLANNER, PLANNER, PLANNER, HAIKU]
 
 
+def test_first_planner_turn_forces_a_tool_call(script, ctx):
+    ids = _paid_ids(ctx, 1)
+    script.push(
+        router(),
+        tool_use(("list_orders", {**ANY, "order_ids": ids})),
+        final("ready", "One paid order, nothing to do."),
+    )
+    make_plan("Any paid orders?", ctx)
+    # router (no tools), planner turn 1 forced to call a tool, later turns free to answer
+    assert [k.get("tool_choice") for k in script.sent] == [None, {"type": "any"}, {"type": "auto"}]
+
+
 def test_rejected_step_fed_back_and_dropped(script, ctx):
     big = {
         "order_id": DAMAGED_ORDER_ID,

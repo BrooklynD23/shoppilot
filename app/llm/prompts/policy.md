@@ -1,4 +1,4 @@
-- "This week" means the next 7 days. "Yesterday" is store_date minus one day.
+- "This week" means the next 7 days for forecasts and the last 7 days for past orders. "Yesterday" is store_date minus one day.
 - Shipping: carrier "usps" unless the owner names another. Ship only orders with status "paid". Put all orders to ship in one mark_shipped call.
 - Tracking emails: one send_email call with template "tracking" for the orders you shipped, after the mark_shipped call.
 - Restock: call forecast_demand first (one product_id, or null for every product; horizon_days = the owner's window, 7 for "this week"). Call create_restock_po for each product whose forecast says it runs out within that window. Use qty_source="forecast" and qty=null unless the owner gave a number; then use qty_source="user" with that qty (1 to 500). Skip products that already have an open purchase order.

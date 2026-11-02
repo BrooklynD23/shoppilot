@@ -1,0 +1,175 @@
+{
+ "calls": [
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "citations": null,
+      "text": "{\"reason\": \"The message asks to refund a specific order, which is a shop operations request about refunds and orders.\", \"route\": \"plan\", \"reply\": \"\"}",
+      "type": "text"
+     }
+    ],
+    "diagnostics": null,
+    "id": "msg_011Cgeqg1Xv5d8qadW7uVYzL",
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 539
+     },
+     "cache_creation_input_tokens": 539,
+     "cache_read_input_tokens": 0,
+     "inference_geo": "global",
+     "input_tokens": 4,
+     "output_tokens": 51,
+     "output_tokens_details": {
+      "thinking_tokens": 0
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "router"
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "caller": {
+       "type": "direct"
+      },
+      "id": "toolu_01TGTxgQJKkp3zburcMHPsMj",
+      "input": {
+       "created_from": null,
+       "created_to": null,
+       "order_ids": [
+        "O9999"
+       ],
+       "status": "any"
+      },
+      "name": "list_orders",
+      "toolset_name": null,
+      "type": "tool_use"
+     }
+    ],
+    "context_management": null,
+    "diagnostics": null,
+    "id": "msg_011Cgeqg5SZWfeRtEuXRJ2Xn",
+    "input_transformations": null,
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 261
+     },
+     "cache_creation_input_tokens": 261,
+     "cache_read_input_tokens": 7509,
+     "fallback_credit": null,
+     "inference_geo": "global",
+     "input_tokens": 14,
+     "iterations": [
+      {
+       "cache_creation": {
+        "ephemeral_1h_input_tokens": 0,
+        "ephemeral_5m_input_tokens": 261
+       },
+       "cache_creation_input_tokens": 261,
+       "cache_read_input_tokens": 7509,
+       "input_tokens": 14,
+       "model": null,
+       "output_tokens": 113,
+       "type": "message"
+      }
+     ],
+     "output_tokens": 113,
+     "output_tokens_details": {
+      "thinking_tokens": 0
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "planner"
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "signature": "CAQS0wYKEAgTGAI4AUIIdGhpbmtpbmcSDHYl4CvLVDFM1t255RoMoHrKnbyFvxqAxyDbIjBBjBymdiKrVw8/25yjn0uawCki4/3IBepw5WH4ONrLbJbQ7OyyNrRVMWq3F4q3ylgq8AWw7w7YEluE3+6JJeWJdO24qIpZOWQX+qBwX1GxzlydG137A/4FWWWz3jkT33i4wYmRl2RFtgPBsX5x1uofICUbVCqRFzmjYlKjFPMt0woSbK27F2n852d5SICL3UOmI1sp2zQgfQDW/5IRshnbEfAojlYUj04w7plQHzaiUduJGsOMrH+75RjOOKb5RhGbsMkI/9WeEwZg2rC1vJl5DJLOpiAdx+7dQrZfkVSsPteEbBIJlN05MF988BZx+n0Ei3nVPvb1ZSnH8RApGRXu8DAYwx/GpWseMvBuZLZcU+yIs+BOYSpaF9VBgir3xUtFrrqo5MqXrjWHtVMNAuSSE9Me3HpiPFchLak+ZWXJdpC9WEqTjjI3zD8W9wiEj36Zu8KPIHItfywKWC5n5OLS+oZR3gXWaRgN937NfpJEENGIJv7lgV8ZWrAhyG7I3vFZlvvyjJrxDeFQvqZr8ArMGRas884b3fNIowtE3MP2Puzb0QQUni4jU0gZ5z/q9E0OumUhpXSNvgcGtonGtPyBK+FAWvG0iwFcrPE4xoQde/IYlxPmte3lObgHFgahgeqfNEep4ZxnZFUIJtHWHX2CO3dpjKQ87y7+LHOunKYyYQnB/SM4UH4PUVfWFDR1GWdqd6ANW5BIcJo+wsPaCXvx9LJ0sSqfJZ/UiC6itGe/raXrQ5DImjOu8pREUlDgIkC/jAixSkwMFet/7XJ6GllbPiI2EmpN9JdhtmQGrLj57UFroz9E8DdU8oFPr+SwOf59napR55e8VaWnIuZzE7/QQ7obtnTsZYx6KUB9d73Ac10CoHG9WMof0/vKprk3emHHXCe+ZIS9/Rmeu9lclX7jqtQeG1j0jUbadw91u4483xv6FuYaLNsiW3l7pcWqDNWy/C9juWLylE/4sWZdfV3ln6Pb8rUxxNs5Df/9xRBpjc2CX8ZOqn1ku3jnLqjXxlh8W39OsSG15gdLX4dyE6gHGkG7HczLaIGjyt676weEHQNp1BgB",
+      "thinking": "",
+      "type": "thinking"
+     },
+     {
+      "citations": null,
+      "text": "{\"status\":\"needs_clarification\",\"message\":\"I couldn't find order O9999 in this shop's orders. Could you double-check the order id? If you meant a different order, send me its id and whether to refund it in full.\"}",
+      "type": "text"
+     }
+    ],
+    "context_management": null,
+    "diagnostics": null,
+    "id": "msg_011Cgeqg9W8LU6epWoXDCwoU",
+    "input_transformations": null,
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 295
+     },
+     "cache_creation_input_tokens": 295,
+     "cache_read_input_tokens": 7509,
+     "fallback_credit": null,
+     "inference_geo": "global",
+     "input_tokens": 2,
+     "iterations": [
+      {
+       "cache_creation": {
+        "ephemeral_1h_input_tokens": 0,
+        "ephemeral_5m_input_tokens": 295
+       },
+       "cache_creation_input_tokens": 295,
+       "cache_read_input_tokens": 7509,
+       "input_tokens": 2,
+       "model": null,
+       "output_tokens": 146,
+       "type": "message"
+      }
+     ],
+     "output_tokens": 146,
+     "output_tokens_details": {
+      "thinking_tokens": 77
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "planner"
+  }
+ ],
+ "prompt_version": "e427f917",
+ "recorded_at": "2026-11-02T21:50:11+00:00",
+ "request": "Refund order O9999"
+}

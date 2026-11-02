@@ -1,0 +1,183 @@
+{
+ "calls": [
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "citations": null,
+      "text": "{\"reason\": \"Emailing a customer about an order delay is a customer communication task about running the shop.\", \"route\": \"plan\", \"reply\": \"\"}",
+      "type": "text"
+     }
+    ],
+    "diagnostics": null,
+    "id": "msg_011CgeqeFWExT5DTxsEsATgw",
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 541
+     },
+     "cache_creation_input_tokens": 541,
+     "cache_read_input_tokens": 0,
+     "inference_geo": "global",
+     "input_tokens": 4,
+     "output_tokens": 48,
+     "output_tokens_details": {
+      "thinking_tokens": 0
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "router"
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "caller": {
+       "type": "direct"
+      },
+      "id": "toolu_01Cx9tP5V1ndUfy2kNNvrbqk",
+      "input": {},
+      "name": "list_inbox",
+      "toolset_name": null,
+      "type": "tool_use"
+     },
+     {
+      "caller": {
+       "type": "direct"
+      },
+      "id": "toolu_01BnENQjeGAzN6xyEzr1R6yq",
+      "input": {
+       "created_from": null,
+       "created_to": null,
+       "order_ids": null,
+       "status": "any"
+      },
+      "name": "list_orders",
+      "toolset_name": null,
+      "type": "tool_use"
+     }
+    ],
+    "context_management": null,
+    "diagnostics": null,
+    "id": "msg_011CgeqeNE3rTn6ogbDQCWon",
+    "input_transformations": null,
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 263
+     },
+     "cache_creation_input_tokens": 263,
+     "cache_read_input_tokens": 7509,
+     "fallback_credit": null,
+     "inference_geo": "global",
+     "input_tokens": 14,
+     "iterations": [
+      {
+       "cache_creation": {
+        "ephemeral_1h_input_tokens": 0,
+        "ephemeral_5m_input_tokens": 263
+       },
+       "cache_creation_input_tokens": 263,
+       "cache_read_input_tokens": 7509,
+       "input_tokens": 14,
+       "model": null,
+       "output_tokens": 133,
+       "type": "message"
+      }
+     ],
+     "output_tokens": 133,
+     "output_tokens_details": {
+      "thinking_tokens": 0
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "planner"
+  },
+  {
+   "model": "claude-haiku-5-5",
+   "response": {
+    "container": null,
+    "content": [
+     {
+      "signature": "CAQS9wkKEAgTGAI4AUIIdGhpbmtpbmcSDOH4/XiS2HiwnND3WRoMUc3w/bJ9CfUYplMKIjDAyfBEHce2fC01T+lQD6E76Lg70bwz5yHwxqaSgDFuqfWGygrpR3TCp50qcVX/KTEqlAlCdFgHbkU4RgSOnWGxEtKmYY3BzVvyfEl7SI37zBzsZTEPkNjM0W02f3ZDF6K8Ps6lzBI368MdFtIft1Lb5fbTENehVpBGTI3SqNHcC3nlOP4Go7fXJltZnRhcUYnU6CY6V+/XeeFEaYZAUdXS8DRSMZE/9NKfn63a4y9WMt3k2WLuUHJwKmCfmo7RzKRvi0MUa191DD6f/0Ez5M8lAay0jGvVv2uBwOl+fXMQlg+lmiC7Kxuvy5bky0Rn88Wvsc4qSTMCLxMwiCaHDKQFpPPSremrJ9/Nl+ArTinhtXtG8uweWmv5BBIIlO952+eAEZ/N7DFN7q0cowDvgO027om0MvVa5p95DucXiP6tD4FbD1wWygvDlI3ZNjW+qnEhh7JeMYlNX+ELRdZFwE1B2aSVZfF3lQcfQukjVJC/L21AahCNzsersMFYJOHTls6Ex11RKW+B213Icpi5BaiWBdZXp96TycVADKg35jWV6LuSc8B3EOBibrmybFpkDcRSpyrHN9kMcPhgDTwKZoz9aYyroD8zxSZSd4Ou+4EGGDJaT4O+z6edj8lL+d0DOr7oQqijzeinu+7YgKVnY0fP2HhajNzG8WG/KP+2Bnub+9Cy+H08wBITEBahw/dXwZRnYe7z8b6a8HpEBL8IbMgT/KrR1AFOXiHwTV5JgKrnk0N8TWGecYHKRBd7J9SkadcqO6po+1ISAafJmhobmitkS9c+Mf1ykDso1XpfnTfHzMHZ3t7xmxOvxofSU8h20PkwkywgDlBmrPladHivAK5Lq3WgEs4aTXzp1SVZm0S+P2urgGDZFxa/abRpy+hgdlUVUaB7SVT7duDQZC2YaFcrVwwvxhWGuuxGrbMAX5bt8PvVD5zuMTYgK3uMIUT2qzR6JojCccjqF5STIrdGvelQb4u1OSKdDrRRiVqElqadwqW/zgu2OyCSlUD0A7nEGQqjT6FuY76rM4er8u+LrdS87b5QJxYM6ahs4t8zZCQn//CCTfMDPzGPAcpE6zuRDN2cwM4iykPAFmCSdyOAz3BjCjmcyKXC2WfeIRHNsKpCKRhR+IzxDYHy8P3alDbFbnlOHrN3EuFG7JEkr35Oi7w2wHgWUq41sTiQkT9xd/t0vEUKy5gyPkYr9jSNXS6gQMrHz1NG5aNJ/JIGYcaSUrT2dwM+iANjNG0jfrxN1oifhhJZLP/hsVwbqDau0IXELFUBXGmA4+BYDZrC817ijhXA7cXt9i0CifZnY5esl5Nrm31cJ07e0J2m23a6bMsVrQZPsgTFNLcKaMdj6Y8UV4ALGxPuUdiOBBkP4NiF+nkNBgarQAmjxiUoZ63cWS2HFv4nSj8QTEkgGaA7VmrpTnz1kvh+zukipz53Y92ztOmRMdcRPKa8jWgV16GXDa9kcL8xhoTgZwyUWmZ+E5yr3/KDl1aTEdHtsBEo44g+H2+HMWAJk8yCRL2Hsq42PbiIM3d4X+VU5JDK7saF/aYLxUhb4uI4YMGK4gZHjsGs1Xp0DKIMBxzYDuwy05zEqvA6G69JxGAY93C5NhifUlapdV3ApbGAwyYvVhgB",
+      "thinking": "",
+      "type": "thinking"
+     },
+     {
+      "citations": null,
+      "text": "{\"status\":\"needs_clarification\",\"message\":\"Which customer should I email about the delay? The likeliest match is Rosa Walsh (C0266), whose inbox email says order O2590 from over a week ago hasn't arrived. Should I email her about O2590, or someone else?\"}",
+      "type": "text"
+     }
+    ],
+    "context_management": null,
+    "diagnostics": null,
+    "id": "msg_011CgeqeSmPoPes6L1J7qb8b",
+    "input_transformations": null,
+    "model": "claude-haiku-5-5",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+     "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 11584
+     },
+     "cache_creation_input_tokens": 11584,
+     "cache_read_input_tokens": 7509,
+     "fallback_credit": null,
+     "inference_geo": "global",
+     "input_tokens": 2,
+     "iterations": [
+      {
+       "cache_creation": {
+        "ephemeral_1h_input_tokens": 0,
+        "ephemeral_5m_input_tokens": 11584
+       },
+       "cache_creation_input_tokens": 11584,
+       "cache_read_input_tokens": 7509,
+       "input_tokens": 2,
+       "model": null,
+       "output_tokens": 308,
+       "type": "message"
+      }
+     ],
+     "output_tokens": 308,
+     "output_tokens_details": {
+      "thinking_tokens": 216
+     },
+     "server_tool_use": null,
+     "service_tier": "standard",
+     "speed": "standard"
+    }
+   },
+   "stage": "planner"
+  }
+ ],
+ "prompt_version": "e427f917",
+ "recorded_at": "2026-11-02T21:49:51+00:00",
+ "request": "Email the customer about the delay"
+}

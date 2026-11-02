@@ -349,8 +349,11 @@ def complete(
     tools: list[dict] | None = None,
     output_format: dict | None = None,
     timeout_s: float = 60.0,
+    tool_choice: dict | None = None,  # planner only; default {"type": "auto"}
 ) -> LLMResponse:
     kw = _build(stage, model, system, messages, max_tokens, effort, tools, output_format, timeout_s)
+    if tool_choice and "tools" in kw:
+        kw = {**kw, "tool_choice": tool_choice}
     return _call(stage, kw, trace, RECORDINGS_DIR / f"{recording_key(trace.request)}.json")
 
 

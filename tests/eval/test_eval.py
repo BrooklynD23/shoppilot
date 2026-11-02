@@ -150,8 +150,9 @@ def run_case(case: dict) -> tuple[Plan, list[str]]:
     from app.agent.planner import make_plan
     from app.agent.validator import validate_plan
     from app.db import create_store, get_db
-    from app.tools.registry import Ctx
+    from app.tools.registry import Ctx, load_tools
 
+    load_tools()  # as app startup does (main.lifespan); without it the planner gets no tools
     sid = token_urlsafe(32)
     create_store(sid, ANCHOR)
     with get_db(sid) as db:
