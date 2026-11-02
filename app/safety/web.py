@@ -13,6 +13,10 @@ from fastapi.responses import JSONResponse
 from app.config import get_settings
 
 MAX_BODY_BYTES = 16_384
+# Spec 10: Stripe webhooks. Exact paths only (no prefix, no trailing slash): Stripe sends no CSRF
+# header or cookie, so these routes verify the Stripe-Signature header instead.
+WEBHOOK_PATHS = frozenset({"/api/connect/webhooks/thin", "/api/connect/webhooks/billing"})
+WEBHOOK_MAX_BODY_BYTES = 65_536  # snapshot events can pass 16 KiB; Stripe retries a 413, then quits
 PLAN_DAILY_CAP = 300  # R7: count backstop; $ budgets (P2-T2) bind first
 CSRF_HEADER = "X-ShopPilot"
 UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
@@ -73,15 +77,16 @@ def _error(status: int, code: str, message: str, retry_after_s: int | None = Non
 
 async def _body_too_large(request: Request) -> bool:
     """Content-Length check; chunked bodies are read with a cap and cached for the route."""
+    cap = WEBHOOK_MAX_BODY_BYTES if request.url.path in WEBHOOK_PATHS else MAX_BODY_BYTES
     length = request.headers.get("content-length")
     if length is not None:
-        return not length.isdigit() or int(length) > MAX_BODY_BYTES
+        return not length.isdigit() or int(length) > cap
     if request.method not in UNSAFE_METHODS:
         return False
     chunks, size = [], 0
     async for chunk in request.stream():
         size += len(chunk)
-        if size > MAX_BODY_BYTES:
+        if size > cap:
             return True
         chunks.append(chunk)
     request._body = b"".join(chunks)  # BaseHTTPMiddleware replays a cached _body downstream
@@ -90,6 +95,8 @@ async def _body_too_large(request: Request) -> bool:
 
 def _csrf_error(request: Request) -> JSONResponse | None:
     if request.method not in UNSAFE_METHODS or not request.url.path.startswith("/api/"):
+        return None
+    if request.url.path in WEBHOOK_PATHS:  # spec 10: the route checks Stripe-Signature instead
         return None
     if request.headers.get(CSRF_HEADER) != "1":
         return _error(403, "csrf", "Missing request header.")

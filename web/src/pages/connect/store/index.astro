@@ -1,0 +1,25 @@
+---
+// /connect/store/?account=acct_...: one storefront per connected account (spec 10 §12).
+// Products and the shop name are rendered by src/scripts/connect/store.ts with textContent.
+import '../../../styles/page-connect.css';
+import Site from '../../../layouts/Site.astro';
+---
+<Site
+  title="Storefront: ShopPilot+ Connect sample"
+  description="A sandbox shop on the ShopPilot+ Stripe Connect sample. Pay with a Stripe test card."
+  surface="morning"
+>
+  <!-- Demo: the shop is picked by its Stripe account ID. In production use your own shop slug or ID, not the Stripe account ID. -->
+  <main id="main" class="wrap cx">
+    <header class="cx-head">
+      <h1 id="shop-name">Loading shop</h1>
+      <p class="cx-lede">Sandbox shop. Pay with the test card 4242 4242 4242 4242, any future date and any CVC.</p>
+    </header>
+    <p class="cx-notice" id="notice" role="status" aria-live="polite"></p>
+    <ul class="cx-grid" id="product-list"></ul>
+  </main>
+</Site>
+
+<script>
+  import '../../../scripts/connect/store';
+</script>

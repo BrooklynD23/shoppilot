@@ -30,6 +30,7 @@ from app.agent.executor import PlanError, claim_plan, execute
 from app.agent.planner import make_plan, save_plan
 from app.agent.validator import validate_plan
 from app.config import get_settings, session_hash
+from app.connect.routes import router as connect_router  # spec 10: 404s unless CONNECT_ENABLED
 from app.db import SESSION_ID_RE, create_store, get_db, store_exists, sweep_sessions, touch_store
 from app.integrations.export import EXPORT_KINDS, render
 from app.integrations.outbox import list_outbox
@@ -39,6 +40,7 @@ from app.safety.inbound_guard import screen_inbox
 from app.seed.generate import STORE_NAME
 from app.tools.registry import Ctx, get_tools, load_tools
 
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("shoppilot")
 COOKIE = "sp_session"
 CSP = (
@@ -412,6 +414,7 @@ def api_not_found(_rest: str):
 
 
 web.install(app)  # R10: added after guard, so it runs outermost
+app.include_router(connect_router)  # before `api`: its /api/{_rest:path} catch-all would shadow it
 app.include_router(api)
 # mounted last so API routes win
 app.mount("/", StaticFiles(directory=Path(__file__).parent / "static", html=True), name="static")

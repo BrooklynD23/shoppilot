@@ -45,11 +45,15 @@ def tmp_data_dir(tmp_path, monkeypatch):
         pass
     # in-process limiters/counters are module globals; reset so test order never matters
     import app.main as main
+    from app.connect import stripe_calls
+    from app.connect.config import connect_settings
     from app.llm import budget
     from app.safety import web
 
     main._reset_rate_limits()
     web._reset_for_tests()
+    connect_settings.cache_clear()  # spec 10: Connect reads env lazily and caches it
+    stripe_calls.client.cache_clear()
     with budget._lock:
         budget._calls.clear()
     return tmp_path

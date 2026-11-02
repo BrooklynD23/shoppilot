@@ -1,0 +1,92 @@
+---
+// /connect/: the Stripe Connect sample dashboard (spec 10 §12). Sandbox only, not linked from
+// the nav or footer. Sections stay hidden until the API answers; every value from the API or
+// Stripe is set with textContent by src/scripts/connect/dashboard.ts.
+import '../../styles/page-connect.css';
+import Site from '../../layouts/Site.astro';
+---
+<Site
+  title="Stripe Connect sample: ShopPilot+"
+  description="Sandbox only. Create a shop, onboard with Stripe, add products and sell them from your storefront."
+  surface="morning"
+>
+  <main id="main" class="wrap cx">
+    <header class="cx-head">
+      <h1>Stripe Connect sample</h1>
+      <p class="cx-lede">Sandbox only. Create a shop, onboard with Stripe, add products, then sell them from your storefront.</p>
+    </header>
+
+    <p class="cx-notice" id="notice" role="status" aria-live="polite">Loading</p>
+
+    <section class="cx-card" id="create" aria-labelledby="create-h" hidden>
+      <h2 id="create-h">Create your shop</h2>
+      <p class="cx-sub">This makes a connected account in the Stripe sandbox. One per browser.</p>
+      <form class="cx-form" id="create-form">
+        <label>Shop name
+          <input name="display_name" required maxlength="80" autocomplete="organization" />
+        </label>
+        <label>Contact email
+          <input name="contact_email" type="email" required maxlength="254" autocomplete="email" />
+        </label>
+        <button class="btn btn-primary" type="submit">Create account</button>
+      </form>
+    </section>
+
+    <section class="cx-card" id="account" aria-labelledby="account-h" hidden>
+      <h2 id="account-h">Your connected account</h2>
+      <dl class="cx-facts">
+        <div><dt>Account ID</dt><dd class="id" id="acct-id"></dd></div>
+        <div><dt>Shop name</dt><dd id="acct-name"></dd></div>
+        <div><dt>Card payments</dt><dd><span class="pill" id="pill-pay"></span></dd></div>
+        <div><dt>Onboarding</dt><dd><span class="pill" id="pill-onb"></span></dd></div>
+      </dl>
+      <div class="cx-actions">
+        <button class="btn btn-primary" type="button" id="onboard">Onboard to collect payments</button>
+        <button class="btn btn-line btn-sm" type="button" id="refresh">Refresh status</button>
+      </div>
+    </section>
+
+    <section class="cx-card" id="products" aria-labelledby="products-h" hidden>
+      <h2 id="products-h">Products</h2>
+      <p class="cx-sub" id="product-count"></p>
+      <form class="cx-form" id="product-form">
+        <label>Name
+          <input name="name" required maxlength="80" />
+        </label>
+        <label>Description (optional)
+          <textarea name="description" maxlength="500" rows="2"></textarea>
+        </label>
+        <div class="cx-row">
+          <label>Price in dollars
+            <input name="price" type="number" required min="1" max="1000" step="0.01" inputmode="decimal" />
+          </label>
+          <label>Currency
+            <select name="currency"><option value="usd">USD</option></select>
+          </label>
+        </div>
+        <button class="btn btn-line" type="submit">Create product</button>
+      </form>
+      <ul class="cx-grid" id="product-list"></ul>
+      <p><a class="btn btn-line btn-sm" id="storefront-link" href="/connect/store/">Open your storefront</a></p>
+    </section>
+
+    <section class="cx-card" id="plan" aria-labelledby="plan-h" hidden>
+      <h2 id="plan-h">Platform plan</h2>
+      <p id="plan-status"></p>
+      <div class="cx-actions">
+        <button class="btn btn-line" type="button" id="subscribe">Subscribe to ShopPilot+ Pro</button>
+        <button class="btn btn-line" type="button" id="manage">Manage billing</button>
+      </div>
+    </section>
+
+    <section class="cx-card" id="events" aria-labelledby="events-h" hidden>
+      <h2 id="events-h">Recent Stripe events</h2>
+      <p class="cx-sub" id="events-empty">None yet. They appear here when Stripe's webhooks arrive.</p>
+      <ol class="cx-events" id="event-list"></ol>
+    </section>
+  </main>
+</Site>
+
+<script>
+  import '../../scripts/connect/dashboard';
+</script>

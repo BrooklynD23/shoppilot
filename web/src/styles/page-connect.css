@@ -1,0 +1,51 @@
+/* /connect/ pages only (Stripe Connect sample, spec 10 §12). Reads the site tokens (.morning);
+   defines no new palette. Buttons and status pills come from site.css. */
+
+.cx { display: grid; gap: 24px; max-width: 880px; padding-block: clamp(32px, 6vw, 64px) clamp(56px, 8vw, 96px); }
+.cx-head h1 { font-size: clamp(2rem, 4.5vw, 3rem); overflow-wrap: anywhere; } /* shop names are user input */
+.cx-lede { margin-top: 12px; max-width: 60ch; color: var(--ink-2); font-size: var(--fs-lead); }
+
+/* Notices (aria-live): calm by default, tinted for errors. Empty = gone. */
+.cx-notice { padding: 12px 16px; border-radius: var(--r-ctl); background: var(--s2); box-shadow: var(--elev-1); }
+.cx-notice[data-tone="bad"] { background: var(--bad-bg); }
+.cx-notice:empty { display: none; }
+
+/* Cards: one resting elevation, no border (BRAND rule 5). */
+.cx-card { display: grid; gap: 16px; min-width: 0; padding: clamp(20px, 3vw, 28px); border-radius: var(--r-card); background: var(--s1); box-shadow: var(--shadow); }
+.cx-card h2 { font-size: var(--fs-h3); font-weight: var(--fw-title); letter-spacing: var(--tr-h3); }
+.cx-sub { color: var(--ink-2); font-size: var(--fs-small); }
+
+/* Forms */
+.cx-form { display: grid; gap: 14px; }
+.cx-form label { display: grid; gap: 6px; font-size: .9375rem; font-weight: var(--fw-title); }
+.cx-form input, .cx-form textarea, .cx-form select {
+  width: 100%; min-width: 0; padding: 10px 12px; border: 0; border-radius: var(--r-ctl);
+  box-shadow: inset 0 0 0 1px var(--line-ctl); background: var(--bg); color: var(--ink);
+  font: inherit; font-size: 16px; font-weight: var(--fw-body); /* 16 px: no zoom on iOS */
+}
+.cx-form textarea { resize: vertical; }
+.cx-form :focus-visible { outline-offset: 0; }
+.cx-row { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+.cx-form > .btn { justify-self: start; }
+.cx-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+/* Account facts */
+.cx-facts { display: grid; gap: 12px 24px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.cx-facts dt { color: var(--ink-2); font-size: var(--fs-small); }
+.cx-facts dd { margin: 4px 0 0; min-width: 0; overflow-wrap: anywhere; }
+
+/* Product grid (dashboard and storefront) */
+.cx-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.cx-grid:empty { display: none; }
+.cx-product { display: grid; gap: 6px; align-content: start; min-width: 0; padding: 16px; border-radius: var(--r-ctl); background: var(--bg); box-shadow: var(--elev-1); }
+.cx-product h3 { font-size: 1rem; overflow-wrap: anywhere; }
+.cx-product p { color: var(--ink-2); font-size: var(--fs-small); overflow-wrap: anywhere; }
+.cx-product .cx-price { color: var(--ink); font-size: 1rem; font-weight: var(--fw-title); }
+.cx-product .btn { justify-self: start; margin-top: 6px; }
+
+/* Recent Stripe events */
+.cx-events li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding-block: 8px; border-top: 1px solid var(--line); font-size: var(--fs-small); }
+.cx-events li:first-child { border-top: 0; }
+.cx-events time { color: var(--ink-3); }
+
+@media (max-width: 560px) { .cx-row { grid-template-columns: 1fr; } }

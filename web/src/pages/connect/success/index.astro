@@ -1,0 +1,29 @@
+---
+// /connect/success/?session_id=...&account=...: where Stripe Checkout sends a shopper after a
+// storefront purchase (spec 10 §12). Not proof of payment: see the note on the page.
+import '../../../styles/page-connect.css';
+import Site from '../../../layouts/Site.astro';
+---
+<Site
+  title="Payment received: ShopPilot+ Connect sample"
+  description="Stripe Checkout finished on the ShopPilot+ Stripe Connect sample (sandbox)."
+  surface="morning"
+>
+  <main id="main" class="wrap cx">
+    <header class="cx-head">
+      <h1 id="title">Payment received (sandbox)</h1>
+      <p class="cx-lede">Stripe sent you back after Checkout. This page is not proof of payment: the shop's Stripe Dashboard is.</p>
+    </header>
+    <p class="cx-notice" id="notice" role="status" aria-live="polite"></p>
+    <section class="cx-card" aria-label="Checkout details">
+      <dl class="cx-facts">
+        <div><dt>Checkout session</dt><dd class="id" id="session-id"></dd></div>
+      </dl>
+      <p><a class="btn btn-line btn-sm" id="back" href="/connect/">Back to the shop</a></p>
+    </section>
+  </main>
+</Site>
+
+<script>
+  import '../../../scripts/connect/success';
+</script>
