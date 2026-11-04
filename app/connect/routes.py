@@ -80,7 +80,15 @@ def _base_url() -> str:
 
 def _has_pro(row: dict) -> bool:
     # Brief: customers get only what they're actively subscribed to. Paused = no access.
-    return row["sub_status"] in ("active", "trialing") and not row["sub_paused"]
+    # The brief also says to check subscription.items.data[0].price: only OUR platform price
+    # grants Pro, so a subscription to some other price (or a missing setting) grants nothing.
+    platform_price = connect_settings().stripe_platform_price_id
+    return (
+        row["sub_status"] in ("active", "trialing")
+        and not row["sub_paused"]
+        and platform_price is not None
+        and row["sub_price_id"] == platform_price
+    )
 
 
 def _product_limit(row: dict) -> int:
@@ -225,6 +233,10 @@ def checkout(body: NewCheckout) -> dict:
     """A shopper buys from a storefront: no cookie needed."""
     if store.get_by_account_id(body.account_id) is None:
         fail(404, "not_found", "Unknown shop.")
+    # A shop that can't take cards yet would send the buyer to a Checkout that fails. Read the
+    # card_payments capability live from Stripe (the brief: never store onboarding status).
+    if not stripe_calls.account_status(body.account_id)["ready_to_process_payments"]:
+        fail(422, "not_onboarded", "This shop hasn't finished onboarding, so it can't sell yet.")
     fee = connect_settings().connect_application_fee_cents
     url = stripe_calls.product_checkout(
         body.account_id, body.product_id, body.quantity, fee, _base_url()
@@ -236,7 +248,11 @@ def checkout(body: NewCheckout) -> dict:
 def subscribe(request: Request) -> dict:
     """The connected account subscribes to the platform's plan (hosted Checkout)."""
     row = _need_account(request)
-    if row["sub_status"] in stripe_calls.OPEN:
+    # Don't trust only the webhook-written row: it is empty until the webhook arrives (or
+    # forever, with no listener). Ask Stripe now and store what it says, as the webhook would.
+    current = stripe_calls.plan_summary(row["account_id"])
+    store.set_plan(row["account_id"], current)
+    if current is not None and current["sub_status"] in stripe_calls.OPEN:
         fail(409, "already_subscribed", "You already have a plan. Use Manage billing to change it.")
     # PLACEHOLDER: STRIPE_PLATFORM_PRICE_ID=price_... printed by scripts/create_platform_price.py.
     price_id = require(connect_settings().stripe_platform_price_id, "STRIPE_PLATFORM_PRICE_ID")

@@ -87,12 +87,12 @@ def sub_obj(status="active", price="price_test1", quantity=1, cancel=False, paus
     )
 
 
-def plan(status="active", paused=False, cancel=False) -> dict:
+def plan(status="active", paused=False, cancel=False, price="price_test1") -> dict:
     """A stored platform plan, as `stripe_calls.plan_summary` returns it."""
     return {
         "sub_id": "sub_Test000001",
         "sub_status": status,
-        "sub_price_id": "price_test1",
+        "sub_price_id": price,
         "sub_quantity": 1,
         "sub_cancel_at_period_end": cancel,
         "sub_paused": paused,

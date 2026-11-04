@@ -509,8 +509,10 @@ def test_subscribe_uses_customer_account_at_platform_level(client, account, fake
         "line_items": [{"price": "price_test1", "quantity": 1}],
         "success_url": "http://testserver/connect/?subscribed=1&session_id={CHECKOUT_SESSION_ID}",
         "cancel_url": "http://testserver/connect/",
+        "expires_at": call["params"]["expires_at"],
     }
-    assert call.get("options") is None
+    # No Stripe-Account header; only an idempotency key, so repeat clicks reuse one session.
+    assert set(call["options"]) == {"idempotency_key"}
 
 
 @pytest.mark.parametrize("status", ["active", "trialing", "past_due", "incomplete", "paused"])
@@ -518,6 +520,7 @@ def test_subscribe_is_409_while_a_plan_is_open(client, account, fake_stripe, sta
     from app.connect import store
 
     store.set_plan(account, plan(status=status))
+    fake_stripe.rec["subscriptions.list"].result = obj(data=[sub_obj(status=status)])
     r = client.post("/api/connect/subscribe")
     assert r.status_code == 409 and err(r)["code"] == "already_subscribed"
     assert fake_stripe.rec["checkout.create"].calls == []
@@ -589,3 +592,44 @@ def test_plan_summary_picks_the_subscription_that_grants_access(fake_stripe):
     }
     fake_stripe.rec["subscriptions.list"].result = obj(data=[])
     assert stripe_calls.plan_summary(ACCT) is None
+
+
+# ---------- review fixes (2026-11-02) ----------
+def test_subscribe_rechecks_stripe_before_the_webhook_arrives(client, account, fake_stripe):
+    # Fix 1: the stored row is empty (webhook not here yet) but Stripe already has a plan.
+    fake_stripe.rec["subscriptions.list"].result = obj(data=[sub_obj(status="active")])
+    r = client.post("/api/connect/subscribe")
+    assert r.status_code == 409 and err(r)["code"] == "already_subscribed"
+    assert fake_stripe.rec["checkout.create"].calls == []
+    assert client.get("/api/connect/account").json()["account"]["plan"]["has_pro"] is True
+
+
+def test_repeat_subscribe_clicks_share_one_idempotency_key(client, account, fake_stripe):
+    # Fix 1: two clicks in the same hour ask Stripe for the same Checkout Session.
+    client.post("/api/connect/subscribe")
+    client.post("/api/connect/subscribe")
+    a, b = fake_stripe.rec["checkout.create"].calls
+    assert a["options"]["idempotency_key"] == b["options"]["idempotency_key"]
+    assert a["params"]["expires_at"] == b["params"]["expires_at"]
+
+
+def test_pro_needs_the_platform_price(client, account, fake_stripe):
+    # Fix 2: an active subscription to any other price grants nothing.
+    from app.connect import store
+
+    for i in range(3):
+        client.post("/api/connect/products", json={**PRODUCT, "name": f"P{i}"})
+    store.set_plan(account, plan(status="active", price="price_SomethingElse"))
+    r = client.post("/api/connect/products", json=PRODUCT)
+    assert r.status_code == 403 and err(r)["code"] == "product_limit"
+    store.set_plan(account, plan(status="active", price="price_test1"))
+    assert client.post("/api/connect/products", json=PRODUCT).status_code == 200
+
+
+@pytest.mark.parametrize("card", ["restricted", "inactive", "pending"])
+def test_checkout_refuses_a_shop_that_cannot_take_cards(client, account, fake_stripe, card):
+    # Fix 3: Buy waits until the connected account's card_payments capability is active.
+    fake_stripe.rec["accounts.retrieve"].result = account_obj(card=card)
+    r = client.post("/api/connect/checkout", json={"account_id": account, "product_id": PROD})
+    assert r.status_code == 422 and err(r)["code"] == "not_onboarded"
+    assert fake_stripe.rec["checkout.create"].calls == []

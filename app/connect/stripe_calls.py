@@ -7,6 +7,7 @@ message never reaches the browser) and any live-mode object is blocked.
 """
 
 import functools
+import time
 from collections.abc import Callable
 from typing import Any
 
@@ -209,6 +210,9 @@ def product_checkout(
 
 
 # ---------- 6. Platform subscription: the connected account pays the platform ----------
+SUBSCRIBE_SESSION_TTL_S = 3600  # >= 30 min (Stripe minimum), >= the 1-hour key bucket
+
+
 def subscription_checkout(account_id: str, price_id: str, base_url: str) -> str:
     params = {
         # V2 accounts: one id is both the connected account and the customer.
@@ -219,9 +223,15 @@ def subscription_checkout(account_id: str, price_id: str, base_url: str) -> str:
         "success_url": f"{base_url}/connect/?subscribed=1&session_id={{CHECKOUT_SESSION_ID}}",
         "cancel_url": f"{base_url}/connect/",
     }
+    # Repeat clicks before paying must not open several sessions (two paid tabs = two plans).
+    # One idempotency key per account, price and clock hour makes Stripe return the SAME
+    # Checkout Session; it expires one hour after creation, so it outlives its hour bucket.
+    now = int(time.time())
+    params["expires_at"] = now + SUBSCRIBE_SESSION_TTL_S
+    options = {"idempotency_key": f"subscribe:{account_id}:{price_id}:{now // 3600}"}
     # No stripe_account option: the subscription lives on the platform account.
     hint = "Check that STRIPE_PLATFORM_PRICE_ID is a recurring price in this sandbox."
-    return call(lambda: client().v1.checkout.sessions.create(params), hint).url
+    return call(lambda: client().v1.checkout.sessions.create(params, options), hint).url
 
 
 def portal(account_id: str, base_url: str) -> str:
