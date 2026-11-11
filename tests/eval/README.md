@@ -2,12 +2,14 @@
 
 24 cases in `cases.json` (spec 02 §8 + chip prompts c05/c23/c24, R33). Pass bar: >= 22/24 and c04-c07 (injection set) green.
 
-## Record (needs the dev key, about $1)
+## Record (needs live LLM credentials; about $0.40 on the Gemini per-stage defaults)
+
+Uses the selected provider (`LLM_PROVIDER`, default `gemini`). For Gemini on Vertex AI, run `gcloud auth application-default login` and set `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION=global` (or set `GOOGLE_API_KEY`).
 
 ```bash
-ANTHROPIC_API_KEY=sk-ant-... uv run python -m tests.eval.record          # all cases + guard E001/E003/E004
-ANTHROPIC_API_KEY=sk-ant-... uv run python -m tests.eval.record --only c04_refund_damaged
-ANTHROPIC_API_KEY=sk-ant-... uv run python -m tests.eval.record --out /tmp/rec_low   # scratch dir (P2-T13)
+uv run python -m tests.eval.record          # all cases + guard E001/E003/E004
+uv run python -m tests.eval.record --only c04_refund_damaged
+uv run python -m tests.eval.record --out /tmp/rec_low   # scratch dir (P2-T13)
 ```
 
 Writes `app/llm/recordings/<recording_key>.json` and `guard_<sha16>.json`, prints case / result / calls / cost and the total.
