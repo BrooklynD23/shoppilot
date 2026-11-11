@@ -24,10 +24,19 @@ def test_service_fields():
 
 def test_env_vars():
     keys = [ln.split(": ", 1)[1] for ln in LINES if ln.startswith("- key:")]
-    assert keys == ["APP_ENV", "DATA_DIR", "ANTHROPIC_API_KEY", "STRIPE_SECRET_KEY"]
+    assert keys == [
+        "APP_ENV",
+        "DATA_DIR",
+        "LLM_PROVIDER",
+        "GOOGLE_CLOUD_PROJECT",
+        "GOOGLE_CLOUD_LOCATION",
+        "GOOGLE_API_KEY",
+        "GOOGLE_APPLICATION_CREDENTIALS_JSON",
+        "STRIPE_SECRET_KEY",
+    ]
     assert "value: prod" in LINES and "value: /tmp/shoppilot" in LINES
-    assert LINES.count("sync: false") == 2
+    assert LINES.count("sync: false") == 4
     for bad in ("sk_", "sk-ant-", "sk_test_", "sk_live_", "rk_test_", "rk_live_"):
         assert bad not in TEXT, bad
-    for secret in ("ANTHROPIC_API_KEY", "STRIPE_SECRET_KEY"):
+    for secret in ("GOOGLE_API_KEY", "GOOGLE_APPLICATION_CREDENTIALS_JSON", "STRIPE_SECRET_KEY"):
         assert LINES[LINES.index(f"- key: {secret}") + 1] == "sync: false", secret

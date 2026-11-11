@@ -14,6 +14,7 @@ import unicodedata
 from pydantic import BaseModel
 
 from app.agent.audit import log_action
+from app.config import get_settings
 from app.llm.client import LLMError, complete_json
 from app.tools.registry import get_tools
 
@@ -22,7 +23,6 @@ log = logging.getLogger(__name__)
 MAX_TEXT_CHARS = 4000
 BLOCK_SCORE = 1.0
 LLM_BLOCK_CONFIDENCE = 0.5
-GUARD_MODEL = "claude-haiku-5-5"
 CACHE_MAX = 2048
 REASON_MAX = 200
 GUARD_ERROR_REASON = "Guard unavailable — held for manual review."
@@ -166,7 +166,7 @@ def heuristic_score(text: str) -> tuple[float, list[str]]:
 def _classify(text: str, source_id: str) -> GuardVerdict:
     nonce = secrets.token_hex(8)
     out = complete_json(
-        model=GUARD_MODEL,
+        model=get_settings().judge_model,  # cheapest allowed model of the active provider
         system=GUARD_SYSTEM_PROMPT,
         user=f"<untrusted-{nonce}>\n{text}\n</untrusted-{nonce}>",
         schema=SCHEMA,

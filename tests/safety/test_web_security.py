@@ -208,7 +208,7 @@ def test_existing_csp_is_appended_once(c):
 
 @pytest.mark.parametrize("env,present", [("prod", True), ("dev", False)])
 def test_hsts_only_in_prod(c, monkeypatch, env, present):
-    vals = {"APP_ENV": env, "ANTHROPIC_API_KEY": "x" * 10}
+    vals = {"APP_ENV": env, "GOOGLE_CLOUD_PROJECT": "p", "GOOGLE_API_KEY": "x" * 10}
     monkeypatch.setattr(web, "get_settings", lambda: load_settings(vals))
     h = c.get("/api/x").headers
     assert ("strict-transport-security" in h) is present

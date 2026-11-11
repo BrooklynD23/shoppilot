@@ -36,7 +36,7 @@ export const proof = [
 export const proofNote = 'Prototype numbers on synthetic data. Re-measured on the final build before launch.';
 
 export const howSteps = [
-  { key: 'plan', name: 'Plan', pill: 'Planned', text: 'You type one sentence. Claude turns it into typed steps: which tool, which orders, why.' },
+  { key: 'plan', name: 'Plan', pill: 'Planned', text: 'You type one sentence. The AI turns it into typed steps: which tool, which orders, why.' },
   { key: 'check', name: 'Check', pill: 'Checked', text: 'A validator checks every step against your store and your rules before anything runs.' },
   { key: 'approve', name: 'Approve', pill: 'Needs approval', text: 'You see each change and every dollar. Steps that move money wait for your click.' },
   { key: 'run', name: 'Run', pill: 'Done', text: 'Approved steps run in order. Each one writes a receipt to the audit log.' },

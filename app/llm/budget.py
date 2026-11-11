@@ -11,12 +11,31 @@ from typing import Literal
 
 from app.config import get_settings, session_hash
 
-# USD per MTok. Source: https://platform.claude.com/docs/en/about-claude/pricing
+# USD per MTok. Claude source: https://platform.claude.com/docs/en/about-claude/pricing
 # (checked 2026-10-30).
 # Haiku prices are for prompts <= 100K tokens.
 PRICES: dict[str, dict[str, float]] = {
     "claude-sonnet-5-5": {"input": 2.00, "cache_write": 2.50, "cache_read": 0.10, "output": 10.00},
     "claude-haiku-5-5": {"input": 0.10, "cache_write": 0.125, "cache_read": 0.01, "output": 0.50},
+    # Source: https://aistudio.google.com/docs/pricing (paid tier, text; checked 2026-11-10).
+    # Gemini has no cache-write charge (implicit caching); output includes thinking tokens.
+    # gemini-3.5-flash-lite: same AI Studio page, and https://deepmind.google/models/gemini/flash-lite/
+    # lists $0.30 in / $2.50 out (checked 2026-11-10).
+    "gemini-3.5-flash-lite": {
+        "input": 0.30,
+        "cache_write": 0.30,
+        "cache_read": 0.03,
+        "output": 2.50,
+    },
+    # gemini-3.8-flash: same AI Studio page, $0.75 in / $3.75 out until 2026-12-31, then
+    # $1.50 / $7.50. Priced at the 2027 rate so the spend cap never under-counts.
+    "gemini-3.8-flash": {"input": 1.50, "cache_write": 1.50, "cache_read": 0.15, "output": 7.50},
+    "gemini-3.1-flash-lite": {
+        "input": 0.25,
+        "cache_write": 0.25,
+        "cache_read": 0.025,
+        "output": 1.50,
+    },
 }
 _USAGE_KEYS = {
     "input_tokens": "input",

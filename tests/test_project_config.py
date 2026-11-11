@@ -36,6 +36,6 @@ def test_dockerfile_builds_web_and_slims():
 
 def test_ci_docker_smoke_needs_no_real_keys():
     ci = (ROOT / ".github/workflows/ci.yml").read_text()
-    assert "--memory=512m" in ci and "ANTHROPIC_API_KEY=dummy" in ci
+    assert "--memory=512m" in ci and "GOOGLE_API_KEY=dummy" in ci
     assert "sleep 5" not in ci and "docker logs sp" in ci
     assert "grep -qi '<html'" in ci

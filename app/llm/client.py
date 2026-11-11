@@ -1,4 +1,4 @@
-"""One door to Claude: retries, spend guard, slot, record/replay (spec 02 §3, §6, §7)."""
+"""One door to the LLM (Gemini or Claude): retries, spend guard, slot, record/replay (spec 02)."""
 
 import hashlib
 import json
@@ -16,6 +16,7 @@ import anthropic
 from pydantic import BaseModel
 
 from app.config import get_settings, session_hash
+from app.llm import gemini
 from app.llm.budget import (
     BudgetExceeded,
     Busy,
@@ -99,6 +100,7 @@ class Trace:
 # Test seam: when set, called with the kwargs dict instead of the SDK.
 _send: Callable[[dict], Any] | None = None
 _client: anthropic.Anthropic | None = None
+_gclient: Any = None  # google.genai.Client
 
 
 def recording_key(request: str) -> str:
@@ -126,7 +128,29 @@ def _sdk() -> anthropic.Anthropic:
     return _client
 
 
+def _gemini_send(kw: dict) -> dict:
+    global _gclient
+    if _gclient is None:
+        s = get_settings()
+        key, sa = s.google_api_key, s.google_application_credentials_json
+        if key is None and sa is None and s.google_cloud_project is None:
+            raise LLMError("not_configured")
+        try:
+            _gclient = gemini.make_client(
+                project=s.google_cloud_project,
+                location=s.google_cloud_location,
+                api_key=key.get_secret_value() if key else None,
+                sa_json=sa.get_secret_value() if sa else None,
+            )
+        except ValueError:  # SDK: no project/key, or no ADC found
+            log.warning("vertex client not configured")
+            raise LLMError("not_configured") from None
+    return gemini.send(_gclient, kw)
+
+
 def _sdk_send(kwargs: dict) -> Any:
+    if get_settings().llm_provider == "gemini":
+        return _gemini_send(kwargs)
     kw = dict(kwargs)
     sdk = _sdk().with_options(timeout=kw.pop("timeout"))
     api = sdk.beta.messages if "betas" in kw else sdk.messages
@@ -189,6 +213,15 @@ def _retry_after(exc: anthropic.APIStatusError) -> float | None:
 
 def _classify(exc: Exception) -> tuple[Kind, int, float | None]:
     """-> (kind, max_attempts, retry_after). max_attempts 1 = never retried."""
+    if isinstance(exc, gemini.ERRORS):
+        kind, attempts, retry_after = gemini.classify(exc)
+        log.warning(
+            "llm error provider=gemini kind=%s status=%s msg=%.500s",
+            kind,
+            getattr(exc, "code", None),
+            getattr(exc, "message", None) or type(exc).__name__,  # API text only, no headers
+        )
+        return kind, attempts, retry_after  # type: ignore[return-value]
     if isinstance(exc, anthropic.APIConnectionError):  # includes APITimeoutError
         return "unreachable", 2, None
     if not isinstance(exc, anthropic.APIStatusError):
@@ -276,7 +309,7 @@ def _live(stage: str, kw: dict, trace: Trace) -> LLMResponse:
     while True:
         try:
             raw = _attempt(kw, trace)
-        except anthropic.AnthropicError as exc:
+        except (anthropic.AnthropicError, *gemini.ERRORS) as exc:
             _wait_or_raise(exc, attempt, trace)
             attempt += 1
             continue

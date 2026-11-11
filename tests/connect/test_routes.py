@@ -604,13 +604,26 @@ def test_subscribe_rechecks_stripe_before_the_webhook_arrives(client, account, f
     assert client.get("/api/connect/account").json()["account"]["plan"]["has_pro"] is True
 
 
-def test_repeat_subscribe_clicks_share_one_idempotency_key(client, account, fake_stripe):
-    # Fix 1: two clicks in the same hour ask Stripe for the same Checkout Session.
+def test_repeat_subscribe_clicks_share_one_idempotency_key(
+    client, account, fake_stripe, monkeypatch
+):
+    # Fix 1: two clicks in the same hour ask Stripe for the same Checkout Session, with
+    # identical params (Stripe rejects a reused idempotency key with different params).
+    import time
+
+    from app.connect import stripe_calls
+
+    hour = int(time.time()) // 3600 * 3600  # frozen in the current hour (sessions stay valid)
+    now = [hour + 5]
+    monkeypatch.setattr(stripe_calls.time, "time", lambda: now[0])
     client.post("/api/connect/subscribe")
+    now[0] = hour + 3540  # 59th minute of the same hour
     client.post("/api/connect/subscribe")
     a, b = fake_stripe.rec["checkout.create"].calls
     assert a["options"]["idempotency_key"] == b["options"]["idempotency_key"]
     assert a["params"]["expires_at"] == b["params"]["expires_at"]
+    ttl = a["params"]["expires_at"] - (hour + 3540)
+    assert 30 * 60 <= ttl <= 24 * 3600  # Stripe's expires_at window, even for the late click
 
 
 def test_pro_needs_the_platform_price(client, account, fake_stripe):

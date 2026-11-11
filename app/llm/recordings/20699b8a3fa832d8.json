@@ -1,54 +1,32 @@
 {
  "calls": [
   {
-   "model": "claude-haiku-5-5",
+   "model": "gemini-3.1-flash-lite",
    "response": {
-    "container": null,
     "content": [
      {
-      "citations": null,
-      "text": "{\"reason\": \"The message asks to update the status of a specific order, which is an order-management request for this shop.\", \"route\": \"plan\", \"reply\": \"\"}",
+      "text": "{\"reason\": \"The user is requesting an update to a specific order status.\", \"route\": \"plan\", \"reply\": \"\"}",
+      "thought_signature": "AY89a18MI2bRkdocw3MaoI3nAbmtvSpVQ3QSNfXdMlz8kblRaJwaa1R93M+NLx3n3YugTW2qPZGzWjKTm/jcSvc9d6WB4uW97ugEWeq9B/JnY2tmWJGg0PgvJxM=",
       "type": "text"
      }
     ],
-    "diagnostics": null,
-    "id": "msg_011CgeqgJEW16JQ4EqVpcQFq",
-    "model": "claude-haiku-5-5",
-    "role": "assistant",
-    "stop_details": null,
+    "model": "gemini-3.1-flash-lite",
     "stop_reason": "end_turn",
-    "stop_sequence": null,
-    "type": "message",
     "usage": {
-     "cache_creation": {
-      "ephemeral_1h_input_tokens": 0,
-      "ephemeral_5m_input_tokens": 0
-     },
      "cache_creation_input_tokens": 0,
-     "cache_read_input_tokens": 544,
-     "inference_geo": "global",
-     "input_tokens": 4,
-     "output_tokens": 49,
-     "output_tokens_details": {
-      "thinking_tokens": 0
-     },
-     "server_tool_use": null,
-     "service_tier": "standard",
-     "speed": "standard"
+     "cache_read_input_tokens": 0,
+     "input_tokens": 296,
+     "output_tokens": 26
     }
    },
    "stage": "router"
   },
   {
-   "model": "claude-haiku-5-5",
+   "model": "gemini-3.8-flash",
    "response": {
-    "container": null,
     "content": [
      {
-      "caller": {
-       "type": "direct"
-      },
-      "id": "toolu_01MGHsKTYT9rFBaf1pbQjDbb",
+      "id": "call_7578287329409638724",
       "input": {
        "created_from": null,
        "created_to": null,
@@ -58,118 +36,44 @@
        "status": "any"
       },
       "name": "list_orders",
-      "toolset_name": null,
+      "thought_signature": "AY89a1/nkd8jbJ8isCwbSFgc/KDkQ1rWpKm3gffIJT7kxfSFiRVlXoEngxgxJxE5s3Yglxoj52ySWGaaUvrABwfWplw3VkWld5cN/l1qDVeLour9IDQmZVnTYsDwBJxuz7uUnZhoPW3JhDjJgcxdKyxzbiHXq7mVBFlcnBhnWLTEnMrhOCdxFHoAKY9jjjoi42Zl0cn3+Wo3NyAZsWEHN7/2e5PbP5OKFBJ9b+lbYwqLHJxBgoPnB4FUf8wk9UxBVmQeoegLhzaE0d96r8N1PfQpXmg34aVv8DfyDRIA6K6IQhANiQ/Z2Q18V+8yJAKiK0h1WVX/TdBv3P2HZ+Gj8TlC0CB2V0i5wdg7+M+cGYGziPPgxS74sdNFDDIgp8EYwvdX1mMXkQKiKxaSM+9Echrp2qI14jiNUYZO+d48Ghd008E5YfcU6+3p2Dxm40Xh7B3/49MaljsCoGWWwBOfdu5TmZe144KfWBW6Th4tjzhL4fcQNGmG5L9QVmTLbQuY0G6BtiGJgrvbuHzNsZSVcFlnYq+r0Te4i1YwL4vAo5kh5ckfn2Axt55iy7ArSG3+uuXrRq1Co2a2/yyZTRi55Z1HMZwvoMQ43WjNxRtf7PUidiQg18ZxkX0QJIqUvqstn94Bgqop6oZcaZJ1eT7s5SzwVAuIItCxCcAbp3R+w3tYJGIuogNcbNFZ/y188o2urdMqhNUPw0tbt+yHMx1wBOOW6gfKhw1ptZiUlJhfXuG/rtP/Wzot0BuR+8f4UhnievoremfhPuMGF65FYzTfk4JQ9LslFhdkPW3CvlJhjHZhtZloA2aeiV5j7MPxakCz8cLlAZtrwLcn9kx6E1a+wtl9LuJVIVAViMjjWU1tCw82WworabmA4CmTs42+WmJR8/HyF7G9hwMjubqy0fRLkm2bEZe75Ofh5YjRdZjQ0DPWdNP1BRV3W15s6v7IFSfbjdMEhtodEdUYaUdfyonc+unwyJ7MiX4EMNKhNdZqdWcKRWyawoVWvl7ttNUX6432gCRzx9y8B8kIzp4A7MTVMiIFJPtQTaB5Y2+qaJLeLjl+anDPNYPhXtQpUAQvRgVoeqWddJHwU8Mpza3LIvUte2ZMMy695G18uxWTTPIbIMgXEOcI9J/t/uRrssADRFhOTAthaRailxDDnsvzBe3GU5znwCIvvAQO5S45b1ih9CdytqvbNd8GDK+0lLyYxVBwPcEwff/MWIzDcINUCQ5a9ATAZ/f4MSHZNExvqdWd",
       "type": "tool_use"
      }
     ],
-    "context_management": null,
-    "diagnostics": null,
-    "id": "msg_011CgeqgMzDjrJMof1JVPz1v",
-    "input_transformations": null,
-    "model": "claude-haiku-5-5",
-    "role": "assistant",
-    "stop_details": null,
+    "model": "gemini-3.8-flash",
     "stop_reason": "tool_use",
-    "stop_sequence": null,
-    "type": "message",
     "usage": {
-     "cache_creation": {
-      "ephemeral_1h_input_tokens": 0,
-      "ephemeral_5m_input_tokens": 0
-     },
      "cache_creation_input_tokens": 0,
-     "cache_read_input_tokens": 7775,
-     "fallback_credit": null,
-     "inference_geo": "global",
-     "input_tokens": 14,
-     "iterations": [
-      {
-       "cache_creation": {
-        "ephemeral_1h_input_tokens": 0,
-        "ephemeral_5m_input_tokens": 0
-       },
-       "cache_creation_input_tokens": 0,
-       "cache_read_input_tokens": 7775,
-       "input_tokens": 14,
-       "model": null,
-       "output_tokens": 113,
-       "type": "message"
-      }
-     ],
-     "output_tokens": 113,
-     "output_tokens_details": {
-      "thinking_tokens": 0
-     },
-     "server_tool_use": null,
-     "service_tier": "standard",
-     "speed": "standard"
+     "cache_read_input_tokens": 0,
+     "input_tokens": 4915,
+     "output_tokens": 264
     }
    },
    "stage": "planner"
   },
   {
-   "model": "claude-haiku-5-5",
+   "model": "gemini-3.8-flash",
    "response": {
-    "container": null,
     "content": [
      {
-      "signature": "CAQSqwcKEAgTGAI4AUIIdGhpbmtpbmcSDNwVF/mcXvz/FNgPrhoMhTtMJ7HGRp0Xj8FxIjB2zvjLd/1baLE5lP+0fk43vIDxlW1Y1cPkNN0FWZoQqQHOeF/TPxKSVZs0P61U/7UqyAaaEqJojkfUIEBKVdXfogTUT8Z4fTxASOdMUlId4HuVjD03toEYW4WulecB9knGJBe3AHE2/fdEgKvpdnMDPlv+i5DU7TXBaz5l7ZejeICsNy4kuLARseQKvtB+jOx5z8NK6j439y7ttCqUk8IDsBM1iksVva0KpdhpZalX2xRQGywnW7hwW3UZUuMbgdNyV8u1oUCIVy6BMeqXHE1fnDMYe2dvbgQCyTl8I7SWoLGXPCyXJpPxQ/dGsgNpk5XWiMM80SAPPlHLzOW0cQAySn7eZHefyFFz5EeD43VDP1GAPa/eFvsSeN/RQkAn4Vp6US2QyrnjZfnH9KAaSCnUouKflj54gjV483nQEShQhCENCXv1OyCxt7wzcSeQHgBrf+5aevO4P2vRwSfZvC8RI2gG/GiKxATuV6mHUqBvauaw6guslo1M0UNyNPhpoKxM+Z96Q+jfjPMmuqZu3GSJPUHXsCW9oRK3hEwXLNEg2w8i6mzlsdcv7G9ZkINGym/tsHj1E/omYiRg2ZSm/4b+nauq2+OHsuBf/OJj9UEmf/sq7S6rr1CPNPgXdKr6U4UQxEUFOvmQqthBaEPz3NqS6gXmqoNKKcfLoEdnK8PyvptAAAzRvhmMGE6laEjTn8HKZW8WEAzZHUVvhwIkEpT0c+p08VvVpmlFMLmGObg2bqXOn0b5aGRw4crYEorp4yy82l4uFqgrhJw96tm44cBRoGxeNmXPu6UVKnqQ98tDNfFqOrbqpvcflwrsE/iuPWnszmND7Epfb2eaoKQl8YfapEi6hP9EJyUJoOGR5XeSynUQD4oPqcT3ciSex53wiFzsBEHzq3UCqvqn9lB8WVmvOI4ml6sBy46ehO5s0EdnwSEU6GWvNIwffZ0kAfH+iIFeYJuDciLZhNET2I5Updsu7FZj5kpT4miQ3V3ztXYuh4vBXBYgjWotT7fjIMQTRldTZDSdcAWqcc6RoZDHlPjHo3r9ENFGjqKxtltRankjpPspqxz8WgtXmLxDE5OjiLiiA+F/bpzak25uhz+ORgb3ycoZ9ivAogKE71r96I4k1uU+Iqbx3THYQP/YZU+HeWisAivwJhIValVCcgBq0IqHxMId95BaTaOv8skYAQ==",
-      "thinking": "",
-      "type": "thinking"
-     },
-     {
-      "citations": null,
-      "text": "{\"status\":\"needs_clarification\",\"message\":\"Order O2695 (Tara Fischer, $78.00) is already marked shipped with USPS tracking 1Z4831370253, so I haven't changed anything. Do you want me to re-send the tracking email to Tara, or is there a different order you meant to ship?\"}",
+      "text": "{\n  \"status\": \"needs_clarification\",\n  \"message\": \"Order O2695 is already marked as shipped with tracking number 1Z4831370253; did you mean a different order?\"\n} ",
+      "thought_signature": "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",
       "type": "text"
      }
     ],
-    "context_management": null,
-    "diagnostics": null,
-    "id": "msg_011CgeqgWzwvgt1U5fHQGgK9",
-    "input_transformations": null,
-    "model": "claude-haiku-5-5",
-    "role": "assistant",
-    "stop_details": null,
+    "model": "gemini-3.8-flash",
     "stop_reason": "end_turn",
-    "stop_sequence": null,
-    "type": "message",
     "usage": {
-     "cache_creation": {
-      "ephemeral_1h_input_tokens": 0,
-      "ephemeral_5m_input_tokens": 0
-     },
      "cache_creation_input_tokens": 0,
-     "cache_read_input_tokens": 8086,
-     "fallback_credit": null,
-     "inference_geo": "global",
-     "input_tokens": 2,
-     "iterations": [
-      {
-       "cache_creation": {
-        "ephemeral_1h_input_tokens": 0,
-        "ephemeral_5m_input_tokens": 0
-       },
-       "cache_creation_input_tokens": 0,
-       "cache_read_input_tokens": 8086,
-       "input_tokens": 2,
-       "model": null,
-       "output_tokens": 209,
-       "type": "message"
-      }
-     ],
-     "output_tokens": 209,
-     "output_tokens_details": {
-      "thinking_tokens": 105
-     },
-     "server_tool_use": null,
-     "service_tier": "standard",
-     "speed": "standard"
+     "cache_read_input_tokens": 0,
+     "input_tokens": 5526,
+     "output_tokens": 1123
     }
    },
    "stage": "planner"
   }
  ],
- "prompt_version": "e427f917",
- "recorded_at": "2026-11-02T21:50:18+00:00",
+ "prompt_version": "74edb237",
+ "recorded_at": "2026-11-11T04:58:47+00:00",
  "request": "Mark order O2695 as shipped"
 }

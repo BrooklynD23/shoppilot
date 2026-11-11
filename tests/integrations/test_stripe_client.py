@@ -155,7 +155,10 @@ def test_payment_intent_params(use_client):
     name, _, params, options = fake.calls[0]
     assert name == "payment_intents.create" and options == {"idempotency_key": "pi:sh16:o1"}
     assert params["amount"] == 4200 and params["currency"] == "usd" and params["confirm"] is True
-    assert params["payment_method"] == "pm_card_visa" and params["payment_method_types"] == ["card"]
+    assert params["payment_method"] == "pm_card_visa" and params["confirm"] is True
+    # Stripe API 2026-10-28 rejects payment_method_types; dynamic payment methods, no redirects
+    assert "payment_method_types" not in params
+    assert params["automatic_payment_methods"] == {"enabled": True, "allow_redirects": "never"}
     assert params["metadata"] == {"session_hash": "sh16", "order_id": "o1"}
 
 

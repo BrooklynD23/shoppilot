@@ -40,6 +40,8 @@ MAX_TURNS = 6
 # Turn 1 must call a tool: Haiku otherwise answers from guesses. Haiku 5.5 accepts forced
 # tool_choice (Sonnet/Opus 5.5 return 400); that turn skips thinking, later turns are "auto".
 FIRST_TURN = {"type": "any"}
+# Last turn may not call tools: answer from what was read instead of failing the whole plan.
+LAST_TURN = {"type": "none"}
 PLAN_DEADLINE_S = 90
 MAX_REQUEST_CHARS = 2000
 RESULT_MAX_CHARS = 24_000  # fits list_orders' 50-row max (seed: 22.4K); 8K hid 2 of 20 orders
@@ -216,6 +218,8 @@ def _read_detail(name: str, args: dict, data: dict) -> tuple[str, str]:
         return "forecaster", (
             f"forecast_demand: {len(risk)} at risk. {f['product_id']} runs out first, {when}."
         )
+    if name == "sales_by_product":
+        return "planner", f"sales_by_product: {_n(len(data.get('products') or []), 'product')}."
     if name == "list_orders":  # status passed the tool's enum check
         status = "" if args.get("status") == "any" else f"{args.get('status')} "
         return "planner", f"list_orders: {_n(len(data.get('orders') or []), status + 'order')}."
@@ -377,7 +381,7 @@ def _loop(lp: _Loop) -> tuple[str, str]:
             messages=messages,
             output_format=PLAN_FORMAT,
             tools=tools,
-            tool_choice=FIRST_TURN if n == 1 else None,
+            tool_choice=FIRST_TURN if n == 1 else LAST_TURN if n == MAX_TURNS else None,
         )
         if r.stop_reason == "refusal":
             return "refused", _refusal_text(r)

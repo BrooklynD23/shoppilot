@@ -1,124 +1,59 @@
 {
  "calls": [
   {
-   "model": "claude-haiku-5-5",
+   "model": "gemini-3.1-flash-lite",
    "response": {
-    "container": null,
     "content": [
      {
-      "citations": null,
-      "text": "{\"reason\": \"The owner asks to restock inventory that runs out this week, which is a shop operations request about inventory.\", \"route\": \"plan\", \"reply\": \"\"}",
+      "text": "{\n  \"reason\": \"The request pertains to inventory management for the online shop.\",\n  \"route\": \"plan\",\n  \"reply\": \"\"\n}",
+      "thought_signature": "AY89a1/Pbo2X9eschGRyVnDAyp0Bpe6UJ7PCmq83dqdgvWmAq1AcQjGvO+lVmT4cuOPcfVuwAPSAovOO/8fBUpCKZvInMphIKWVVSOO64inkvlTaVo2d+/UOf10=",
       "type": "text"
      }
     ],
-    "diagnostics": null,
-    "id": "msg_011CgeqZWitrajEYzewrUx4y",
-    "model": "claude-haiku-5-5",
-    "role": "assistant",
-    "stop_details": null,
+    "model": "gemini-3.1-flash-lite",
     "stop_reason": "end_turn",
-    "stop_sequence": null,
-    "type": "message",
     "usage": {
-     "cache_creation": {
-      "ephemeral_1h_input_tokens": 0,
-      "ephemeral_5m_input_tokens": 543
-     },
-     "cache_creation_input_tokens": 543,
+     "cache_creation_input_tokens": 0,
      "cache_read_input_tokens": 0,
-     "inference_geo": "global",
-     "input_tokens": 4,
-     "output_tokens": 54,
-     "output_tokens_details": {
-      "thinking_tokens": 0
-     },
-     "server_tool_use": null,
-     "service_tier": "standard",
-     "speed": "standard"
+     "input_tokens": 295,
+     "output_tokens": 34
     }
    },
    "stage": "router"
   },
   {
-   "model": "claude-haiku-5-5",
+   "model": "gemini-3.8-flash",
    "response": {
-    "container": null,
     "content": [
      {
-      "caller": {
-       "type": "direct"
-      },
-      "id": "toolu_01UpUrvEBqoyKpsbDSmZ15w9",
+      "id": "call_9754042492772721043",
       "input": {
        "horizon_days": 7,
        "only_at_risk": true,
        "product_id": null
       },
       "name": "forecast_demand",
-      "toolset_name": null,
+      "thought_signature": "AY89a1+nUna9rVpDjfsTEpdjTqjtxsNEitFGxCPgFHE/xB8JnxluNX1ApogV2gogcY3NqoNO0sKi/pGQzpr0j+O0XLLRiEzGl3K9Q3PW7Dyv8kgHt380Rm66jsebrDOeazHM18HVOF+wF8kt1s2AA25qU3KA1NHcxN6FzPtLq/4Wu/L+BS0G3YbXmO/FbfrVt2SeW5RpwGsxQPQf8M/jdmolntxEYzRIM9ij50+XLyZ+xNz1/qt19lkva97rhYko4zELoWkTHAdoxFd5+t071RZmRIumZ0xbI8BSFwOgibpdKE0I5o31j5z/KgALvcz3fA4ylSYS8mPA1JuPFQjdHGeQVR0xm0/wlbl79bfuOl/961Pfh9t8uPfSjsdSeUmBJOPzKMyEWbba3sIZmE/k8JXa7KKPiacPOurs48CMQ3s0OYsspI3ZXhTUIaFjQtskBtp3pNXbY+YMtY+FWjfL0bk5kQ2SjXxiS6MbpZ2uMx2A1T0rzw3YgwszUl29qvsbn2r74PT/nyxPpkBPXMsa4lcEnb618O1hc+rtSC7oYoKKXw6K7hjCCimYmt21S6u1bjP9dHHkh44cOUBUQoKuCvzR9dqx720pwIDNpMSUOEtL1Gsg6xUMkxheQgXqxf97Y1a0wossdwqnPJD73LyqynTfECBU0xzd/XNXf3x4/S9J6qBsLrhufcnYzLOBqCx/beJ+0s7lYyqmMMvueJymSGyatLSlUtqE8CWBbx9Y86GIp/h18BoC7k7sonuv/C5VroxEhujXWFljucdA7jKHCAf9NEiCgi7MFxwRFCMEvMXBX6iMbJLq0/rqEm3DOjXf8EUvmPqOwAvqy17MlwmYtldgnS7eFYU+aaDo2cjUMzbPkLn7nf8kQzqQm/WkBNO4rc1HMzBmcVU1OiYb4rEZ35mHB3GtxObdO07ozfEtlI5d0MPcZIV2qWajWxeRW+TgaXBgYBAKxcIBTKrWF4zAMNS9hXTl2wfnhi/Lk0KhAB197o3dS8bJVOsA7o05u6HB888NgCx+qQdscuccjngGiy2z+zna1pe5hFiz1PLP1azKrVtm1goJPJB45CoNWD4bQp2RfNUm+Bi/ABPtMNLi0vxJZQRyRgTE06FfUMDTWapzZIY0b1Vb49fxn5Oss8T3pnzmEWggI8Y1bekMR6GUQ1re2WhCcrVFyJ3jndxKvDDONc2gbRtWbdW2FSVBTo5vNvSP5LVDoys8JpRLxQLCe6KtA+DXCfK/Tg==",
       "type": "tool_use"
      }
     ],
-    "context_management": null,
-    "diagnostics": null,
-    "id": "msg_011CgeqZa73TpG8dRMyFFdn2",
-    "input_transformations": null,
-    "model": "claude-haiku-5-5",
-    "role": "assistant",
-    "stop_details": null,
+    "model": "gemini-3.8-flash",
     "stop_reason": "tool_use",
-    "stop_sequence": null,
-    "type": "message",
     "usage": {
-     "cache_creation": {
-      "ephemeral_1h_input_tokens": 0,
-      "ephemeral_5m_input_tokens": 265
-     },
-     "cache_creation_input_tokens": 265,
-     "cache_read_input_tokens": 7509,
-     "fallback_credit": null,
-     "inference_geo": "global",
-     "input_tokens": 14,
-     "iterations": [
-      {
-       "cache_creation": {
-        "ephemeral_1h_input_tokens": 0,
-        "ephemeral_5m_input_tokens": 265
-       },
-       "cache_creation_input_tokens": 265,
-       "cache_read_input_tokens": 7509,
-       "input_tokens": 14,
-       "model": null,
-       "output_tokens": 93,
-       "type": "message"
-      }
-     ],
-     "output_tokens": 93,
-     "output_tokens_details": {
-      "thinking_tokens": 0
-     },
-     "server_tool_use": null,
-     "service_tier": "standard",
-     "speed": "standard"
+     "cache_creation_input_tokens": 0,
+     "cache_read_input_tokens": 0,
+     "input_tokens": 4914,
+     "output_tokens": 263
     }
    },
    "stage": "planner"
   },
   {
-   "model": "claude-haiku-5-5",
+   "model": "gemini-3.8-flash",
    "response": {
-    "container": null,
     "content": [
      {
-      "signature": "CAQS5gUKEAgTGAI4AUIIdGhpbmtpbmcSDAnBp+DkZSddv+yIYBoMKIoapNgYnxBJyeumIjAYYutx5TjV8H8IYaz5BEurSf9EnthstRoHCokGXYxAy9TBx5K7xLPvGn9vDQEHwzMqgwWsAzKt4ZWEKgK9nUcCriZV/D7+pXDt3mpfZUC4xedy19Fw6heSdMwhp+3NMCHxlLKXYQc6pmKwDKtqGV5PwK18v8AqdKkGm123qSnvHHRragEn48hZI9u62uYYg2QkS1HUCHn7SBRwMISJvAvVS1k+MtiNtgwRX9pac/4v3DNRdKResEvpRxHDV3iJtA/9BQ88bL2eSnhJ+RvLrBBM2P0U15sKYqe9g9Av/oeytt7as36Gn0+MGO3OHqkggXal0hRq4G7IMSDNwYom8vWvEak7V4B6OWcUbEZxuHC1d7sL+Dz+uIA9yrwr7JKumMwZo0H/ba4uYu3AUbYG2ybKtIGy24L/7DiJyTdhDsibG/XEtWt5WbVM3fnNsEktE9J8X4OZdsoxbLu2PPv3KDRl1cRORpxrhiyayxbURJcIMdlA/uxAzm5rH9SdRuhAoLrvEhiF+njSPtQx2Sx5PepKFXfZlAJ+DpU8czbmbmAfFQGWNAEasMWQb+UIRc0m3Iy3qkLMx7FiFj8FRgM0UJr3cG4aYvha7QX49B24N8t1tMKreAD0ii3rIlVyP+D+AGUDcA8SU0hwYB9S21W0dqvptK6lslfwJg7de7R+IkCuhs3SCCfR6NksO+3MEGO6cteUyOws3XmgnnfWX+6AGMdiyf/2GmEqQ4R9NLRWsfTM17gXzVaOVEfSBM4TQWB2XI72h8B/PuSXTG3yfDNCNmZWUryGrnMknvTqkQfcLcnXkfJDCwY/qSrV7RFfyc0Pfz4XmWlnYzmxDgfTAvSl+dU8KdLpI0v2ozO8jtr/wBwYWW152t0aYKJ/AmsLm7yqKOysrja1BStSi2R7rsUR6g1W4SuXcI1oGAE=",
-      "thinking": "",
-      "type": "thinking"
-     },
-     {
-      "caller": {
-       "type": "direct"
-      },
-      "id": "toolu_01DLXErPbtv9rVuwwAeujDpv",
+      "id": "call_3161547052652750032",
       "input": {
        "evidence": [
         "P03"
@@ -126,17 +61,14 @@
        "product_id": "P03",
        "qty": null,
        "qty_source": "forecast",
-       "rationale": "Earl Grey Loose Tea 100g: Sells about 3.7/day, more on weekends. Already out of stock. Lead time is 6 days, so order now: 86 units covers the lead time plus 14 days. Expect to be out of stock for about 6 days before the PO arrives."
+       "rationale": "Sells about 3.7/day, more on weekends. Already out of stock. Lead time is 6 days, so order now: 86 units covers the lead time plus 14 days. Expect to be out of stock for about 6 days before the PO arrives."
       },
       "name": "create_restock_po",
-      "toolset_name": null,
+      "thought_signature": "AY89a18narTvSGwTgjYzWGeLz0MfDULnu/2xObQWRLZ05Dk5vaP7hAFy/a37WKUm24Oxj2jHA61tXdkWFASnLDL1DclrF9hRlOGb5Tm2xAmHkFLDP0Di81VhqU+Ohg1tnPutje76bmX+BFN7mAHFBnaiYbsEWaW5t/ShR/dN0yAdi3kMTPHC80HpZyqkLqA/ymdG0kRuX9FUbuWjTPHqTCLBWZ/F0Nd7Oj82gb5vdo3ZJunh0P4FgHUlHCZp72RMfVTyidDgxwglpkBvppnnK84q578qgI4qi5XLvYTuy/p1a01oMQmYePlUPanhuRaLLtX6u87xdmfhKX+w8pCaiU+mtgHNmkI6OfMGTX4NYEltOptN/aSVlUfTubLWdsEX8iKH1vYWXcwLfx+XoL+xXPi0YyZ4VK8YSHczUvrnAWcBw8w+vQHZU0V/W7ghT9qYMLshzvvDt75OrfwnLqzDWT2tPVHLgHri/6RaBqORxY46gmVhNd297TbsgmOPHVY1xhSHL5tWDLabYE1kNXmUO1A4ZkpaxtXHqkVtKJy+nl97nQLhBsHVDGpBN9SKn8wjrODkLLjKpR6FKb3AjNpiEDGtwGWmnSXhXnN518mpBngrXL2fuPPuNbX+mxx0O/ClDRqaqhgGMJi1WRZkRX4aHylsGe61zyqLaJuV6bIgz16hXfLLrOcQ4jK2zDiWfzCYATBGKQ1bx7P1f5Tccvyio64FpA/OJ5S1V0USWEmSYIa8ZcBSU1DzCdLNHdzPQ55DqfV+V0wG98ydwTSNVuN4DQgsJUnUmR5l9NLJbzYqO3+dfEf01awUNWQKjhexsz1MJ+UW/L0mr7mpqyyEwjhZKruMIPqw0l3Blm3fTLFMUIGugIoEHvuQAm4uybMpzRosjb3CIfuPrKQf3LF4f5eBIyk/hlJWOadZDUttG6x7laAqohxgP4mWlAKvwApZs4ST76tTOZp2saYbAdt1b43korSnYf4Io88FfRxVllFSKSXWVgJD6CPknoc6bFfiG/aU/W4oPvEk+F9/UM5/VkrrAuz2jbqSd32cA073lmsqXeUlDU64GrByXZOzdZCTQCR0KlzfyEwrpDSGzU3vBbLIq1XG5Ff/uJ3RYdMqLlZJhVSY1Mwu6RdnahDqMCsEVTe6MRgb+VIRvGboSOohxeR26zqt293Y0wPGpFjSRTmf5I+rmlC8az0WSQT5oTz/HMeP/sxbFgukbgO5Lio+2hDyyDLtpo2c3pfeigKehX42TJe60j2B6YX5w1lRUbeC7G9/vgMX7S9GJD2fzoJ1JChfOjRhMpkAE40Xd/ASHdLgDBfewzvPCxD2ZpLAX9KHMZ78d4GKiDDO2YCZwSfCkbl9p1kVk0WZNH/Vw2YhzhLXPeXBYrXYdLlEybmLGSXo4ze1W2USYjUIeppUO4G/muCVtyhGNSoPao35xOkO4CdGRp0BWZlvmXcPfB+thAP4KzOTg7qEbLujKl6C9o/xMAFZHkqbgbOeJgPcfYlqKlYkgNuFtgODOkoJeZmMD5MG6T7JojIXrXU2UO7oZ6SeeU8a8aqUAWglfoXR2aTI7LUEehnNu9SlR3pvGDcImpaiBDZHPLdD2ogOBI0ilj6Q+HgNQuimg/Hd9zTab0dyVcaClgljGA9/mQVu8jisBsFmdHjd6xXvroyk6wl//NqtuCGR5jgIRCOeLLVJUGXYGsv6HLSQhLxHiKW8bhqm13tqWI47rjuS",
       "type": "tool_use"
      },
      {
-      "caller": {
-       "type": "direct"
-      },
-      "id": "toolu_01KRPk5syroRBMATBXdkjc89",
+      "id": "call_3161547052652752533",
       "input": {
        "evidence": [
         "P01"
@@ -144,17 +76,13 @@
        "product_id": "P01",
        "qty": null,
        "qty_source": "forecast",
-       "rationale": "Black Speckle Mug: Sells about 7.7/day, more on weekends. 31 in stock runs out in about 4 days (80% range 3\u20135). Lead time is 5 days, so order now: 134 units covers the lead time plus 14 days. Expect to be out of stock for about 1 day before the PO arrives."
+       "rationale": "Sells about 7.7/day, more on weekends. 31 in stock runs out in about 4 days (80% range 3\u20135). Lead time is 5 days, so order now: 134 units covers the lead time plus 14 days. Expect to be out of stock for about 1 day before the PO arrives."
       },
       "name": "create_restock_po",
-      "toolset_name": null,
       "type": "tool_use"
      },
      {
-      "caller": {
-       "type": "direct"
-      },
-      "id": "toolu_016aZwtmDhDkSgfmMUNyoxeb",
+      "id": "call_3161547052652750938",
       "input": {
        "evidence": [
         "P02"
@@ -162,155 +90,67 @@
        "product_id": "P02",
        "qty": null,
        "qty_source": "forecast",
-       "rationale": "Fig & Cedar Candle: Sells about 5.7/day, more on weekends. 35 in stock runs out in about 7 days (80% range 5\u20137). Lead time is 7 days, so order now: 97 units covers the lead time plus 14 days."
+       "rationale": "Sells about 5.7/day, more on weekends. 35 in stock runs out in about 7 days (80% range 5\u20137). Lead time is 7 days, so order now: 97 units covers the lead time plus 14 days."
       },
       "name": "create_restock_po",
-      "toolset_name": null,
       "type": "tool_use"
      }
     ],
-    "context_management": null,
-    "diagnostics": null,
-    "id": "msg_011CgeqZeA7zuycL5g9j1RoF",
-    "input_transformations": null,
-    "model": "claude-haiku-5-5",
-    "role": "assistant",
-    "stop_details": null,
+    "model": "gemini-3.8-flash",
     "stop_reason": "tool_use",
-    "stop_sequence": null,
-    "type": "message",
     "usage": {
-     "cache_creation": {
-      "ephemeral_1h_input_tokens": 0,
-      "ephemeral_5m_input_tokens": 708
-     },
-     "cache_creation_input_tokens": 708,
-     "cache_read_input_tokens": 7509,
-     "fallback_credit": null,
-     "inference_geo": "global",
-     "input_tokens": 2,
-     "iterations": [
-      {
-       "cache_creation": {
-        "ephemeral_1h_input_tokens": 0,
-        "ephemeral_5m_input_tokens": 708
-       },
-       "cache_creation_input_tokens": 708,
-       "cache_read_input_tokens": 7509,
-       "input_tokens": 2,
-       "model": null,
-       "output_tokens": 778,
-       "type": "message"
-      }
-     ],
-     "output_tokens": 778,
-     "output_tokens_details": {
-      "thinking_tokens": 50
-     },
-     "server_tool_use": null,
-     "service_tier": "standard",
-     "speed": "standard"
-    }
-   },
-   "stage": "planner"
-  },
-  {
-   "model": "claude-haiku-5-5",
-   "response": {
-    "container": null,
-    "content": [
-     {
-      "citations": null,
-      "text": "{\"status\":\"ready\",\"message\":\"Three restock POs are staged at the forecast quantities: Earl Grey Loose Tea 100g (P03, 86 units, already out of stock), Black Speckle Mug (P01, 134 units, runs out in about 4 days) and Fig & Cedar Candle (P02, 97 units, runs out in about 7 days). I could not check for existing open purchase orders with my tools, so please confirm none of these already exist before approving.\"}",
-      "type": "text"
-     }
-    ],
-    "context_management": null,
-    "diagnostics": null,
-    "id": "msg_011CgeqZveJe1zPdZx9jZvwJ",
-    "input_transformations": null,
-    "model": "claude-haiku-5-5",
-    "role": "assistant",
-    "stop_details": null,
-    "stop_reason": "end_turn",
-    "stop_sequence": null,
-    "type": "message",
-    "usage": {
-     "cache_creation": {
-      "ephemeral_1h_input_tokens": 0,
-      "ephemeral_5m_input_tokens": 949
-     },
-     "cache_creation_input_tokens": 949,
-     "cache_read_input_tokens": 8217,
-     "fallback_credit": null,
-     "inference_geo": "global",
-     "input_tokens": 2,
-     "iterations": [
-      {
-       "cache_creation": {
-        "ephemeral_1h_input_tokens": 0,
-        "ephemeral_5m_input_tokens": 949
-       },
-       "cache_creation_input_tokens": 949,
-       "cache_read_input_tokens": 8217,
-       "input_tokens": 2,
-       "model": null,
-       "output_tokens": 154,
-       "type": "message"
-      }
-     ],
-     "output_tokens": 154,
-     "output_tokens_details": {
-      "thinking_tokens": 0
-     },
-     "server_tool_use": null,
-     "service_tier": "standard",
-     "speed": "standard"
-    }
-   },
-   "stage": "planner"
-  },
-  {
-   "model": "claude-haiku-5-5",
-   "response": {
-    "container": null,
-    "content": [
-     {
-      "citations": null,
-      "text": "{\"checks\":[{\"name\":\"covers_request\",\"note\":\"The owner asked to restock anything running out this week; all three items (P03 already out, P01 in ~4 days, P02 in ~7 days) have POs, and the plan notes the open-PO check was not done.\",\"pass\":true},{\"name\":\"no_extra_actions\",\"note\":\"Each step only creates a restock PO for an item the owner asked to restock, with no unrelated actions.\",\"pass\":true},{\"name\":\"untrusted_text_not_obeyed\",\"note\":\"Nothing in the steps or plan appears to originate from customer or email text; all quantities come from forecasts.\",\"pass\":true},{\"name\":\"evidence_supports\",\"note\":\"Evidence fields list only product IDs without the sales, stock, or lead-time figures cited in the rationales, so the rationale numbers are not directly backed by the recorded evidence.\",\"pass\":false}],\"verdict\":\"fail\"}",
-      "type": "text"
-     }
-    ],
-    "diagnostics": null,
-    "id": "msg_011Cgeqa6AYXN3d5pq32GRUs",
-    "model": "claude-haiku-5-5",
-    "role": "assistant",
-    "stop_details": null,
-    "stop_reason": "end_turn",
-    "stop_sequence": null,
-    "type": "message",
-    "usage": {
-     "cache_creation": {
-      "ephemeral_1h_input_tokens": 0,
-      "ephemeral_5m_input_tokens": 1402
-     },
-     "cache_creation_input_tokens": 1402,
+     "cache_creation_input_tokens": 0,
      "cache_read_input_tokens": 0,
-     "inference_geo": "global",
-     "input_tokens": 4,
-     "output_tokens": 298,
-     "output_tokens_details": {
-      "thinking_tokens": 0
-     },
-     "server_tool_use": null,
-     "service_tier": "standard",
-     "speed": "standard"
+     "input_tokens": 5612,
+     "output_tokens": 717
+    }
+   },
+   "stage": "planner"
+  },
+  {
+   "model": "gemini-3.8-flash",
+   "response": {
+    "content": [
+     {
+      "text": "{\n  \"status\": \"ready\",\n  \"message\": \"Create purchase orders to restock Earl Grey Loose Tea 100g (P03), Black Speckle Mug (P01), and Fig & Cedar Candle (P02) at forecast reorder quantities, as all three run out within 7 days.\"\n} ",
+      "thought_signature": "AY89a1+2iCu1T/Tfn6Quk9rOLbEKg2SYsqNTDBi6EQCGRKJb9sy+Rre98kt3G4m9Hs7OU0kAC3QjFQv3UNoIkawOZta9/FDbaOxGyzCiP9kjfxXyEsKo6ifIL5/gFESWMn6ThxkzN1eOgbDqsq2cCm3WPHjNvDB1+qvH7qQbpu4BPgdqZS9rvpzuQ4ph1RD7TAN9o/10k+kaPENdJIq+rlZ0LqK7ulraohXRuEoDMqIwX5W6JnlJN1ZBEIVPEDqDy2uv7cu7Ib5iA7oBuljCKWfsgnXRGjjLM7TxnTRx3FQwiZiFiGLuQk/o94bwDbY=",
+      "type": "text"
+     }
+    ],
+    "model": "gemini-3.8-flash",
+    "stop_reason": "end_turn",
+    "usage": {
+     "cache_creation_input_tokens": 0,
+     "cache_read_input_tokens": 3856,
+     "input_tokens": 2503,
+     "output_tokens": 109
+    }
+   },
+   "stage": "planner"
+  },
+  {
+   "model": "gemini-3.1-flash-lite",
+   "response": {
+    "content": [
+     {
+      "text": "{\n  \"checks\": [\n    {\n      \"name\": \"covers_request\",\n      \"note\": \"The plan addresses all products identified as running out within the requested timeframe.\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"no_extra_actions\",\n      \"note\": \"The plan only generates purchase orders for products identified as running out, as requested.\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"untrusted_text_not_obeyed\",\n      \"note\": \"The plan relies on inventory data and forecast models rather than external user instructions.\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"evidence_supports\",\n      \"note\": \"The rationale and evidence provided for each product justify the creation of the purchase orders.\",\n      \"pass\": true\n    }\n  ],\n  \"verdict\": \"pass\"\n}",
+      "thought_signature": "AY89a18vNiM/nOGnnP9rBI7KYaVa70c5wIah9gDPsNOXuxcaMEME/LxQMInsly8CcDafqY7O9eDZcQeby/BN2BYcWVnO+b9d4GitM98UMi+UsyZY7jMzU8SW1os=",
+      "type": "text"
+     }
+    ],
+    "model": "gemini-3.1-flash-lite",
+    "stop_reason": "end_turn",
+    "usage": {
+     "cache_creation_input_tokens": 0,
+     "cache_read_input_tokens": 0,
+     "input_tokens": 895,
+     "output_tokens": 202
     }
    },
    "stage": "judge"
   }
  ],
- "prompt_version": "e427f917",
- "recorded_at": "2026-11-02T21:48:51+00:00",
+ "prompt_version": "74edb237",
+ "recorded_at": "2026-11-11T04:55:20+00:00",
  "request": "Restock anything that runs out this week"
 }

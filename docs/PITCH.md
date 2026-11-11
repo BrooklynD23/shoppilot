@@ -252,7 +252,7 @@ The model never writes the restock number: `create_restock_po` takes `qty_source
 |---|---|
 | Backend | Python 3.12, FastAPI, Pydantic v2 |
 | Data | SQLite, one file per browser session; 24-hour idle TTL; plans expire after 15 minutes |
-| LLM | Anthropic SDK, Claude Haiku 5.5 for every live call |
+| LLM | Google Gemini 3.1 Flash-Lite on Vertex AI by default (`LLM_PROVIDER=gemini`); Claude Haiku 5.5 still selectable (`LLM_PROVIDER=anthropic`) |
 | Money and files | Stripe SDK (test mode), reportlab for the PDF report, stdlib `csv` |
 | Frontend | Astro static build served by FastAPI from `app/static`; three.js team stage with a 2D SVG fallback; Mona Sans and JetBrains Mono |
 | Packaging | One Docker image |
@@ -267,7 +267,7 @@ On 2026-11-02 (commit `3e062ed`) every live LLM call moved to **Claude Haiku 5.5
 |---|---|---|
 | Haiku 5.5 input / output | $0.10 / $0.50 per million tokens (prompts up to 100K tokens) | `docs/specs/02-agent-core.md` §6.3, pricing page checked 2026-10-30 |
 | Haiku 5.5 cache read / 5-minute cache write | $0.01 / $0.125 per million tokens | same |
-| LLM budget, all sessions | $2.00 a day | `app/config.py` `llm_daily_budget_usd` |
+| LLM budget, all sessions | $5.00 a day | `app/config.py` `llm_daily_budget_usd` |
 | LLM budget, per session | $0.25 a day | `app/config.py` `llm_session_budget_usd` |
 | LLM throughput | 4 concurrent calls, 60 calls a minute | `app/llm/budget.py` |
 | Backstop | Anthropic Console spend limit | set by hand |

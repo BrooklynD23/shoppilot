@@ -16,7 +16,9 @@ from app.tools.registry import Ctx, get_tool, validate_args
 
 MAX_STEPS = 20
 MAX_ORDER_IDS = 50
-READ_TOOLS = frozenset({"list_orders", "list_inbox", "forecast_demand", "flag_anomalies"})
+READ_TOOLS = frozenset(
+    {"list_orders", "list_inbox", "forecast_demand", "flag_anomalies", "sales_by_product"}
+)
 OWNER = "owner_request"
 _EMAIL_ID = re.compile(r"^E\d+$")
 log = logging.getLogger(__name__)

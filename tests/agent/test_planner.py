@@ -281,6 +281,7 @@ def test_max_turns(script, ctx):
     p = make_plan("loop forever", ctx)
     assert p.status == "error" and "split" in p.message and p.steps == []
     assert script.models.count(PLANNER) == MAX_TURNS + 1  # + the router call
+    assert script.sent[-1]["tool_choice"] == {"type": "none"}  # last turn must answer
 
 
 def test_llm_error_becomes_error_plan(script, ctx):

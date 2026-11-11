@@ -37,6 +37,8 @@ def no_network(request, monkeypatch):
 def tmp_data_dir(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     monkeypatch.setenv("APP_ENV", "test")
+    # Recordings and scripted responses are Claude-shaped; Gemini has its own tests.
+    monkeypatch.setenv("LLM_PROVIDER", "anthropic")
     try:
         from app.config import get_settings
 

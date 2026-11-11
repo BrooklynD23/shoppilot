@@ -66,9 +66,9 @@ function init(root: HTMLElement) {
     $('stripe-tag').textContent = state.modes.stripe_mode === 'test' ? 'Stripe test mode' : 'Stripe mock';
     const mode = state.modes.llm_mode;
     const text = mode === 'live' ? ''
-      : mode === 'replay' ? 'Recorded mode: plans come from saved recordings, not live Claude. Tools, guard and audit still run for real.'
-      : mode === 'record' ? 'Record mode: live Claude plans are saved as recordings for replay.'
-      : 'Mock mode: plans are canned, not from Claude. Tools, guard and audit still run.';
+      : mode === 'replay' ? 'Recorded mode: plans come from saved recordings, not the live AI. Tools, guard and audit still run for real.'
+      : mode === 'record' ? 'Record mode: live AI plans are saved as recordings for replay.'
+      : 'Mock mode: plans are canned, not from the AI. Tools, guard and audit still run.';
     $('mode-banner').hidden = !text;
     $('mode-text').textContent = text;
     updateOut();
@@ -284,7 +284,7 @@ function init(root: HTMLElement) {
       case 'demo_budget_reached': return `Today's demo budget is used up. Planning opens again in ${dur(e.retry_after_s ?? 3600)}. Offline fixtures still work.`;
       case 'replay_miss': return state.modes.llm_mode === 'replay' ? replayOnly()
         : 'No recorded plan for this request yet. Try Plan it for a live plan, or open the offline fixtures.';
-      case 'timeout': return 'Claude did not answer in time. Your store is unchanged.';
+      case 'timeout': return 'The AI did not answer in time. Your store is unchanged.';
       case 'bad_request': return 'ShopPilot+ could not read that request. Keep it between 1 and 500 characters.';
       case 'too_large': return 'That request is too long. Shorten it and try again.';
       case 'bad_content_type': case 'csrf': return 'The request was blocked by a safety check. Reload the page and try again.';

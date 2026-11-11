@@ -1,4 +1,5 @@
-"""Record eval recordings live (P2-T11). Needs ANTHROPIC_API_KEY; costs about $1.
+"""Record eval recordings live (P2-T11). Uses LLM_PROVIDER (gemini: Vertex auth; anthropic:
+ANTHROPIC_API_KEY). Costs about $1 on Claude Haiku, about $0.30 on Gemini Flash-Lite.
 
     uv run python -m tests.eval.record [--only c04_refund_damaged] [--out DIR]
 
@@ -36,8 +37,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--only", help="record one case id")
     ap.add_argument("--out", type=Path, help="recordings dir (default app/llm/recordings)")
     a = ap.parse_args(argv)
-    if not os.environ.get("ANTHROPIC_API_KEY"):
+    from app.config import load_settings
+
+    s = load_settings()
+    if s.llm_provider == "anthropic" and s.anthropic_api_key is None:
         print("ANTHROPIC_API_KEY is not set (use the shoppilot-dev key).", file=sys.stderr)
+        return 2
+    if s.llm_provider == "gemini" and not (s.google_cloud_project or s.google_api_key):
+        print("Set GOOGLE_CLOUD_PROJECT (with ADC) or GOOGLE_API_KEY for Vertex.", file=sys.stderr)
         return 2
     os.environ["LLM_MODE"] = "record"
     os.environ.setdefault("DATA_DIR", tempfile.mkdtemp(prefix="shoppilot-eval-"))

@@ -12,7 +12,15 @@ services:
         value: prod
       - key: DATA_DIR
         value: /tmp/shoppilot
-      - key: ANTHROPIC_API_KEY
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: GOOGLE_CLOUD_PROJECT
+        sync: false
+      - key: GOOGLE_CLOUD_LOCATION
+        value: global
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GOOGLE_APPLICATION_CREDENTIALS_JSON
         sync: false
       - key: STRIPE_SECRET_KEY
         sync: false

@@ -76,6 +76,7 @@ def test_tool_descriptions_cover_all():
         "list_inbox",
         "forecast_demand",
         "flag_anomalies",
+        "sales_by_product",
         "mark_shipped",
         "send_email",
         "create_restock_po",

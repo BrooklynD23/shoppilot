@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v5
       - run: docker build -t shoppilot .
       - run: |
-          docker run -d -p 8000:8000 --memory=512m -e ANTHROPIC_API_KEY=dummy-not-a-key --name sp shoppilot
+          docker run -d -p 8000:8000 --memory=512m -e GOOGLE_CLOUD_PROJECT=dummy -e GOOGLE_API_KEY=dummy-not-a-key --name sp shoppilot
           for i in $(seq 30); do curl -fsS localhost:8000/healthz && break; sleep 1; done
           curl -fsS localhost:8000/healthz || { docker logs sp; exit 1; }
           curl -fsS localhost:8000/ | grep -qi '<html'

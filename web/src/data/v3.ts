@@ -16,7 +16,7 @@ export const hero = {
 export const builtWith = {
   label: 'Built with',
   items: [
-    { name: 'Claude', by: 'Anthropic' },
+    { name: 'Gemini', by: 'Google' },
     { name: 'Stripe', by: 'test mode' },
     { name: 'FastAPI', by: 'in-house API' },
     { name: 'SQLite', by: 'audit log' },

@@ -44,6 +44,13 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
         "order ids with a score and a one-line reason. Read-only; runs immediately. Use it to "
         "answer questions; it does not change anything."
     ),
+    "sales_by_product": (
+        "Total sales per product over an inclusive created date range (YYYY-MM-DD, null for "
+        "open), counting paid and shipped orders: units, revenue_cents and order count per "
+        'product, plus the range covered. sort_by is "units" or "revenue"; limit (1 to 50, '
+        "null for 10) caps the products. Use it for best sellers, top products and sales by "
+        "item. Read-only; runs immediately."
+    ),
     "mark_shipped": (
         "Propose marking paid orders as shipped with a carrier. Assigns tracking numbers when "
         "the owner approves. Put every order to ship in one call. Staged, not executed; undoable."

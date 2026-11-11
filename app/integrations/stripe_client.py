@@ -119,7 +119,9 @@ def ensure_payment_intent(session_hash: str, order_id: str, amount_cents: int) -
         "amount": amount_cents,
         "currency": "usd",
         "payment_method": "pm_card_visa",
-        "payment_method_types": ["card"],
+        # payment_method_types is rejected on API 2026-10-28 (dynamic payment methods). A test
+        # card confirmed server-side never redirects, so redirect-based methods are turned off.
+        "automatic_payment_methods": {"enabled": True, "allow_redirects": "never"},
         "confirm": True,
         "metadata": {"session_hash": session_hash, "order_id": order_id},
         "description": f"ShopPilot+ demo order {order_id}",

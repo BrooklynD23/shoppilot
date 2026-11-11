@@ -225,10 +225,11 @@ def subscription_checkout(account_id: str, price_id: str, base_url: str) -> str:
     }
     # Repeat clicks before paying must not open several sessions (two paid tabs = two plans).
     # One idempotency key per account, price and clock hour makes Stripe return the SAME
-    # Checkout Session; it expires one hour after creation, so it outlives its hour bucket.
-    now = int(time.time())
-    params["expires_at"] = now + SUBSCRIBE_SESSION_TTL_S
-    options = {"idempotency_key": f"subscribe:{account_id}:{price_id}:{now // 3600}"}
+    # Checkout Session. Stripe rejects a reused key with different params, so expires_at comes
+    # from the hour bucket too: the end of the bucket + TTL, 1 to 2 hours after creation.
+    bucket = int(time.time()) // 3600
+    params["expires_at"] = (bucket + 1) * 3600 + SUBSCRIBE_SESSION_TTL_S
+    options = {"idempotency_key": f"subscribe:{account_id}:{price_id}:{bucket}"}
     # No stripe_account option: the subscription lives on the platform account.
     hint = "Check that STRIPE_PLATFORM_PRICE_ID is a recurring price in this sandbox."
     return call(lambda: client().v1.checkout.sessions.create(params, options), hint).url

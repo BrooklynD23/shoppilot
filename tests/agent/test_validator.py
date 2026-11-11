@@ -187,7 +187,10 @@ def six_shipped_ids(ctx):
 
 def test_read_tools_constant():
     assert (
-        frozenset({"list_orders", "list_inbox", "forecast_demand", "flag_anomalies"}) == READ_TOOLS
+        frozenset(
+            {"list_orders", "list_inbox", "forecast_demand", "flag_anomalies", "sales_by_product"}
+        )
+        == READ_TOOLS
         and MAX_STEPS == 20
     )
 
